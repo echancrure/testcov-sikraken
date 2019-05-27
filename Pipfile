@@ -10,6 +10,7 @@ lxml = ">=4.0.0"
 black = "*"
 pylint = "*"
 nose = "*"
+coverage = "*"
 
 [requires]
 python_version = "3.6"
