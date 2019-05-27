@@ -132,3 +132,6 @@ dmypy.json
 
 # Validator output directory
 /output
+
+# Coverage data of tests
+/cover 
