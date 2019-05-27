@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE testcase PUBLIC "+//IDN sosy-lab.org//DTD test-format testcase 1.0//EN" "https://sosy-lab.org/test-format/testcase-1.0.dtd">
+<testcase coversError="true">
+  <input>'a'</input>
+  <input>5</input>
+  <input>0x10</input>
+</testcase>
