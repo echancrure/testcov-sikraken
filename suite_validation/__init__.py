@@ -42,14 +42,16 @@ def get_parser():
         "-r",
         action="store_true",
         default=False,
-        help="scan for test cases recursively")
+        help="scan for test cases recursively",
+    )
 
     parser.add_argument(
         "--stop-after-found-violation",
         dest="stop_after_success",
         action="store_true",
         default=False,
-        help="scan for test cases recursively")
+        help="scan for test cases recursively",
+    )
 
     parser.add_argument(
         "--timelimit-per-run",
@@ -57,45 +59,50 @@ def get_parser():
         action="store",
         type=int,
         default=20,
-        help="timelimit for each single test execution")
+        help="timelimit for each single test execution",
+    )
 
     parser.add_argument(
         "--no-overwrite",
         dest="overwrite",
         action="store_false",
         default=True,
-        help="don't overwrite existing files (e.g., the harness or executable)")
+        help="don't overwrite existing files (e.g., the harness or executable)",
+    )
 
     parser.add_argument(
         "--output",
         dest="output_dir",
         action="store",
         default="output",
-        help="output directory to write to")
+        help="output directory to write to",
+    )
 
-    parser.add_argument(
-        "--version", "-v", action="version", version=__VERSION__)
+    parser.add_argument("--version", "-v", action="version", version=__VERSION__)
 
     machine_model_args = parser.add_mutually_exclusive_group()
     machine_model_args.add_argument(
-        '-32',
+        "-32",
         dest="machine_model",
         action="store_const",
         const=eu.MACHINE_MODEL_32,
-        help="Use 32 bit machine model")
+        help="Use 32 bit machine model",
+    )
     machine_model_args.add_argument(
-        '-64',
+        "-64",
         dest="machine_model",
         action="store_const",
         const=eu.MACHINE_MODEL_64,
-        help="Use 64 bit machine model")
+        help="Use 64 bit machine model",
+    )
 
     parser.add_argument(
         "--test-suite",
         dest="test_suite",
         action="store",
         help="directory or zip-file that contains test suite",
-        required=True)
+        required=True,
+    )
 
     parser.add_argument(
         "--sequence-file",
@@ -103,14 +110,16 @@ def get_parser():
         action="store",
         default=None,
         help="print sequence of accumulated coverage per executed test to file",
-        required=False)
+        required=False,
+    )
 
     parser.add_argument(
         "--verbose",
         dest="verbose",
         action="store_true",
         default=False,
-        help="show messages verbose")
+        help="show messages verbose",
+    )
 
     parser.add_argument("file", action="store", help="program file")
 
@@ -122,7 +131,9 @@ def parse():
     return parser.parse_args()
 
 
-def _write_test_to_output(program_file, test_container, successful_test, overwrite, output_dir):
+def _write_test_to_output(
+    program_file, test_container, successful_test, overwrite, output_dir
+):
     """
     Writes, for the given test, the original XML definition and an executable harness
     to the current working directory.
@@ -136,14 +147,19 @@ def _write_test_to_output(program_file, test_container, successful_test, overwri
     successful_test_file = successful_test.origin
     test_directory = os.path.dirname(successful_test_file)
     metadata_file = os.path.join(test_directory, eu.METADATA_XML_NAME)
-    _copy_file(metadata_file, test_container, output_dir,
-               eu.METADATA_XML_NAME, overwrite)
+    _copy_file(
+        metadata_file, test_container, output_dir, eu.METADATA_XML_NAME, overwrite
+    )
 
-    _copy_file(successful_test_file, test_container,
-               output_dir, SUCCESSFUL_TEST_NAME, overwrite)
+    _copy_file(
+        successful_test_file,
+        test_container,
+        output_dir,
+        SUCCESSFUL_TEST_NAME,
+        overwrite,
+    )
 
-    test_c_file = os.path.join(output_dir,
-                               SUCCESSFUL_HARNESS_NAME)
+    test_c_file = os.path.join(output_dir, SUCCESSFUL_HARNESS_NAME)
     harness_content = execution.HarnessCreator().convert(program_file, successful_test)
     if not overwrite and os.path.exists(test_c_file):
         logging.info("Not overwriting %s", test_c_file)
@@ -152,24 +168,30 @@ def _write_test_to_output(program_file, test_container, successful_test, overwri
             harness_content = progr_inp.read() + harness_content
         with open(test_c_file, "w+") as outp:
             outp.write(harness_content)
-    logging.info("Successful test data written to %s",
-                 SUCCESSFUL_TESTSUITE_FOLDER)
+    logging.info("Successful test data written to %s", SUCCESSFUL_TESTSUITE_FOLDER)
 
 
-def _copy_file(relative_file_path, container, dest_directory, dest_name, overwrite=True):
+def _copy_file(
+    relative_file_path, container, dest_directory, dest_name, overwrite=True
+):
     file_dest = os.path.join(dest_directory, dest_name)
     if not overwrite and os.path.exists(file_dest):
         logging.info("Not overwriting %s", file_dest)
         return
     os.makedirs(dest_directory, exist_ok=True)
 
-    logging.debug("Copying %s from %s to %s/%s", relative_file_path, container,
-                  dest_directory, dest_name)
-    if container.endswith('.zip'):
+    logging.debug(
+        "Copying %s from %s to %s/%s",
+        relative_file_path,
+        container,
+        dest_directory,
+        dest_name,
+    )
+    if container.endswith(".zip"):
         try:
             with zipfile.ZipFile(container) as inp_zip:
                 source = inp_zip.open(relative_file_path)
-                with source, open(file_dest, 'wb+') as target:
+                with source, open(file_dest, "wb+") as target:
                     shutil.copyfileobj(source, target)
         except KeyError:
             logging.warning("No file %s in %s", relative_file_path, container)
@@ -205,14 +227,17 @@ def main():
             compute_sequence=args.print_seq_file is not None,
             overwrite_files=args.overwrite,
             harness_file_target=harness_file,
-            compile_target=executable)
+            compile_target=executable,
+        )
 
-        executor.run(args.file, args.test_suite, args.machine_model,
-                     args.recursive, exec_results)
+        executor.run(
+            args.file, args.test_suite, args.machine_model, args.recursive, exec_results
+        )
 
         if not exec_results.results:
-            logging.warning("No test case in exchange format found in '%s'",
-                            args.test_suite)
+            logging.warning(
+                "No test case in exchange format found in '%s'", args.test_suite
+            )
 
     except FileNotFoundError as e:
         logging.error(e)
@@ -221,20 +246,25 @@ def main():
     finally:
         testsuite_folder = os.path.join(args.output_dir, SUCCESSFUL_TESTSUITE_FOLDER)
         if exec_results.successful_test:
-            _write_test_to_output(args.file, args.test_suite,
-                                  exec_results.successful_test, args.overwrite, testsuite_folder)
+            _write_test_to_output(
+                args.file,
+                args.test_suite,
+                exec_results.successful_test,
+                args.overwrite,
+                testsuite_folder,
+            )
 
         if exec_results.coverage_sequence and args.print_seq_file:
             if not os.path.exists(testsuite_folder):
                 os.mkdir(testsuite_folder)
-            seq_file = os.path.join(testsuite_folder,
-                                    args.print_seq_file)
+            seq_file = os.path.join(testsuite_folder, args.print_seq_file)
             if not args.overwrite and os.path.exists(seq_file):
                 logging.info("Not overwriting %s", seq_file)
             else:
-                with open(seq_file, 'w') as outp:
+                with open(seq_file, "w") as outp:
                     outp.writelines(
-                        [str(c) + '\n' for c in exec_results.coverage_sequence])
+                        [str(c) + "\n" for c in exec_results.coverage_sequence]
+                    )
 
         print()
         print("---Results---")

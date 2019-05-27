@@ -26,47 +26,61 @@ MACHINE_MODEL_32 = "-m32"
 MACHINE_MODEL_64 = "-m64"
 
 EXTERNAL_DECLARATIONS = [
-    ('_IO_FILE', 'struct _IO_FILE;'), ('FILE', 'typedef struct _IO_FILE FILE;'),
-    ('stdin', 'extern struct _IO_FILE *stdin;'),
-    ('stderr', 'extern struct _IO_FILE *stderr;'),
-    ('size_t', 'typedef long unsigned int size_t;'),
-    ('abort',
-     'extern void abort (void) __attribute__ ((__nothrow__ , __leaf__))' +
-     ' __attribute__ ((__noreturn__));'),
-    ('exit',
-     'extern void exit (int __status) __attribute__ ((__nothrow__ , __leaf__))'
-     + ' __attribute__ ((__noreturn__));'),
-    ('fgets',
-     'extern char *fgets (char *__restrict __s, int __n, FILE *__restrict __stream);'
+    ("_IO_FILE", "struct _IO_FILE;"),
+    ("FILE", "typedef struct _IO_FILE FILE;"),
+    ("stdin", "extern struct _IO_FILE *stdin;"),
+    ("stderr", "extern struct _IO_FILE *stderr;"),
+    ("size_t", "typedef long unsigned int size_t;"),
+    (
+        "abort",
+        "extern void abort (void) __attribute__ ((__nothrow__ , __leaf__))"
+        + " __attribute__ ((__noreturn__));",
     ),
-    ('sscanf',
-     'extern int sscanf (const char *__restrict __s, const char *__restrict __format, ...)'
-     + ' __attribute__ ((__nothrow__ , __leaf__));'),
-    ('strlen',
-     ' extern size_t strlen (const char *__s __attribute__ ((__nothrow__ , __leaf__))'
-     + ' __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1))));'),
-    ('fprintf',
-     'extern int fprintf (FILE *__restrict __stream, const char *__restrict __format, ...);'
+    (
+        "exit",
+        "extern void exit (int __status) __attribute__ ((__nothrow__ , __leaf__))"
+        + " __attribute__ ((__noreturn__));",
     ),
-    ('malloc',
-     ' extern void *malloc (size_t __size __attribute__ ((__nothrow__ , __leaf__))'
-     + ' __attribute__ ((__malloc__)));'),
-    ('memcpy',
-     ' extern void *memcpy (void *__restrict __dest, const void *__restrict __src, size_t __n)'
-     +
-     ' __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__nonnull__ (1, 2)));'
+    (
+        "fgets",
+        "extern char *fgets (char *__restrict __s, int __n, FILE *__restrict __stream);",
     ),
-    ('strcpy',
-     ' extern char *strcpy (char *__restrict __dest, const char *__restrict __src)'
-     +
-     ' __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__nonnull__ (1, 2)));'
+    (
+        "sscanf",
+        "extern int sscanf (const char *__restrict __s, const char *__restrict __format, ...)"
+        + " __attribute__ ((__nothrow__ , __leaf__));",
     ),
-    ('strcat',
-     ' extern char *strcat (char *__restrict __dest, const char *__restrict __src)'
-     +
-     ' __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__nonnull__ (1, 2)));'
-    )
+    (
+        "strlen",
+        " extern size_t strlen (const char *__s __attribute__ ((__nothrow__ , __leaf__))"
+        + " __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1))));",
+    ),
+    (
+        "fprintf",
+        "extern int fprintf (FILE *__restrict __stream, const char *__restrict __format, ...);",
+    ),
+    (
+        "malloc",
+        " extern void *malloc (size_t __size __attribute__ ((__nothrow__ , __leaf__))"
+        + " __attribute__ ((__malloc__)));",
+    ),
+    (
+        "memcpy",
+        " extern void *memcpy (void *__restrict __dest, const void *__restrict __src, size_t __n)"
+        + " __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__nonnull__ (1, 2)));",
+    ),
+    (
+        "strcpy",
+        " extern char *strcpy (char *__restrict __dest, const char *__restrict __src)"
+        + " __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__nonnull__ (1, 2)));",
+    ),
+    (
+        "strcat",
+        " extern char *strcat (char *__restrict __dest, const char *__restrict __src)"
+        + " __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__nonnull__ (1, 2)));",
+    ),
 ]
+
 
 class TestVector:
     """Test vector.
@@ -84,7 +98,7 @@ class TestVector:
         self._vector = list()
 
     def add(self, value, method=None):
-        self._vector.append({'value': value, 'name': method})
+        self._vector.append({"value": value, "name": method})
 
     @property
     def vector(self):
@@ -145,7 +159,6 @@ class ExecutionResult:
 
 
 def execute(command, quiet=False, input_str=None, timelimit=None):
-
     def shut_down(process):
         process.kill()
         return process.wait()
@@ -158,7 +171,8 @@ def execute(command, quiet=False, input_str=None, timelimit=None):
         stdin=subprocess.PIPE if input_str else None,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        universal_newlines=False)
+        universal_newlines=False,
+    )
 
     output = None
     err_output = None
@@ -166,7 +180,8 @@ def execute(command, quiet=False, input_str=None, timelimit=None):
         if input_str and not isinstance(input_str, bytes):
             input_str = input_str.encode()
         output, err_output = process.communicate(
-            input=input_str, timeout=timelimit if timelimit else None)
+            input=input_str, timeout=timelimit if timelimit else None
+        )
         returncode = process.poll()
         got_aborted = False
     except subprocess.TimeoutExpired:
@@ -174,7 +189,7 @@ def execute(command, quiet=False, input_str=None, timelimit=None):
         returncode = shut_down(process)
         got_aborted = True
     # We decode output, but we can't decode error output, since it may contain undecodable bytes.
-    output = output.decode() if output else ''
+    output = output.decode() if output else ""
 
     if output:
         logging.debug("Output of execution:\n%s", output)
@@ -185,5 +200,4 @@ def execute(command, quiet=False, input_str=None, timelimit=None):
 
 
 def found_err(run_result):
-    return run_result.stderr and ERROR_STRING.encode(
-    ) in run_result.stderr
+    return run_result.stderr and ERROR_STRING.encode() in run_result.stderr

@@ -29,35 +29,34 @@ import suite_validation.execution_utils as eu
 import suite_validation
 
 MODULE_DIRECTORY = os.path.join(
-    os.path.dirname(suite_validation.__file__), os.path.pardir)
-TEST_DIRECTORY = os.path.join(MODULE_DIRECTORY, 'test')
-TEST_FILE_WITHOUT_ERR = os.path.join(TEST_DIRECTORY, 'test.c')
-TEST_FILE_WITH_ERR = os.path.join(TEST_DIRECTORY, 'test_false.c')
-TEST_FILE_WITH_NO_TERMINATION = os.path.join(TEST_DIRECTORY,
-                                             'test_no-termination.c')
+    os.path.dirname(suite_validation.__file__), os.path.pardir
+)
+TEST_DIRECTORY = os.path.join(MODULE_DIRECTORY, "test")
+TEST_FILE_WITHOUT_ERR = os.path.join(TEST_DIRECTORY, "test.c")
+TEST_FILE_WITH_ERR = os.path.join(TEST_DIRECTORY, "test_false.c")
+TEST_FILE_WITH_NO_TERMINATION = os.path.join(TEST_DIRECTORY, "test_no-termination.c")
 
-TEST_HARNESS = os.path.join(TEST_DIRECTORY, 'test_harness.c')
+TEST_HARNESS = os.path.join(TEST_DIRECTORY, "test_harness.c")
 
-SUITE_DIR = os.path.join(TEST_DIRECTORY, 'suites')
-SUITE_VALID_DIR = os.path.join(SUITE_DIR, 'suite-valid/')
-SUITE_VALID_ZIP = os.path.join(SUITE_DIR, 'suite-valid.zip')
-SUITE_VALID_NESTED_DIR = os.path.join(SUITE_DIR, 'suite-valid-nested/')
-SUITE_VALID_NESTED_ZIP = os.path.join(SUITE_DIR, 'suite-valid-nested.zip')
-SUITE_INVALID_DIR = os.path.join(SUITE_DIR, 'suite-metadata-missing/')
-SUITE_INVALID_ZIP = os.path.join(SUITE_DIR, 'suite-metadata-missing.zip')
+SUITE_DIR = os.path.join(TEST_DIRECTORY, "suites")
+SUITE_VALID_DIR = os.path.join(SUITE_DIR, "suite-valid/")
+SUITE_VALID_ZIP = os.path.join(SUITE_DIR, "suite-valid.zip")
+SUITE_VALID_NESTED_DIR = os.path.join(SUITE_DIR, "suite-valid-nested/")
+SUITE_VALID_NESTED_ZIP = os.path.join(SUITE_DIR, "suite-valid-nested.zip")
+SUITE_INVALID_DIR = os.path.join(SUITE_DIR, "suite-metadata-missing/")
+SUITE_INVALID_ZIP = os.path.join(SUITE_DIR, "suite-metadata-missing.zip")
 
 MACHINE_MODELS = (eu.MACHINE_MODEL_32, eu.MACHINE_MODEL_64)
 
 
 class TempDirExecutor:
-
     def __init__(self):
         self.temp_dir = None
-        self._old_dir = '.'
+        self._old_dir = "."
 
     def setup(self):
         self.temp_dir = _get_test_directory()
-        self._old_dir = os.path.abspath('.')
+        self._old_dir = os.path.abspath(".")
         os.chdir(self.temp_dir)
 
     def teardown(self):
@@ -74,29 +73,29 @@ class TestHarness(TempDirExecutor):
     def test_harness_with_test_vector_compilable(self):
         vectors = list()
 
-        test_vector = eu.TestVector('int_input', 'dummy.xml')
+        test_vector = eu.TestVector("int_input", "dummy.xml")
         test_vector.add("0")
         vectors.append(test_vector)
 
-        test_vector = eu.TestVector('int_input_with_method', 'dummy.xml')
+        test_vector = eu.TestVector("int_input_with_method", "dummy.xml")
         test_vector.add("0", method="__VERIFIER_nondet_int")
         vectors.append(test_vector)
 
-        test_vector = eu.TestVector('char_input', 'dummy.xml')
+        test_vector = eu.TestVector("char_input", "dummy.xml")
         test_vector.add("'a'")
         vectors.append(test_vector)
 
-        test_vector = eu.TestVector('hex_input', 'dummy.xml')
+        test_vector = eu.TestVector("hex_input", "dummy.xml")
         test_vector.add("0x0000f")
         vectors.append(test_vector)
 
-        test_vector = eu.TestVector('multiple_inputs', 'dummy.xml')
+        test_vector = eu.TestVector("multiple_inputs", "dummy.xml")
         test_vector.add("0")
         test_vector.add("5")
         test_vector.add("999")
         vectors.append(test_vector)
 
-        test_vector = eu.TestVector('multiple_input_types', 'dummy.xml')
+        test_vector = eu.TestVector("multiple_input_types", "dummy.xml")
         test_vector.add("0")
         test_vector.add("'b'")
         test_vector.add("0xff000f9a")
@@ -107,10 +106,9 @@ class TestHarness(TempDirExecutor):
 
     @staticmethod
     def _check_compilable(test_vector=None):
-        compile_cmd = ['gcc', '-x', 'c', '-include', TEST_FILE_WITHOUT_ERR, '-']
+        compile_cmd = ["gcc", "-x", "c", "-include", TEST_FILE_WITHOUT_ERR, "-"]
 
-        harness = ex.HarnessCreator().convert(TEST_FILE_WITHOUT_ERR,
-                                              test_vector)
+        harness = ex.HarnessCreator().convert(TEST_FILE_WITHOUT_ERR, test_vector)
 
         compile_exec = subprocess.Popen(compile_cmd, stdin=subprocess.PIPE)
         compile_exec.communicate(harness.encode())
@@ -126,8 +124,9 @@ class TestExecutionRunner(TempDirExecutor):
     def get_runner(machine_model, timelimit):
         harness_file = _get_harness_file_target()
         compile_output_file = _get_compile_target()
-        return ex.ExecutionRunner(machine_model, timelimit, harness_file,
-                                  compile_output_file)
+        return ex.ExecutionRunner(
+            machine_model, timelimit, harness_file, compile_output_file
+        )
 
     def test_harness_creation(self):
         for machine_model in MACHINE_MODELS:
@@ -152,8 +151,7 @@ class TestExecutionRunner(TempDirExecutor):
         _, out_file = tempfile.mkstemp()
 
         try:
-            out_file = runner.compile(TEST_FILE_WITHOUT_ERR, TEST_HARNESS,
-                                      out_file)
+            out_file = runner.compile(TEST_FILE_WITHOUT_ERR, TEST_HARNESS, out_file)
 
         except AssertionError as e:
             assert False, "Compilation failed: %s" % e
@@ -187,15 +185,11 @@ class TestExecutionRunner(TempDirExecutor):
 
         for machine_model in MACHINE_MODELS:
             for timelimit in (None, 5, 10, 99999):
-                yield self._check_test_execution_runs, \
-                        machine_model, \
-                        timelimit, \
-                        TEST_FILE_WITHOUT_ERR, \
-                        simple_vector, \
-                        ex.UNKNOWN
+                yield self._check_test_execution_runs, machine_model, timelimit, TEST_FILE_WITHOUT_ERR, simple_vector, ex.UNKNOWN
 
-    def _check_test_execution_runs(self, machine_model, timelimit, test_file,
-                                   test_vector, expected):
+    def _check_test_execution_runs(
+        self, machine_model, timelimit, test_file, test_vector, expected
+    ):
         if timelimit:
             timed(timelimit * 1.2)
 
@@ -218,33 +212,18 @@ class TestExecutionRunner(TempDirExecutor):
 
         for machine_model in MACHINE_MODELS:
             for timelimit in (None, 5, 10):
-                yield self._check_test_execution_runs, \
-                        machine_model, \
-                        timelimit, \
-                        TEST_FILE_WITH_ERR, \
-                        covering_vector, \
-                        ex.COVERS
+                yield self._check_test_execution_runs, machine_model, timelimit, TEST_FILE_WITH_ERR, covering_vector, ex.COVERS
 
         for machine_model in MACHINE_MODELS:
             for timelimit in (None, 5, 10):
-                yield self._check_test_execution_runs, \
-                        machine_model, \
-                        timelimit, \
-                        TEST_FILE_WITH_ERR, \
-                        missing_vector, \
-                        ex.UNKNOWN
+                yield self._check_test_execution_runs, machine_model, timelimit, TEST_FILE_WITH_ERR, missing_vector, ex.UNKNOWN
 
     def test_execution_run_non_terminating_with_timelimit(self):
         empty_vector = eu.TestVector("dummy", "dummy.xml")
         timelimit = 3
 
         for machine_model in MACHINE_MODELS:
-            yield self._check_test_execution_runs, \
-                    machine_model, \
-                    timelimit, \
-                    TEST_FILE_WITH_NO_TERMINATION, \
-                    empty_vector, \
-                    ex.ABORTED
+            yield self._check_test_execution_runs, machine_model, timelimit, TEST_FILE_WITH_NO_TERMINATION, empty_vector, ex.ABORTED
 
 
 class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
@@ -255,16 +234,17 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
         harness_file = _get_harness_file_target()
         compile_output_file = _get_compile_target()
         return ex.CoverageMeasuringExecutionRunner(
-            machine_model, timelimit, harness_file, compile_output_file)
+            machine_model, timelimit, harness_file, compile_output_file
+        )
 
     def test_get_coverage_single_execution(self):
         vector_going_one_way = eu.TestVector("vector1", "vector1.xml")
         vector_going_one_way.add("5")
 
         for machine_model in MACHINE_MODELS:
-            yield self._check_coverage_multiple_executions, \
-                    machine_model, \
-                    [vector_going_one_way]
+            yield self._check_coverage_multiple_executions, machine_model, [
+                vector_going_one_way
+            ]
 
     def test_get_coverage_multiple_executions(self):
         vector_going_one_way = eu.TestVector("vector1", "vector1.xml")
@@ -274,9 +254,10 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
         vector_going_other_way.add("-5")
 
         for machine_model in MACHINE_MODELS:
-            yield self._check_coverage_multiple_executions, \
-                    machine_model, \
-                    [vector_going_one_way, vector_going_other_way]
+            yield self._check_coverage_multiple_executions, machine_model, [
+                vector_going_one_way,
+                vector_going_other_way,
+            ]
 
     def _check_coverage_multiple_executions(self, machine_model, vectors):
         runner = self.get_runner(machine_model, None)
@@ -286,10 +267,10 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
         for tv in vectors:
             runner.run(test_file, tv)
             lines, _, branches = runner.get_coverage(test_file)
-            lines = float(
-                lines.split('%')[0])  # remove '%' and parantheses at end
+            lines = float(lines.split("%")[0])  # remove '%' and parantheses at end
             branches = float(
-                branches.split('%')[0])  # remove '%' and parantheses at end
+                branches.split("%")[0]
+            )  # remove '%' and parantheses at end
 
             assert lines > 0, "Line coverage at 0"
             assert branches > 0, "Branch coverage at 0"
@@ -311,8 +292,9 @@ class TestSuiteExecutor(TempDirExecutor):
     def get_runner(stop_after_found=False, timelimit=None):
         harness_file = _get_harness_file_target()
         compile_output_file = _get_compile_target()
-        return ex.SuiteExecutor(stop_after_found, timelimit, harness_file,
-                                compile_output_file)
+        return ex.SuiteExecutor(
+            stop_after_found, timelimit, harness_file, compile_output_file
+        )
 
     def test_run_suite_valid(self):
         for machine_model in MACHINE_MODELS:
@@ -327,20 +309,22 @@ class TestSuiteExecutor(TempDirExecutor):
     def _check_run_suite_valid(self, machine_model, suite_location, recursive):
         runner = self.get_runner()
 
-        result_obj = \
-            runner.run(self.program_file, suite_location, machine_model, recursive=recursive)
+        result_obj = runner.run(
+            self.program_file, suite_location, machine_model, recursive=recursive
+        )
         results = result_obj.results
         lines = result_obj.lines_executed
         conds_ex = result_obj.branches_executed
         branches = result_obj.branches_taken
 
         assert len(results) == 2, "Not both tests executed"
-        assert results.count(ex.COVERS) == 1 and results.count(
-            ex.UNKNOWN
-        ) == 1, "Expected exactly one result to be %s and one to be %s: %s" % (
-            ex.COVERS, ex.UNKNOWN, results)
-        assert lines and conds_ex and branches, "Coverage information invalid: %s, %s, %s" % (
-            lines, conds_ex, branches)
+        assert results.count(ex.COVERS) == 1 and results.count(ex.UNKNOWN) == 1, (
+            "Expected exactly one result to be %s and one to be %s: %s"
+            % (ex.COVERS, ex.UNKNOWN, results)
+        )
+        assert (
+            lines and conds_ex and branches
+        ), "Coverage information invalid: %s, %s, %s" % (lines, conds_ex, branches)
 
     @staticmethod
     def _check_file_exists(filename):
@@ -352,31 +336,34 @@ class TestSuiteExecutor(TempDirExecutor):
                 yield self._check_run_suite_without_metadata_throws_error, machine_model, suite
 
     @raises(ex.ExecutionError)
-    def _check_run_suite_without_metadata_throws_error(self, machine_model,
-                                                       suite_location):
+    def _check_run_suite_without_metadata_throws_error(
+        self, machine_model, suite_location
+    ):
         runner = self.get_runner()
 
-        runner.run(
-            self.program_file, suite_location, machine_model, recursive=False)
+        runner.run(self.program_file, suite_location, machine_model, recursive=False)
 
     def test_run_suite_with_non_terminating_program(self):
         for machine_model in MACHINE_MODELS:
             for suite in (SUITE_VALID_DIR, SUITE_VALID_ZIP):
                 yield self._check_run_suite_with_non_terminating_program, machine_model, suite
 
-    def _check_run_suite_with_non_terminating_program(self, machine_model,
-                                                      suite_location):
+    def _check_run_suite_with_non_terminating_program(
+        self, machine_model, suite_location
+    ):
         runner = self.get_runner(timelimit=2)
 
         result_obj = runner.run(
             TEST_FILE_WITH_NO_TERMINATION,
             suite_location,
             machine_model,
-            recursive=False)
+            recursive=False,
+        )
         results = result_obj.results
 
-        assert len(results) == 2 and all(r == ex.ABORTED for r in results), \
-            "Expected two results '%s': %s" % (ex.ABORTED, results)
+        assert len(results) == 2 and all(
+            r == ex.ABORTED for r in results
+        ), "Expected two results '%s': %s" % (ex.ABORTED, results)
 
 
 def _get_test_directory():

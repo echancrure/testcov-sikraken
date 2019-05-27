@@ -29,16 +29,15 @@ from lxml import etree
 from suite_validation import execution_utils as eu
 
 HARNESS_FILE_NAME = "harness.c"
-ARCHITECTURE_TAG = 'architecture'
+ARCHITECTURE_TAG = "architecture"
 
-COVERS = 'false'
-UNKNOWN = 'unknown'
-ERROR = 'error'
-ABORTED = 'abort'
+COVERS = "false"
+UNKNOWN = "unknown"
+ERROR = "error"
+ABORTED = "abort"
 
 
 class ExecutionError(Exception):
-
     def __init__(self, msg):
         super().__init__()
         self.msg = msg
@@ -55,25 +54,25 @@ class HarnessCreator:
     def _get_vector_read_method(test_vector):
         if test_vector:
             definition = ["unsigned int access_counter = 0;"]
-            definition += ['']
+            definition += [""]
             definition += ["char * get_input() {"]
             definition += ["    char * inp_var;"]
             definition += ["    switch(access_counter) {"]
             for idx, item in enumerate(test_vector.vector):
-                value = item['value']
+                value = item["value"]
                 definition += ["    case " + str(idx) + ":"]
-                definition += ["        inp_var = \"" + value + "\";"]
+                definition += ['        inp_var = "' + value + '";']
                 definition += ["        break;"]
             definition += ["    default:"]
             definition += [
-                "        fprintf(stderr, \"Incomplete test vector, aborting\\n\");"
+                '        fprintf(stderr, "Incomplete test vector, aborting\\n");'
             ]
             definition += ["        abort();"]
             definition += ["    }"]
             definition += ["    access_counter++;"]
             definition += ["    return inp_var;"]
             definition += ["}"]
-            return '\n'.join(definition)
+            return "\n".join(definition)
 
         return """char * get_input() {
     char * inp_var = malloc(MAX_INPUT_SIZE);
@@ -98,15 +97,14 @@ class HarnessCreator:
             for line in inp.readlines():
                 for name, _ in eu.EXTERNAL_DECLARATIONS:
                     if name in to_declare and re.search(
-                            r'\s+' + name + r'([^a-zA-Z]+|$)', line):
+                        r"\s+" + name + r"([^a-zA-Z]+|$)", line
+                    ):
                         to_declare.remove(name)
-        return '\n'.join(
-            l[1] for l in eu.EXTERNAL_DECLARATIONS if l[0] in to_declare)
+        return "\n".join(l[1] for l in eu.EXTERNAL_DECLARATIONS if l[0] in to_declare)
 
     @staticmethod
     def _get_harness_skeleton():
-        harness_skeleton = os.path.join(
-            os.path.dirname(__file__), HARNESS_FILE_NAME)
+        harness_skeleton = os.path.join(os.path.dirname(__file__), HARNESS_FILE_NAME)
         with open(harness_skeleton) as inp:
             return inp.read()
 
@@ -130,17 +128,18 @@ class HarnessCreator:
         testsuite += [self._get_harness_skeleton()]
         testsuite += [self._get_vector_read_method(test_vector)]
 
-        return '\n'.join(testsuite)
+        return "\n".join(testsuite)
 
 
 class ExecutionRunner:
-
-    def __init__(self,
-                 machine_model,
-                 timelimit_per_run,
-                 harness_file_target='harness.c',
-                 compile_target='a.out',
-                 overwrite_files=True):
+    def __init__(
+        self,
+        machine_model,
+        timelimit_per_run,
+        harness_file_target="harness.c",
+        compile_target="a.out",
+        overwrite_files=True,
+    ):
         """Create new ExecutionRunner.
 
         :param str machine_model: Machine model to use
@@ -156,16 +155,21 @@ class ExecutionRunner:
         self.timelimit = timelimit_per_run
         self._overwrite = overwrite_files
 
-    def _get_compile_cmd(self,
-                         program_file,
-                         harness_file,
-                         output_file,
-                         c_version='gnu11'):
+    def _get_compile_cmd(
+        self, program_file, harness_file, output_file, c_version="gnu11"
+    ):
         mm_arg = "-m64" if self.machine_model == eu.MACHINE_MODEL_64 else "-m32"
-        cmd = ['gcc']
+        cmd = ["gcc"]
         cmd += [
-            '-std={}'.format(c_version), mm_arg, '-D__alias__(x)=', '-o',
-            output_file, '-include', program_file, harness_file, '-lm'
+            "-std={}".format(c_version),
+            mm_arg,
+            "-D__alias__(x)=",
+            "-o",
+            output_file,
+            "-include",
+            program_file,
+            harness_file,
+            "-lm",
         ]
 
         return cmd
@@ -175,22 +179,24 @@ class ExecutionRunner:
             logging.info("Not overwriting %s", output_file)
             return output_file
 
-        logging.debug("Compiling %s and %s into %s", program_file, harness_file,
-                      output_file)
-        compile_cmd = self._get_compile_cmd(program_file, harness_file,
-                                            output_file)
+        logging.debug(
+            "Compiling %s and %s into %s", program_file, harness_file, output_file
+        )
+        compile_cmd = self._get_compile_cmd(program_file, harness_file, output_file)
         compile_result = eu.execute(compile_cmd, quiet=True)
 
         if compile_result.returncode != 0:
             raise AssertionError(
-                "Compilation failed for harness {}".format(harness_file))
+                "Compilation failed for harness {}".format(harness_file)
+            )
 
         return output_file
 
     def get_executable_harness(self, program_file):
         if not self.harness:
             self.harness = os.path.abspath(
-                self._create_executable_harness(program_file))
+                self._create_executable_harness(program_file)
+            )
         return self.harness
 
     def _create_executable_harness(self, program_file):
@@ -200,9 +206,11 @@ class ExecutionRunner:
         else:
             harness_content = self.harness_generator.convert(program_file)
 
-            with open(harness_file, 'w+') as outp:
+            with open(harness_file, "w+") as outp:
                 outp.write(harness_content)
-        self.harness_file = harness_file  # set this only after successfully writing the harness
+        self.harness_file = (
+            harness_file
+        )  # set this only after successfully writing the harness
 
         output_file = self._compile_target
         return self.compile(program_file, harness_file, output_file)
@@ -212,10 +220,12 @@ class ExecutionRunner:
         input_vector = self._get_input_vector(test_vector)
 
         if executable and os.path.exists(executable):
-            run_result = eu.execute([executable],
-                                    quiet=True,
-                                    input_str=input_vector,
-                                    timelimit=self.timelimit)
+            run_result = eu.execute(
+                [executable],
+                quiet=True,
+                input_str=input_vector,
+                timelimit=self.timelimit,
+            )
 
             if eu.found_err(run_result):
                 logging.debug("Error found for test %s", test_vector)
@@ -230,13 +240,12 @@ class ExecutionRunner:
 
     @staticmethod
     def _get_input_vector(test_vector, escape_newline=False):
-        input_vector = ''
+        input_vector = ""
         if escape_newline:
-            newline = '\\n'
+            newline = "\\n"
         else:
-            newline = '\n'
-            input_vector = newline.join(
-                [i['value'] for i in test_vector.vector])
+            newline = "\n"
+            input_vector = newline.join([i["value"] for i in test_vector.vector])
 
         logging.debug("Input for %s:", test_vector.name)
         logging.debug(input_vector)
@@ -244,21 +253,19 @@ class ExecutionRunner:
 
 
 class CoverageMeasuringExecutionRunner(ExecutionRunner):
-
-    def _get_compile_cmd(self,
-                         program_file,
-                         harness_file,
-                         output_file,
-                         c_version='gnu11'):
-        cmd = super()._get_compile_cmd(program_file, harness_file, output_file,
-                                       c_version)
-        cmd += ['-fprofile-arcs', '-ftest-coverage', '-DGCOV']
+    def _get_compile_cmd(
+        self, program_file, harness_file, output_file, c_version="gnu11"
+    ):
+        cmd = super()._get_compile_cmd(
+            program_file, harness_file, output_file, c_version
+        )
+        cmd += ["-fprofile-arcs", "-ftest-coverage", "-DGCOV"]
 
         return cmd
 
     def compile(self, program_file, harness_file, output_file):
-        harness_name = '.'.join(harness_file.split('/')[-1].split('.')[:-1])
-        gcov_files = [harness_name + suffix for suffix in ('.gcda', '.gcno')]
+        harness_name = ".".join(harness_file.split("/")[-1].split(".")[:-1])
+        gcov_files = [harness_name + suffix for suffix in (".gcda", ".gcno")]
         if self._overwrite:
             for f in gcov_files:
                 if os.path.exists(f):
@@ -271,9 +278,9 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
 
     @staticmethod
     def _get_gcov_val(gcov_line):
-        if ':' in gcov_line:
-            stat = gcov_line.split(':')[1]
-            measure_end = stat.find('of ')
+        if ":" in gcov_line:
+            stat = gcov_line.split(":")[1]
+            measure_end = stat.find("of ")
             return stat[:measure_end] + "(" + stat[measure_end:] + ")"
         return None
 
@@ -294,23 +301,21 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
             data_file = os.path.basename(data_file)  # data file is in cwd
 
             if os.path.exists(data_file):
-                cmd = ['gcov', '-nbc', data_file]
+                cmd = ["gcov", "-nbc", data_file]
                 res = eu.execute(cmd, quiet=True)
                 full_cov = res.stdout.splitlines()
 
                 program_name = os.path.basename(program_file)
                 for number, line in enumerate(full_cov):
-                    if line.startswith('File') and program_name in line:
-                        lines_executed = self._get_gcov_val(
-                            full_cov[number + 1])
-                        branches_executed = self._get_gcov_val(
-                            full_cov[number + 2])
-                        branches_taken = self._get_gcov_val(
-                            full_cov[number + 3])
+                    if line.startswith("File") and program_name in line:
+                        lines_executed = self._get_gcov_val(full_cov[number + 1])
+                        branches_executed = self._get_gcov_val(full_cov[number + 2])
+                        branches_taken = self._get_gcov_val(full_cov[number + 3])
                         break
         else:
             logging.debug(
-                "Coverage requested without any execution. Returning defaults.")
+                "Coverage requested without any execution. Returning defaults."
+            )
 
         if not lines_executed:
             lines_executed = "0%"
@@ -325,13 +330,15 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
 class SuiteExecutor:
     """Provides methods to execute a full test suite in the XML format."""
 
-    def __init__(self,
-                 stop_after_found_error,
-                 timelimit_per_run,
-                 harness_file_target='harness.c',
-                 compile_target='a.out',
-                 compute_sequence=False,
-                 overwrite_files=True):
+    def __init__(
+        self,
+        stop_after_found_error,
+        timelimit_per_run,
+        harness_file_target="harness.c",
+        compile_target="a.out",
+        compute_sequence=False,
+        overwrite_files=True,
+    ):
         self._stop_after_success = stop_after_found_error
         self._timelimit = timelimit_per_run
 
@@ -340,12 +347,14 @@ class SuiteExecutor:
         self._compute_sequence = compute_sequence
         self._overwrite_files = overwrite_files
 
-    def run(self,
-            program_file,
-            test_file_directory,
-            machine_model,
-            recursive=False,
-            result_target=None):
+    def run(
+        self,
+        program_file,
+        test_file_directory,
+        machine_model,
+        recursive=False,
+        result_target=None,
+    ):
         """Execute the given tests on the given program.
 
         If a test covering an error is found, the XML file describing the test is written
@@ -374,8 +383,12 @@ class SuiteExecutor:
             result_target = eu.SuiteExecutionResult()
 
         executor = CoverageMeasuringExecutionRunner(
-            machine_model, self._timelimit, self._harness_file_target,
-            self._compile_target, self._overwrite_files)
+            machine_model,
+            self._timelimit,
+            self._harness_file_target,
+            self._compile_target,
+            self._overwrite_files,
+        )
 
         metadata = self._get_metadata(test_file_directory, recursive=True)
         if metadata is None:
@@ -383,14 +396,17 @@ class SuiteExecutor:
 
         architecture = metadata.find(ARCHITECTURE_TAG)
         if architecture is not None:
-            if ('32' in architecture.text) != ('32' in machine_model):
+            if ("32" in architecture.text) != ("32" in machine_model):
                 logging.warning(
                     "Architecture in metadata.xml different from expected: '%s' vs. '%s'",
-                    architecture.text, machine_model)
+                    architecture.text,
+                    machine_model,
+                )
 
         # this method call raises an ExecutionError if the given test suite is invalid
         test_vectors = self._get_described_vectors(
-            test_file_directory, recursive=recursive)
+            test_file_directory, recursive=recursive
+        )
 
         self._execute_tests(program_file, test_vectors, executor, result_target)
 
@@ -413,8 +429,8 @@ class SuiteExecutor:
             glob_start = glob_start + "/"
 
         metadata_file = next(
-            glob.iglob(glob_start + eu.METADATA_XML_NAME, recursive=recursive),
-            None)
+            glob.iglob(glob_start + eu.METADATA_XML_NAME, recursive=recursive), None
+        )
         if metadata_file:
             with open(metadata_file) as metadata_inp:
                 return ET.parse(metadata_inp)
@@ -430,24 +446,25 @@ class SuiteExecutor:
         if test_file_directory.endswith(".zip"):
             with zipfile.ZipFile(test_file_directory) as zip_inp:
                 if not any(
-                        os.path.basename(f) == eu.METADATA_XML_NAME
-                        for f in zip_inp.namelist()):
-                    raise ExecutionError("No %s in %s" % (eu.METADATA_XML_NAME,
-                                                          test_file_directory))
+                    os.path.basename(f) == eu.METADATA_XML_NAME
+                    for f in zip_inp.namelist()
+                ):
+                    raise ExecutionError(
+                        "No %s in %s" % (eu.METADATA_XML_NAME, test_file_directory)
+                    )
 
-                for xml_file in (
-                        l for l in zip_inp.namelist() if l.endswith(".xml")):
+                for xml_file in (l for l in zip_inp.namelist() if l.endswith(".xml")):
                     logging.debug("Considering %s", xml_file)
                     with zip_inp.open(xml_file) as xml_inp:
                         xml_lines = xml_inp.readlines()
                         maybe_vector = convert_to_vector_if_testcase(
-                            xml_file, xml_lines)
+                            xml_file, xml_lines
+                        )
                         if maybe_vector is not None:
                             logging.debug("File %s is valid testcase", xml_file)
                             yield maybe_vector
                         else:
-                            logging.debug("File %s is no valid testcase",
-                                          xml_file)
+                            logging.debug("File %s is no valid testcase", xml_file)
 
         else:
             glob_start = test_file_directory
@@ -456,26 +473,24 @@ class SuiteExecutor:
             else:
                 glob_start = glob_start + "/"
 
-            if not glob.glob(
-                    glob_start + eu.METADATA_XML_NAME, recursive=recursive):
+            if not glob.glob(glob_start + eu.METADATA_XML_NAME, recursive=recursive):
                 raise ExecutionError(
-                    "No %s in %s" % (eu.METADATA_XML_NAME, test_file_directory))
+                    "No %s in %s" % (eu.METADATA_XML_NAME, test_file_directory)
+                )
 
             glob_pattern = glob_start + "*.xml"
             for xml_file in glob.iglob(glob_pattern, recursive=recursive):
                 logging.debug("Considering %s", xml_file)
-                with open(xml_file, 'rb') as xml_inp:
+                with open(xml_file, "rb") as xml_inp:
                     xml_lines = xml_inp.readlines()
-                    maybe_vector = convert_to_vector_if_testcase(
-                        xml_file, xml_lines)
+                    maybe_vector = convert_to_vector_if_testcase(xml_file, xml_lines)
                 if maybe_vector is not None:
                     logging.debug("File %s is valid testcase", xml_file)
                     yield maybe_vector
                 else:
                     logging.debug("File %s is no valid testcase", xml_file)
 
-    def _execute_tests(self, program_file, test_vectors, executor,
-                       result_target):
+    def _execute_tests(self, program_file, test_vectors, executor, result_target):
         """Executes all test vectors on the given program using the given executor
         and puts the results into result_target."""
 
@@ -484,12 +499,13 @@ class SuiteExecutor:
                 next_result = executor.run(program_file, tv)
 
                 if self._compute_sequence:
-                    result_target.lines_executed, \
-                        result_target.branches_executed, \
-                            result_target.branches_taken = executor.get_coverage(program_file)
+                    result_target.lines_executed, result_target.branches_executed, result_target.branches_taken = executor.get_coverage(
+                        program_file
+                    )
 
                     result_target.coverage_sequence.append(
-                        float(result_target.branches_taken.split('%')[0]))
+                        float(result_target.branches_taken.split("%")[0])
+                    )
 
                 result_target.results.append(next_result)
 
@@ -501,17 +517,17 @@ class SuiteExecutor:
 
         finally:
             if not self._compute_sequence:
-                result_target.lines_executed, \
-                    result_target.branches_executed, \
-                        result_target.branches_taken = executor.get_coverage(program_file)
+                result_target.lines_executed, result_target.branches_executed, result_target.branches_taken = executor.get_coverage(
+                    program_file
+                )
 
 
 def _parse_xml_if_testcase(xml_lines):
     curr_content = []
     for line_number, line in enumerate(xml_lines):
-        if line_number == 0 and not line.startswith(b'<?xml '):
+        if line_number == 0 and not line.startswith(b"<?xml "):
             return None
-        if line_number == 1 and not line.startswith(b'<!DOCTYPE testcase '):
+        if line_number == 1 and not line.startswith(b"<!DOCTYPE testcase "):
             return None
         curr_content.append(line)
     return etree.fromstringlist(curr_content)
