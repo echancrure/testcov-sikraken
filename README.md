@@ -13,6 +13,19 @@ that contains a covering test and a corresponding executable harness.
 Run `bin/tbf-testsuite-validator --help` to get additional information
 about its usage.
 
+## Requirements
+
+* Python >= 3.5
+* lxml >= 4.0
+
+For development, we use the [`black`](https://github.com/python/black) formatter,
+[`pylint`](https://www.pylint.org/)
+and [`nosetest`](https://nose.readthedocs.io/en/latest/).
+
+You can use [`pipenv`](https://github.com/pypa/pipenv)
+to install dependencies automatically.
+
+
 ## Support
 
 If you find something not working or know of some improvements,
