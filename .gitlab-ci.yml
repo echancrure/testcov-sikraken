@@ -21,6 +21,13 @@ pylint:
   variables:
     PYTHON_VERSION: '3.7'
 
+check-format:
+  stage: test
+  script:
+      - "black suite_validation && git diff -s --exit-code"
+  variables:
+    PYTHON_VERSION: '3.7'
+
 unit-tests:python-3.5:
   <<: *unit-tests
   variables:
