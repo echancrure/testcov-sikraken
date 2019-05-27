@@ -1,7 +1,7 @@
 [run]
 branch = True
 parallel = True
-source = tfbuilder
+source = suite_validation
 # omit =
 
 [report]

@@ -8,7 +8,7 @@ image: ${CI_REGISTRY_IMAGE}/test:python-${PYTHON_VERSION}
   stage: test
   script:
     - COVERAGE_PROCESS_START=.coveragerc
-        ./setup.py test
+        coverage run setup.py test
   artifacts:
     paths:
       - coverage.xml
