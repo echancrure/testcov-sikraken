@@ -1,5 +1,4 @@
- *  test-format is a collection of an XML-based exchange format for
- *  test suites and accompanying utilities.
+ *  test-suite-validator is a test-suite executor, validator and coverage measurement tool.
  *
  *  Copyright (C) 2018  Dirk Beyer
  *  All rights reserved.
