@@ -7,8 +7,7 @@ image: ${CI_REGISTRY_IMAGE}/test:python-${PYTHON_VERSION}
 .unit-tests: &unit-tests
   stage: test
   script:
-    - COVERAGE_PROCESS_START=.coveragerc
-        coverage run setup.py test
+    - ./setup.py nosetests
   artifacts:
     paths:
       - coverage.xml
