@@ -17,7 +17,6 @@
 # limitations under the License.
 """Module for creation and execution of test harnesses from test-format XML files."""
 
-import glob
 import logging
 import xml.etree.ElementTree as ET
 import re
