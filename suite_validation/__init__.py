@@ -38,14 +38,6 @@ def get_parser():
     parser = argparse.ArgumentParser(prog="tbf test-suite validator")
 
     parser.add_argument(
-        "--recursive",
-        "-r",
-        action="store_true",
-        default=False,
-        help="scan for test cases recursively",
-    )
-
-    parser.add_argument(
         "--stop-after-found-violation",
         dest="stop_after_success",
         action="store_true",
@@ -100,7 +92,7 @@ def get_parser():
         "--test-suite",
         dest="test_suite",
         action="store",
-        help="directory or zip-file that contains test suite",
+        help="zip-file that contains test suite",
         required=True,
     )
 
@@ -139,7 +131,7 @@ def _write_test_to_output(
     to the current working directory.
 
     :param str program_file: Path to the program file.
-    :param str test_container: Path to the directory or zip-file that contains the successful test
+    :param str test_container: Path to the zip-file that contains the successful test
     :param utils.TestVector successful_test: Test vector to create files for.
     :param bool overwrite: Whether to overwrite existing files.
     :param str output_dir: Output directory to write into.
@@ -187,19 +179,13 @@ def _copy_file(
         dest_directory,
         dest_name,
     )
-    if container.endswith(".zip"):
-        try:
-            with zipfile.ZipFile(container) as inp_zip:
-                source = inp_zip.open(relative_file_path)
-                with source, open(file_dest, "wb+") as target:
-                    shutil.copyfileobj(source, target)
-        except KeyError:
-            logging.warning("No file %s in %s", relative_file_path, container)
-    else:
-        if not os.path.exists(relative_file_path):
-            logging.warning("No file %s in %s", relative_file_path, container)
-        else:
-            shutil.copy(relative_file_path, file_dest)
+    try:
+        with zipfile.ZipFile(container) as inp_zip:
+            source = inp_zip.open(relative_file_path)
+            with source, open(file_dest, "wb+") as target:
+                shutil.copyfileobj(source, target)
+    except KeyError:
+        logging.warning("No file %s in %s", relative_file_path, container)
 
 
 def main():
@@ -230,9 +216,7 @@ def main():
             compile_target=executable,
         )
 
-        executor.run(
-            args.file, args.test_suite, args.machine_model, args.recursive, exec_results
-        )
+        executor.run(args.file, args.test_suite, args.machine_model, exec_results)
 
         if not exec_results.results:
             logging.warning(

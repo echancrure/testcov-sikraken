@@ -347,14 +347,7 @@ class SuiteExecutor:
         self._compute_sequence = compute_sequence
         self._overwrite_files = overwrite_files
 
-    def run(
-        self,
-        program_file,
-        test_file_directory,
-        machine_model,
-        recursive=False,
-        result_target=None,
-    ):
+    def run(self, program_file, test_suite, machine_model, result_target=None):
         """Execute the given tests on the given program.
 
         If a test covering an error is found, the XML file describing the test is written
@@ -370,9 +363,7 @@ class SuiteExecutor:
         ```
 
         :param str program_file: Path to program file
-        :param str test_file_directory: Path to directory that contains test files.
-        :param bool recursive: Whether to look recursively for test-case XMLs
-                in the given directory.
+        :param str test_suite: Path to zip file that contains test files.
         :param Optional[eu.SuiteExecutionResult] result_target: if set, execution results will be
             written into the given object. This allows easy access to intermediate results.
 
@@ -390,7 +381,7 @@ class SuiteExecutor:
             self._overwrite_files,
         )
 
-        metadata = self._get_metadata(test_file_directory, recursive=True)
+        metadata = self._get_metadata(test_suite)
         if metadata is None:
             raise ExecutionError("No %s found" % eu.METADATA_XML_NAME)
 
@@ -404,91 +395,45 @@ class SuiteExecutor:
                 )
 
         # this method call raises an ExecutionError if the given test suite is invalid
-        test_vectors = self._get_described_vectors(
-            test_file_directory, recursive=recursive
-        )
+        test_vectors = self._get_described_vectors(test_suite)
 
         self._execute_tests(program_file, test_vectors, executor, result_target)
 
         return result_target
 
     @staticmethod
-    def _get_metadata(test_file_directory, recursive=False):
+    def _get_metadata(test_suite):
         """Return the metadata of the given test suite."""
-        if test_file_directory.endswith(".zip"):
-            with zipfile.ZipFile(test_file_directory) as zip_inp:
-                for name in zip_inp.namelist():
-                    if os.path.basename(name) == eu.METADATA_XML_NAME:
-                        with zip_inp.open(name) as metadata_inp:
-                            return ET.parse(metadata_inp)
-                return None
-        glob_start = test_file_directory
-        if recursive:
-            glob_start = glob_start + "/**/"
-        else:
-            glob_start = glob_start + "/"
-
-        metadata_file = next(
-            glob.iglob(glob_start + eu.METADATA_XML_NAME, recursive=recursive), None
-        )
-        if metadata_file:
-            with open(metadata_file) as metadata_inp:
-                return ET.parse(metadata_inp)
-        return None
+        with zipfile.ZipFile(test_suite) as zip_inp:
+            for name in zip_inp.namelist():
+                if os.path.basename(name) == eu.METADATA_XML_NAME:
+                    with zip_inp.open(name) as metadata_inp:
+                        return ET.parse(metadata_inp)
+            return None
 
     @staticmethod
-    def _get_described_vectors(test_file_directory, recursive=False):
+    def _get_described_vectors(test_suite):
         """Return a generator that produces the test vectors described by the given test suite.
 
             :raises ExecutionError: if given test suite is invalid.
         """
-        logging.debug("Looking for tests in %s", test_file_directory)
-        if test_file_directory.endswith(".zip"):
-            with zipfile.ZipFile(test_file_directory) as zip_inp:
-                if not any(
-                    os.path.basename(f) == eu.METADATA_XML_NAME
-                    for f in zip_inp.namelist()
-                ):
-                    raise ExecutionError(
-                        "No %s in %s" % (eu.METADATA_XML_NAME, test_file_directory)
-                    )
+        logging.debug("Looking for tests in %s", test_suite)
+        with zipfile.ZipFile(test_suite) as zip_inp:
+            if not any(
+                os.path.basename(f) == eu.METADATA_XML_NAME for f in zip_inp.namelist()
+            ):
+                raise ExecutionError("No %s in %s" % (eu.METADATA_XML_NAME, test_suite))
 
-                for xml_file in (l for l in zip_inp.namelist() if l.endswith(".xml")):
-                    logging.debug("Considering %s", xml_file)
-                    with zip_inp.open(xml_file) as xml_inp:
-                        xml_lines = xml_inp.readlines()
-                        maybe_vector = convert_to_vector_if_testcase(
-                            xml_file, xml_lines
-                        )
-                        if maybe_vector is not None:
-                            logging.debug("File %s is valid testcase", xml_file)
-                            yield maybe_vector
-                        else:
-                            logging.debug("File %s is no valid testcase", xml_file)
-
-        else:
-            glob_start = test_file_directory
-            if recursive:
-                glob_start = glob_start + "/**/"
-            else:
-                glob_start = glob_start + "/"
-
-            if not glob.glob(glob_start + eu.METADATA_XML_NAME, recursive=recursive):
-                raise ExecutionError(
-                    "No %s in %s" % (eu.METADATA_XML_NAME, test_file_directory)
-                )
-
-            glob_pattern = glob_start + "*.xml"
-            for xml_file in glob.iglob(glob_pattern, recursive=recursive):
+            for xml_file in (l for l in zip_inp.namelist() if l.endswith(".xml")):
                 logging.debug("Considering %s", xml_file)
-                with open(xml_file, "rb") as xml_inp:
+                with zip_inp.open(xml_file) as xml_inp:
                     xml_lines = xml_inp.readlines()
                     maybe_vector = convert_to_vector_if_testcase(xml_file, xml_lines)
-                if maybe_vector is not None:
-                    logging.debug("File %s is valid testcase", xml_file)
-                    yield maybe_vector
-                else:
-                    logging.debug("File %s is no valid testcase", xml_file)
+                    if maybe_vector is not None:
+                        logging.debug("File %s is valid testcase", xml_file)
+                        yield maybe_vector
+                    else:
+                        logging.debug("File %s is no valid testcase", xml_file)
 
     def _execute_tests(self, program_file, test_vectors, executor, result_target):
         """Executes all test vectors on the given program using the given executor

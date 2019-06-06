@@ -39,11 +39,8 @@ TEST_FILE_WITH_NO_TERMINATION = os.path.join(TEST_DIRECTORY, "test_no-terminatio
 TEST_HARNESS = os.path.join(TEST_DIRECTORY, "test_harness.c")
 
 SUITE_DIR = os.path.join(TEST_DIRECTORY, "suites")
-SUITE_VALID_DIR = os.path.join(SUITE_DIR, "suite-valid/")
 SUITE_VALID_ZIP = os.path.join(SUITE_DIR, "suite-valid.zip")
-SUITE_VALID_NESTED_DIR = os.path.join(SUITE_DIR, "suite-valid-nested/")
 SUITE_VALID_NESTED_ZIP = os.path.join(SUITE_DIR, "suite-valid-nested.zip")
-SUITE_INVALID_DIR = os.path.join(SUITE_DIR, "suite-metadata-missing/")
 SUITE_INVALID_ZIP = os.path.join(SUITE_DIR, "suite-metadata-missing.zip")
 
 MACHINE_MODELS = (eu.MACHINE_MODEL_32, eu.MACHINE_MODEL_64)
@@ -298,20 +295,16 @@ class TestSuiteExecutor(TempDirExecutor):
 
     def test_run_suite_valid(self):
         for machine_model in MACHINE_MODELS:
-            for suite in (SUITE_VALID_DIR, SUITE_VALID_ZIP):
-                yield self._check_run_suite_valid, machine_model, suite, False
+            yield self._check_run_suite_valid, machine_model, SUITE_VALID_ZIP
 
     def test_run_nested_suite_valid(self):
         for machine_model in MACHINE_MODELS:
-            for suite in (SUITE_VALID_NESTED_DIR, SUITE_VALID_NESTED_ZIP):
-                yield self._check_run_suite_valid, machine_model, suite, True
+            yield self._check_run_suite_valid, machine_model, SUITE_VALID_NESTED_ZIP
 
-    def _check_run_suite_valid(self, machine_model, suite_location, recursive):
+    def _check_run_suite_valid(self, machine_model, suite_location):
         runner = self.get_runner()
 
-        result_obj = runner.run(
-            self.program_file, suite_location, machine_model, recursive=recursive
-        )
+        result_obj = runner.run(self.program_file, suite_location, machine_model)
         results = result_obj.results
         lines = result_obj.lines_executed
         conds_ex = result_obj.branches_executed
@@ -332,8 +325,7 @@ class TestSuiteExecutor(TempDirExecutor):
 
     def test_run_suite_without_metadata_throws_error(self):
         for machine_model in MACHINE_MODELS:
-            for suite in (SUITE_INVALID_DIR, SUITE_INVALID_ZIP):
-                yield self._check_run_suite_without_metadata_throws_error, machine_model, suite
+            yield self._check_run_suite_without_metadata_throws_error, machine_model, SUITE_INVALID_ZIP
 
     @raises(ex.ExecutionError)
     def _check_run_suite_without_metadata_throws_error(
@@ -341,12 +333,11 @@ class TestSuiteExecutor(TempDirExecutor):
     ):
         runner = self.get_runner()
 
-        runner.run(self.program_file, suite_location, machine_model, recursive=False)
+        runner.run(self.program_file, suite_location, machine_model)
 
     def test_run_suite_with_non_terminating_program(self):
         for machine_model in MACHINE_MODELS:
-            for suite in (SUITE_VALID_DIR, SUITE_VALID_ZIP):
-                yield self._check_run_suite_with_non_terminating_program, machine_model, suite
+            yield self._check_run_suite_with_non_terminating_program, machine_model, SUITE_VALID_ZIP
 
     def _check_run_suite_with_non_terminating_program(
         self, machine_model, suite_location
@@ -354,10 +345,7 @@ class TestSuiteExecutor(TempDirExecutor):
         runner = self.get_runner(timelimit=2)
 
         result_obj = runner.run(
-            TEST_FILE_WITH_NO_TERMINATION,
-            suite_location,
-            machine_model,
-            recursive=False,
+            TEST_FILE_WITH_NO_TERMINATION, suite_location, machine_model
         )
         results = result_obj.results
 
