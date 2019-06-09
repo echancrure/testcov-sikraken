@@ -25,6 +25,7 @@ import shutil
 import zipfile
 from suite_validation import execution
 from suite_validation import execution_utils as eu
+from suite_validation import test_coverage as test_cov
 
 __VERSION__ = "v1.1-dev"
 
@@ -108,6 +109,14 @@ def get_parser():
         default=None,
         help="print sequence of accumulated coverage per executed test to file",
         required=False,
+    )
+
+    parser.add_argument(
+        "--individual-test-coverage",
+        dest="individual_test_cov",
+        action="store_true",
+        default=False,
+        help="print coverage of each test to file",
     )
 
     parser.add_argument(
@@ -238,6 +247,7 @@ def main():
     exec_results = eu.SuiteExecutionResult()
     harness_file = os.path.join(args.output_dir, "harness.c")
     executable = os.path.join(args.output_dir, "a.out")
+    compute_individuals = args.individual_test_cov
     try:
         executor = execution.SuiteExecutor(
             args.stop_after_success,
@@ -246,6 +256,7 @@ def main():
             overwrite_files=args.overwrite,
             harness_file_target=harness_file,
             compile_target=executable,
+            compute_individuals=compute_individuals
         )
 
         executor.run(args.file, args.test_suite, args.machine_model, exec_results)
@@ -281,6 +292,9 @@ def main():
                     outp.writelines(
                         [str(c) + "\n" for c in exec_results.coverage_sequence]
                     )
+
+        if exec_results.coverage_tests:
+            test_cov.write_individual_test_coverages_to_output(args.output_dir, args.file, exec_results)
 
         print()
         print("---Results---")

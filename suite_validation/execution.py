@@ -26,6 +26,7 @@ import zipfile
 from lxml import etree
 
 from suite_validation import execution_utils as eu
+from suite_validation import test_coverage as test_cov
 
 HARNESS_FILE_NAME = "harness.c"
 ARCHITECTURE_TAG = "architecture"
@@ -307,7 +308,7 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
             data_file = os.path.basename(data_file)  # data file is in cwd
 
             if os.path.exists(data_file):
-                cmd = ["gcov", "-nbc", data_file]
+                cmd = ["gcov", "-bc", data_file]
                 res = eu.execute(cmd, quiet=True)
                 full_cov = res.stdout.splitlines()
 
@@ -364,6 +365,7 @@ class SuiteExecutor:
         compute_sequence=False,
         overwrite_files=True,
         isolate_tests=True,
+        compute_individuals=True,
     ):
         self._stop_after_success = stop_after_found_error
         self._timelimit = timelimit_per_run
@@ -373,6 +375,7 @@ class SuiteExecutor:
         self._compute_sequence = compute_sequence
         self._overwrite_files = overwrite_files
         self._isolate_tests = isolate_tests
+        self._compute_individual_test_coverages = compute_individuals
 
     def run(self, program_file, test_suite, machine_model, result_target=None):
         """Execute the given tests on the given program.
@@ -432,6 +435,10 @@ class SuiteExecutor:
 
         # this method call raises an ExecutionError if the given test suite is invalid
         test_vectors = self._get_described_vectors(test_suite)
+
+        if self._compute_individual_test_coverages:
+            self._execute_individual_tests(program_file, test_vectors, executor, result_target)
+            test_vectors = self._get_described_vectors(test_suite)
 
         self._execute_tests(program_file, test_vectors, executor, result_target)
 
@@ -502,6 +509,25 @@ class SuiteExecutor:
                     program_file
                 )
 
+    @staticmethod
+    def _execute_individual_tests(program_file, test_vectors, executor, result_target):
+
+        for tv in test_vectors:
+            executor.run(program_file, tv)
+
+            lines_executed, branches_executed, branches_taken = executor.get_coverage(
+                program_file
+            )
+
+            gcov_file = os.path.basename(program_file) + ".gcov"
+            hit_counter_dic = test_cov.get_hit_counter_dic_from_gcov_file(gcov_file)
+            test_coverage = test_cov.TestCoverage(program_file, tv, hit_counter_dic, lines_executed,
+                                                  branches_executed, branches_taken)
+            result_target.coverage_tests.append(test_coverage)
+            data_file = executor.harness_file[:-1] + "gcda"
+            data_file = os.path.basename(data_file)
+            cmd = ["rm", data_file]
+            eu.execute(cmd, quiet=True)
 
 def _parse_xml_if_testcase(xml_lines):
     curr_content = []

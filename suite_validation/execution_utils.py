@@ -142,6 +142,7 @@ class SuiteExecutionResult:
         self.branches_taken = "0%"
         self.successful_test = None
         self.coverage_sequence = list()
+        self.coverage_tests = list()
 
 
 class ExecutionResult:
