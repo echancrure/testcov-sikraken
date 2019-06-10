@@ -231,6 +231,19 @@ def parse_coverage_goal_file(goal_file: str) -> str:
         )
     return eu.COVERAGE_GOALS[goal]
 
+def _print_suite_execution_results(exec_results):
+    print("---Results---")
+    print("Tests run:", len(exec_results.results))
+    print("Lines covered:", exec_results.lines_executed)
+    print("Branch conditions executed:", exec_results.branches_executed)
+    print("Branches covered:", exec_results.branches_taken)
+
+    if any(r == execution.COVERS for r in exec_results.results):
+        verdict = "TRUE"
+    else:
+        verdict = "UNKNOWN"
+    print("Result:", verdict)
+
 
 def main():
     args = parse()
@@ -256,7 +269,7 @@ def main():
             overwrite_files=args.overwrite,
             harness_file_target=harness_file,
             compile_target=executable,
-            compute_individuals=compute_individuals
+            compute_individuals=compute_individuals,
         )
 
         executor.run(args.file, args.test_suite, args.machine_model, exec_results)
@@ -294,17 +307,9 @@ def main():
                     )
 
         if exec_results.coverage_tests:
-            test_cov.write_individual_test_coverages_to_output(args.output_dir, args.file, exec_results)
+            test_cov.write_individual_test_coverages_to_output(
+                args.output_dir, args.file, exec_results
+            )
 
         print()
-        print("---Results---")
-        print("Tests run:", len(exec_results.results))
-        print("Lines covered:", exec_results.lines_executed)
-        print("Branch conditions executed:", exec_results.branches_executed)
-        print("Branches covered:", exec_results.branches_taken)
-
-        if any(r == execution.COVERS for r in exec_results.results):
-            verdict = "TRUE"
-        else:
-            verdict = "UNKNOWN"
-        print("Result:", verdict)
+        _print_suite_execution_results(exec_results)

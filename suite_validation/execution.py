@@ -437,7 +437,9 @@ class SuiteExecutor:
         test_vectors = self._get_described_vectors(test_suite)
 
         if self._compute_individual_test_coverages:
-            self._execute_individual_tests(program_file, test_vectors, executor, result_target)
+            self._execute_individual_tests(
+                program_file, test_vectors, executor, result_target
+            )
             test_vectors = self._get_described_vectors(test_suite)
 
         self._execute_tests(program_file, test_vectors, executor, result_target)
@@ -521,13 +523,20 @@ class SuiteExecutor:
 
             gcov_file = os.path.basename(program_file) + ".gcov"
             hit_counter_dic = test_cov.get_hit_counter_dic_from_gcov_file(gcov_file)
-            test_coverage = test_cov.TestCoverage(program_file, tv, hit_counter_dic, lines_executed,
-                                                  branches_executed, branches_taken)
+            test_coverage = test_cov.TestCoverage(
+                program_file,
+                tv,
+                hit_counter_dic,
+                lines_executed,
+                branches_executed,
+                branches_taken,
+            )
             result_target.coverage_tests.append(test_coverage)
             data_file = executor.harness_file[:-1] + "gcda"
             data_file = os.path.basename(data_file)
             cmd = ["rm", data_file]
             eu.execute(cmd, quiet=True)
+
 
 def _parse_xml_if_testcase(xml_lines):
     curr_content = []
