@@ -307,7 +307,7 @@ def main():
                     )
 
         if exec_results.coverage_tests:
-            test_cov.write_individual_test_coverages_to_output(
+            test_cov.write_test_coverages_to_output(
                 args.output_dir, args.file, exec_results
             )
 
