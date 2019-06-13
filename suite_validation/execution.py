@@ -41,7 +41,7 @@ HARNESS_GCDA_FILE = "harness.gcda"
 LCOV_SUBFOLDER_TRACE_FILE = "tmp_tracefiles"
 LCOV_SUMMARY_TRACE_FILE = "tracefile_summary.info"
 LCOV_CURRENT_TRACE_FILE = "current_test.info"
-LCOV_WITH_BRANCH_COVERAGE = "--rc lcov_branch_coverage=1"
+LCOV_WITH_BRANCH_COVERAGE = "lcov_branch_coverage=1"
 
 
 class ExecutionError(Exception):
@@ -310,11 +310,17 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
             data_file = self.harness_file[:-1] + "gcda"
             data_file = os.path.basename(data_file)  # data file is in cwd
             if os.path.exists(data_file):
-                cmd = (
-                    "lcov -c --rc lcov_branch_coverage=1 -d . -o "
-                    + LCOV_CURRENT_TRACE_FILE
-                )
-                os.system(cmd)
+                cmd = [
+                    "lcov",
+                    "-c",
+                    "--rc",
+                    LCOV_WITH_BRANCH_COVERAGE,
+                    "-d",
+                    ".",
+                    "-o",
+                    LCOV_CURRENT_TRACE_FILE,
+                ]
+                eu.execute(cmd, quiet=True)
                 if os.path.exists(LCOV_CURRENT_TRACE_FILE):
                     test_coverage = test_cov.get_test_coverage_from_lcov_file(
                         program_name, LCOV_CURRENT_TRACE_FILE
@@ -345,16 +351,18 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
             eu.execute(cmd, quiet=True)
 
         if os.path.exists(trace_file_summary):
-            cmd = (
-                "lcov --rc lcov_branch_coverage=1"
-                + " -a "
-                + trace_file
-                + " -a "
-                + trace_file_summary
-                + " -o "
-                + trace_file_summary
-            )
-            os.system(cmd)
+            cmd = [
+                "lcov",
+                "--rc",
+                LCOV_WITH_BRANCH_COVERAGE,
+                "-a",
+                trace_file,
+                "-a",
+                trace_file_summary,
+                "-o",
+                trace_file_summary,
+            ]
+            eu.execute(cmd, quiet=True)
             summarize_coverage_info = "--summary"
             cmd = ["lcov", summarize_coverage_info, trace_file_summary]
             eu.execute(cmd, quiet=True)
