@@ -21,7 +21,6 @@ from enum import Enum
 import os
 import logging
 
-ZERO = 0.00
 FILE_NAME_TEST_COVERAGES = "individual-test-coverages"
 LINES_COVERED = "Lines covered"
 
@@ -75,8 +74,8 @@ class TestCoverage:
 
     def compute_line_coverage(self):
         if self.lines_found <= 0:
-            return ZERO
-        return round(100 * float(self.lines_hit) / float(self.lines_found), 2)
+            return 1.0
+        return round(float(self.lines_hit) / float(self.lines_found), 2)
 
     def compute_branch_conditions_executed(self):
         possible_branch_conditions_executions = (
@@ -92,18 +91,27 @@ class TestCoverage:
             if conditions_executed[1]:
                 lines_with_branch_condition_executed += 1
         if possible_branch_conditions_executions <= 0:
-            return ZERO
+            return 1.0
         return round(
-            100
-            * float(lines_with_branch_condition_executed)
+            float(lines_with_branch_condition_executed)
             / float(possible_branch_conditions_executions),
             2,
         )
 
     def compute_branch_coverage(self):
         if self.branches_found <= 0:
-            return ZERO
-        return round(100 * float(self.branches_hit) / float(self.branches_found), 2)
+            return 1.0
+        return round(float(self.branches_hit) / float(self.branches_found), 2)
+
+    def get_coverage_ratios_as_percent_expressions(self):
+        line_coverage = self.compute_line_coverage()
+        branch_condition_coverage = self.compute_branch_conditions_executed()
+        branch_coverage = self.compute_branch_coverage()
+        return (
+            str(line_coverage * 100) + "%",
+            str(branch_condition_coverage * 100) + "%",
+            str(branch_coverage * 100) + "%",
+        )
 
 
 def remove_prefix(line, prefix):
@@ -224,25 +232,10 @@ def write_test_coverages_to_dir(output_dir, program, exec_results):
             outp.write("\n")
             outp.write("Test input: " + str(test_coverage.test_vector) + "\n")
             outp.write("Test result: " + test_coverage.result + "\n")
-            outp.write(
-                "Lines covered: "
-                + as_percent_expression(test_coverage.compute_line_coverage())
-                + "\n"
+            lines_executed, branches_executed, branches_taken = (
+                test_coverage.get_coverage_ratios_as_percent_expressions()
             )
-            outp.write(
-                "Branch conditions executed: "
-                + as_percent_expression(
-                    test_coverage.compute_branch_conditions_executed()
-                )
-                + "\n"
-            )
-            outp.write(
-                "Branches covered: "
-                + as_percent_expression(test_coverage.compute_branch_coverage())
-                + "\n"
-            )
+            outp.write("Lines covered: " + lines_executed + "\n")
+            outp.write("Branch conditions executed: " + branches_executed + "\n")
+            outp.write("Branches covered: " + branches_taken + "\n")
         outp.close()
-
-
-def as_percent_expression(value):
-    return str(value) + "%"

@@ -375,8 +375,7 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
             cmd = ["lcov", summarize_coverage_info, trace_file_summary]
             eu.execute(cmd, quiet=True)
         else:
-            cmd = ["mv", trace_file, trace_file_summary]
-            eu.execute(cmd, quiet=True)
+            shutil.move(trace_file, trace_file_summary)
 
     @staticmethod
     def get_coverage_of_summarized_trace_file(program_file):
@@ -393,15 +392,9 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
                 program_name, trace_file_summary
             )
 
-            lines_executed = test_coverage_summary.compute_line_coverage()
-            branches_executed = (
-                test_coverage_summary.compute_branch_conditions_executed()
+            lines_executed, branches_executed, branches_taken = (
+                test_coverage_summary.get_coverage_ratios_as_percent_expressions()
             )
-            branches_taken = test_coverage_summary.compute_branch_coverage()
-
-            lines_executed = str(lines_executed) + "%"
-            branches_executed = str(branches_executed) + "%"
-            branches_taken = str(branches_taken) + "%"
 
         else:
             logging.warning(
