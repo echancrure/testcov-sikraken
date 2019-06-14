@@ -25,7 +25,7 @@ import shutil
 import zipfile
 from suite_validation import execution
 from suite_validation import execution_utils as eu
-from suite_validation import test_coverage as test_cov
+from suite_validation import coverage as cov
 
 __VERSION__ = "v1.1-dev"
 
@@ -307,9 +307,7 @@ def main():
                     )
 
         if exec_results.coverage_tests:
-            test_cov.write_test_coverages_to_output(
-                args.output_dir, args.file, exec_results
-            )
+            cov.write_test_coverages_to_dir(args.output_dir, args.file, exec_results)
 
         print()
         _print_suite_execution_results(exec_results)

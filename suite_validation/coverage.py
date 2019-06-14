@@ -1,9 +1,29 @@
+# tbf-testsuite-validator is tool for validation and execution of test suites.
+# This file is part of tbf-testsuite-validator.
+#
+# Copyright (C) 2018  Dirk Beyer
+# All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Module for coverage of individual tests"""
+
 from enum import Enum
 import os
 import logging
 
 ZERO = 0.00
 FILE_NAME_TEST_COVERAGES = "individual-test-coverages"
+LINES_COVERED = "Lines covered"
 
 
 class LcovPrefix(Enum):
@@ -196,7 +216,7 @@ def get_test_coverage_from_lcov_file(program_name, trace_file):
     )
 
 
-def write_test_coverages_to_output(output_dir, program, exec_results):
+def write_test_coverages_to_dir(output_dir, program, exec_results):
     output_file = os.path.join(output_dir, FILE_NAME_TEST_COVERAGES)
     with open(output_file, "w") as outp:
         outp.write("Program: " + program + "\n")
