@@ -24,10 +24,10 @@ from typing import Optional
 
 ERROR_STRING = "Error found."
 
-COVER_LINES = "lines"
-COVER_BRANCHES = "branches"
-COVER_CONDITIONS = "conditions"
-COVER_ERRORS = "error"
+COVER_LINES = "COVER( init(main()), FQL(COVER EDGES(@BASICBLOCKENTRY)) )"
+COVER_BRANCHES = "COVER( init(main()), FQL(COVER EDGES(@DECISIONEDGE)) )"
+COVER_CONDITIONS = "COVER( init(main()), FQL(COVER EDGES(@CONDITIONEDGE)) )"
+COVER_ERRORS = "COVER( init(main()), FQL(COVER EDGES(@CALL(__VERIFIER_error))) )"
 
 COVERAGE_GOALS = {
     "@DECISIONEDGE": COVER_BRANCHES,
