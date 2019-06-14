@@ -38,10 +38,15 @@ ABORTED = "abort"
 
 HARNESS_GCDA_FILE = "harness.gcda"
 
+GCOV_FILE_END = "gcov"
+GCDA_FILE_END = "gcda"
+GCNO_FILE_END = "gcno"
+
 LCOV_SUBFOLDER_TRACE_FILE = "tmp_tracefiles"
 LCOV_SUMMARY_TRACE_FILE = "tracefile_summary.info"
 LCOV_CURRENT_TRACE_FILE = "current_test.info"
 LCOV_WITH_BRANCH_COVERAGE = "lcov_branch_coverage=1"
+LCOV_NO_RECURSION = "--no-recursion"
 
 
 class ExecutionError(Exception):
@@ -318,6 +323,7 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
                     LCOV_WITH_BRANCH_COVERAGE,
                     "-d",
                     ".",
+                    LCOV_NO_RECURSION,
                     "-o",
                     LCOV_CURRENT_TRACE_FILE,
                 ]
@@ -556,7 +562,7 @@ class SuiteExecutor:
         # old tmp folder might still exist
         _remove_tracefile_tmp_folder()
         # old gcda, gcno or gcov files might exist and can affect coverage computation with lcov
-        _remove_coverage_analysis_files_in_working_directory()
+        _remove_coverages_files_in_working_directory(program_file)
 
         self._execute_tests(program_file, test_vectors, executor, result_target)
 
@@ -650,15 +656,6 @@ class SuiteExecutor:
                         program_file
                     )
 
-
-def _remove_coverage_analysis_files_in_working_directory():
-    files = [f for f in os.listdir(".") if re.match(r".*\.[gcov|gcno|gcda]", f)]
-    if files:
-        for file in files:
-            cmd = ["rm", "-r", file]
-            eu.execute(cmd, quiet=True)
-
-
 def _remove_tracefile_tmp_folder():
     if os.path.isdir(LCOV_SUBFOLDER_TRACE_FILE):
         cmd = ["rm", "-r", LCOV_SUBFOLDER_TRACE_FILE]
@@ -675,6 +672,20 @@ def _remove_harness_gcda_file():
     if os.path.exists(HARNESS_GCDA_FILE):
         cmd = ["rm", HARNESS_GCDA_FILE]
         eu.execute(cmd, quiet=True)
+
+def _remove_coverages_files_in_working_directory(program_file):
+    harness = HARNESS_FILE_NAME[:-1]
+    program_name = os.path.basename(program_file)
+    program = program_name[:-1]
+    c_gcov_file_end = "c." + GCOV_FILE_END
+    file_endings = [c_gcov_file_end, GCDA_FILE_END, GCNO_FILE_END]
+    file_names = [harness, program]
+    for name in file_names:
+        for ending in file_endings:
+            file_name = name + ending
+            if os.path.exists(file_name):
+                cmd = ["rm", file_name]
+                eu.execute(cmd, quiet=True)
 
 
 def _parse_xml_if_testcase(xml_lines):
