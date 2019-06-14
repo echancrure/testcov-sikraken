@@ -185,8 +185,11 @@ class ExecutionRunner:
         compile_result = eu.execute(compile_cmd, quiet=True)
 
         if compile_result.returncode != 0:
-            raise AssertionError(
-                "Compilation failed for harness {}".format(harness_file)
+            raise ExecutionError(
+                "Compilation failed for harness {}:\n".format(harness_file)
+                + "\n".join(
+                    "    " + l for l in compile_result.stderr.decode().split("\n")
+                )
             )
 
         return output_file
