@@ -656,6 +656,7 @@ class SuiteExecutor:
                         program_file
                     )
 
+
 def _remove_tracefile_tmp_folder():
     if os.path.isdir(LCOV_SUBFOLDER_TRACE_FILE):
         cmd = ["rm", "-r", LCOV_SUBFOLDER_TRACE_FILE]
@@ -672,6 +673,7 @@ def _remove_harness_gcda_file():
     if os.path.exists(HARNESS_GCDA_FILE):
         cmd = ["rm", HARNESS_GCDA_FILE]
         eu.execute(cmd, quiet=True)
+
 
 def _remove_coverages_files_in_working_directory(program_file):
     harness = HARNESS_FILE_NAME[:-1]
