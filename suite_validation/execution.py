@@ -22,6 +22,7 @@ import xml.etree.ElementTree as ET
 import re
 import os
 import zipfile
+import shutil
 
 from lxml import etree
 
@@ -659,20 +660,17 @@ class SuiteExecutor:
 
 def _remove_tracefile_tmp_folder():
     if os.path.isdir(LCOV_SUBFOLDER_TRACE_FILE):
-        cmd = ["rm", "-r", LCOV_SUBFOLDER_TRACE_FILE]
-        eu.execute(cmd, quiet=True)
+        shutil.rmtree(LCOV_SUBFOLDER_TRACE_FILE, ignore_errors=True)
 
 
 def _remove_current_tracefile():
     if os.path.exists(LCOV_CURRENT_TRACE_FILE):
-        cmd = ["rm", LCOV_CURRENT_TRACE_FILE]
-        eu.execute(cmd, quiet=True)
+        os.remove(LCOV_CURRENT_TRACE_FILE)
 
 
 def _remove_harness_gcda_file():
     if os.path.exists(HARNESS_GCDA_FILE):
-        cmd = ["rm", HARNESS_GCDA_FILE]
-        eu.execute(cmd, quiet=True)
+        os.remove(HARNESS_GCDA_FILE)
 
 
 def _remove_coverages_files_in_working_directory(program_file):
@@ -686,8 +684,7 @@ def _remove_coverages_files_in_working_directory(program_file):
         for ending in file_endings:
             file_name = name + ending
             if os.path.exists(file_name):
-                cmd = ["rm", file_name]
-                eu.execute(cmd, quiet=True)
+                os.remove(file_name)
 
 
 def _parse_xml_if_testcase(xml_lines):
