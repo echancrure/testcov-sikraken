@@ -4,6 +4,9 @@
 
 image: ${CI_REGISTRY_IMAGE}/test:python-${PYTHON_VERSION}
 
+variables:
+    PYTHONPATH: "lib/"
+
 .unit-tests: &unit-tests
   stage: test
   script:

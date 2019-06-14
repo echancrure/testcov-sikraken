@@ -17,10 +17,6 @@
 # limitations under the License.
 import logging
 import subprocess
-import xml.etree.ElementTree as ET
-import zipfile
-import os
-from typing import Optional
 
 ERROR_STRING = "Error found."
 
@@ -35,8 +31,6 @@ COVERAGE_GOALS = {
     "@BASICBLOCKENTRY": COVER_LINES,
     "@CALL(__VERIFIER_error)": COVER_ERRORS,
 }
-
-METADATA_XML_NAME = "metadata.xml"
 
 MACHINE_MODEL_32 = "-m32"
 MACHINE_MODEL_64 = "-m64"
@@ -218,28 +212,3 @@ def execute(command, quiet=False, input_str=None, timelimit=None):
 
 def found_err(run_result):
     return run_result.stderr and ERROR_STRING.encode() in run_result.stderr
-
-
-def get_metadata_path(test_suite: str) -> Optional[str]:
-    """
-    Return the file path of the metadata file in the given test suite,
-    if it exists.
-    """
-    with zipfile.ZipFile(test_suite) as zip_inp:
-        for name in zip_inp.namelist():
-            if os.path.basename(name) == METADATA_XML_NAME:
-                return name
-        return None
-
-
-def get_metadata(test_suite: str) -> Optional[ET.ElementTree]:
-    """
-    Return the content of the metadata file in the given test suite,
-    if it exists.
-    """
-    with zipfile.ZipFile(test_suite) as zip_inp:
-        for name in zip_inp.namelist():
-            if os.path.basename(name) == METADATA_XML_NAME:
-                with zip_inp.open(name) as metadata_inp:
-                    return ET.parse(metadata_inp)
-        return None

@@ -27,9 +27,9 @@ from lxml import etree
 
 from suite_validation import execution_utils as eu
 from suite_validation import coverage as cov
+from suite_validation import metadata_utils as mu
 
 HARNESS_FILE_NAME = "harness.c"
-ARCHITECTURE_TAG = "architecture"
 
 COVERS = "false"
 UNKNOWN = "unknown"
@@ -492,16 +492,16 @@ class SuiteExecutor:
                 self._overwrite_files,
             )
 
-        metadata = eu.get_metadata(test_suite)
+        metadata = mu.get_metadata(test_suite)
         if metadata is None:
-            raise ExecutionError("No %s found" % eu.METADATA_XML_NAME)
+            raise ExecutionError("No %s found" % mu.METADATA_XML_NAME)
 
-        architecture = metadata.find(ARCHITECTURE_TAG)
+        architecture = metadata[mu.ARCHITECTURE]
         if architecture is not None:
-            if ("32" in architecture.text) != ("32" in machine_model):
+            if ("32" in architecture) != ("32" in machine_model):
                 logging.warning(
                     "Architecture in metadata.xml different from expected: '%s' vs. '%s'",
-                    architecture.text,
+                    architecture,
                     machine_model,
                 )
 
@@ -529,9 +529,9 @@ class SuiteExecutor:
         logging.debug("Looking for tests in %s", test_suite)
         with zipfile.ZipFile(test_suite) as zip_inp:
             if not any(
-                os.path.basename(f) == eu.METADATA_XML_NAME for f in zip_inp.namelist()
+                os.path.basename(f) == mu.METADATA_XML_NAME for f in zip_inp.namelist()
             ):
-                raise ExecutionError("No %s in %s" % (eu.METADATA_XML_NAME, test_suite))
+                raise ExecutionError("No %s in %s" % (mu.METADATA_XML_NAME, test_suite))
 
             for xml_file in (l for l in zip_inp.namelist() if l.endswith(".xml")):
                 logging.debug("Considering %s", xml_file)

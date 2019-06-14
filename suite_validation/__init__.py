@@ -26,8 +26,11 @@ import zipfile
 from suite_validation import execution
 from suite_validation import execution_utils as eu
 from suite_validation import coverage as cov
+from suite_validation import metadata_utils
 
 __VERSION__ = "v1.1-dev"
+
+__NAME__ = "test-suite validator"
 
 SUCCESSFUL_TESTSUITE_FOLDER = "test-suite"
 SUCCESSFUL_TEST_NAME = "covering-test.xml"
@@ -155,7 +158,9 @@ def parse():
     return args
 
 
-def _write_tests_to_suite(origin_suite, tests, overwrite, output_suite):
+def _write_tests_to_suite(
+    program_file, origin_suite, tests, overwrite, coverage_goal, output_suite
+):
     """
     Writes the given tests from the given test suite to a new suite.
 
@@ -171,14 +176,22 @@ def _write_tests_to_suite(origin_suite, tests, overwrite, output_suite):
         )
         os.remove(output_suite)
 
-    metadata_file = eu.get_metadata_path(origin_suite)
-    _copy_file(metadata_file, origin_suite, output_suite, eu.METADATA_XML_NAME)
-    test_names = [t.origin for t in tests]
+    output_metadata = _create_metadata(origin_suite, program_file, coverage_goal)
+    with zipfile.ZipFile(output_suite, "a") as outp_zip:
+        outp_zip.writestr(metadata_utils.METADATA_XML_NAME, output_metadata)
 
+    test_names = [t.origin for t in tests]
     with zipfile.ZipFile(origin_suite) as inp_zip:
         for test in inp_zip.namelist():
             if test in test_names:
                 _copy_file(test, origin_suite, output_suite, test)
+
+
+def _create_metadata(origin_suite: str, program_file: str, coverage_goal: str) -> str:
+    producer = " ".join([__NAME__, __VERSION__])
+    return metadata_utils.create_for_reduced(
+        origin_suite, producer, program_file, coverage_goal
+    )
 
 
 def _write_harness(program_file, test_vector, overwrite, output_dir):
@@ -305,9 +318,11 @@ def main():
     finally:
         if exec_results.successful_tests:
             _write_tests_to_suite(
+                args.file,
                 args.test_suite,
                 exec_results.successful_tests,
                 args.overwrite,
+                args.goal,
                 os.path.join(args.output_dir, REDUCED_TESTSUITE_NAME),
             )
             if args.check_for_error:
