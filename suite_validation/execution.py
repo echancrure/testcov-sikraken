@@ -18,7 +18,6 @@
 """Module for creation and execution of test harnesses from test-format XML files."""
 
 import logging
-import xml.etree.ElementTree as ET
 import re
 import os
 import zipfile
@@ -491,7 +490,7 @@ class SuiteExecutor:
                 self._overwrite_files,
             )
 
-        metadata = self._get_metadata(test_suite)
+        metadata = eu.get_metadata(test_suite)
         if metadata is None:
             raise ExecutionError("No %s found" % eu.METADATA_XML_NAME)
 
@@ -518,16 +517,6 @@ class SuiteExecutor:
         self._execute_tests(program_file, test_vectors, executor, result_target)
 
         return result_target
-
-    @staticmethod
-    def _get_metadata(test_suite):
-        """Return the metadata of the given test suite."""
-        with zipfile.ZipFile(test_suite) as zip_inp:
-            for name in zip_inp.namelist():
-                if os.path.basename(name) == eu.METADATA_XML_NAME:
-                    with zip_inp.open(name) as metadata_inp:
-                        return ET.parse(metadata_inp)
-            return None
 
     @staticmethod
     def _get_described_vectors(test_suite):

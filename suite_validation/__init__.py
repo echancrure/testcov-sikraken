@@ -145,36 +145,36 @@ def parse():
     return args
 
 
-def _write_test_to_output(
-    program_file, test_container, successful_test, overwrite, output_dir
-):
+def _write_tests_to_suite(origin_suite, tests, overwrite, output_dir):
     """
-    Writes, for the given test, the original XML definition and an executable harness
-    to the current working directory.
+    Writes the given tests from the given test suite to a new suite.
+
+    :param str origin_suite: Path to the zip-file that contains the original test suite
+    :param List[utils.TestVector] tests: Test vector to create files for.
+    :param bool overwrite: Whether to overwrite existing files.
+    :param str output_dir: Directory to write to.
+    """
+    metadata_file = eu.get_metadata_path(origin_suite)
+    _copy_file(metadata_file, origin_suite, output_dir, eu.METADATA_XML_NAME, overwrite)
+
+    with zipfile.ZipFile(origin_suite) as inp_zip:
+        for test in inp_zip.namelist():
+            if test in tests:
+                _copy_file(test, origin_suite, output_dir, test, overwrite)
+
+
+def _write_harness(program_file, test_vector, overwrite, output_dir):
+    """
+    Writes, for the given test, an executable harness to the output folder.
 
     :param str program_file: Path to the program file.
-    :param str test_container: Path to the zip-file that contains the successful test
-    :param utils.TestVector successful_test: Test vector to create files for.
+    :param eu.TestVector test_vector: test vector to create harness for.
     :param bool overwrite: Whether to overwrite existing files.
     :param str output_dir: Output directory to write into.
     """
-    successful_test_file = successful_test.origin
-    test_directory = os.path.dirname(successful_test_file)
-    metadata_file = os.path.join(test_directory, eu.METADATA_XML_NAME)
-    _copy_file(
-        metadata_file, test_container, output_dir, eu.METADATA_XML_NAME, overwrite
-    )
-
-    _copy_file(
-        successful_test_file,
-        test_container,
-        output_dir,
-        SUCCESSFUL_TEST_NAME,
-        overwrite,
-    )
 
     test_c_file = os.path.join(output_dir, SUCCESSFUL_HARNESS_NAME)
-    harness_content = execution.HarnessCreator().convert(program_file, successful_test)
+    harness_content = execution.HarnessCreator().convert(program_file, test_vector)
     if not overwrite and os.path.exists(test_c_file):
         logging.info("Not overwriting %s", test_c_file)
     else:
@@ -192,7 +192,9 @@ def _copy_file(
     if not overwrite and os.path.exists(file_dest):
         logging.info("Not overwriting %s", file_dest)
         return
-    os.makedirs(dest_directory, exist_ok=True)
+    # Don't use dest_directory here, because dest_name may contain sub-directories
+    # that must be created, too
+    os.makedirs(os.path.dirname(file_dest), exist_ok=True)
 
     logging.debug(
         "Copying %s from %s to %s/%s",
@@ -287,13 +289,14 @@ def main():
     finally:
         testsuite_folder = os.path.join(args.output_dir, SUCCESSFUL_TESTSUITE_FOLDER)
         if exec_results.successful_test:
-            _write_test_to_output(
-                args.file,
+            successful_test = exec_results.successful_test
+            _write_tests_to_suite(
                 args.test_suite,
-                exec_results.successful_test,
+                [successful_test.origin],
                 args.overwrite,
                 testsuite_folder,
             )
+            _write_harness(args.file, successful_test, args.overwrite, args.output_dir)
 
         if exec_results.coverage_sequence and args.print_seq_file:
             if not os.path.exists(testsuite_folder):
