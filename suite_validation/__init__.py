@@ -34,6 +34,7 @@ SUCCESSFUL_TEST_NAME = "covering-test.xml"
 """Name of the file a successful test will be written to."""
 SUCCESSFUL_HARNESS_NAME = "covering-test.c"
 """Name of the file the executable harness of a successful test will be written to."""
+REDUCED_TESTSUITE_NAME = "reduced-suite.zip"
 
 
 class IllegalArgumentError(Exception):
@@ -154,7 +155,7 @@ def parse():
     return args
 
 
-def _write_tests_to_suite(origin_suite, tests, overwrite, output_dir):
+def _write_tests_to_suite(origin_suite, tests, overwrite, output_suite):
     """
     Writes the given tests from the given test suite to a new suite.
 
@@ -163,14 +164,21 @@ def _write_tests_to_suite(origin_suite, tests, overwrite, output_dir):
     :param bool overwrite: Whether to overwrite existing files.
     :param str output_dir: Directory to write to.
     """
+    if os.path.exists(output_suite) and overwrite:
+        logging.debug(
+            "File %s already exists and 'overwrite' option set - removing it.",
+            output_suite,
+        )
+        os.remove(output_suite)
+
     metadata_file = eu.get_metadata_path(origin_suite)
-    _copy_file(metadata_file, origin_suite, output_dir, eu.METADATA_XML_NAME, overwrite)
+    _copy_file(metadata_file, origin_suite, output_suite, eu.METADATA_XML_NAME)
     test_names = [t.origin for t in tests]
 
     with zipfile.ZipFile(origin_suite) as inp_zip:
         for test in inp_zip.namelist():
             if test in test_names:
-                _copy_file(test, origin_suite, output_dir, test, overwrite)
+                _copy_file(test, origin_suite, output_suite, test)
 
 
 def _write_harness(program_file, test_vector, overwrite, output_dir):
@@ -195,31 +203,28 @@ def _write_harness(program_file, test_vector, overwrite, output_dir):
     logging.info("Successful test data written to %s", SUCCESSFUL_TESTSUITE_FOLDER)
 
 
-def _copy_file(
-    relative_file_path, container, dest_directory, dest_name, overwrite=True
-):
-    file_dest = os.path.join(dest_directory, dest_name)
-    if not overwrite and os.path.exists(file_dest):
-        logging.info("Not overwriting %s", file_dest)
-        return
-    # Don't use dest_directory here, because dest_name may contain sub-directories
-    # that must be created, too
-    os.makedirs(os.path.dirname(file_dest), exist_ok=True)
-
+def _copy_file(relative_file_path, origin_container, dest_container, dest_name):
     logging.debug(
         "Copying %s from %s to %s/%s",
         relative_file_path,
-        container,
-        dest_directory,
+        origin_container,
+        dest_container,
         dest_name,
     )
     try:
-        with zipfile.ZipFile(container) as inp_zip:
-            source = inp_zip.open(relative_file_path)
-            with source, open(file_dest, "wb+") as target:
-                shutil.copyfileobj(source, target)
+        with zipfile.ZipFile(dest_container, "a") as outp_zip:
+            if dest_name in outp_zip.namelist():
+                logging.info(
+                    "%s already exists in %s - not adding to the zip file, as it would be a duplicate",
+                    dest_name,
+                    dest_container,
+                )
+            else:
+                with zipfile.ZipFile(origin_container) as inp_zip:
+                    content = inp_zip.read(relative_file_path)
+                outp_zip.writestr(dest_name, content)
     except KeyError:
-        logging.warning("No file %s in %s", relative_file_path, container)
+        logging.warning("No file %s in %s", relative_file_path, origin_container)
 
 
 def parse_coverage_goal_file(goal_file: str) -> str:
@@ -298,13 +303,12 @@ def main():
     except execution.ExecutionError as e:
         logging.error(e.msg)
     finally:
-        testsuite_folder = os.path.join(args.output_dir, SUCCESSFUL_TESTSUITE_FOLDER)
         if exec_results.successful_tests:
             _write_tests_to_suite(
                 args.test_suite,
                 exec_results.successful_tests,
                 args.overwrite,
-                testsuite_folder,
+                os.path.join(args.output_dir, REDUCED_TESTSUITE_NAME),
             )
             if args.check_for_error:
                 # If at least one test covered an error,
