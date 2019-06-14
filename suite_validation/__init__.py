@@ -307,7 +307,9 @@ def main():
                     )
 
         if exec_results.coverage_tests:
-            cov.write_test_coverages_to_dir(args.output_dir, args.file, exec_results)
+            if not os.path.exists(testsuite_folder):
+                os.mkdir(testsuite_folder)
+            cov.write_test_coverages_to_dir(testsuite_folder, args.file, exec_results)
 
         print()
         _print_suite_execution_results(exec_results)
