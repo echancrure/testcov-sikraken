@@ -120,6 +120,15 @@ def get_parser():
     )
 
     parser.add_argument(
+        "--create-reduced-suite",
+        dest="reduce_tests",
+        action="store_true",
+        default=False,
+        help="create a reduced test suite",
+        required=False,
+    )
+
+    parser.add_argument(
         "--verbose",
         dest="verbose",
         action="store_true",
@@ -140,7 +149,7 @@ def parse():
         args.machine_model = eu.MACHINE_MODEL_32
 
     args.goal = parse_coverage_goal_file(args.goal_file)
-    args.stop_after_success = args.goal == eu.COVER_ERRORS
+    args.check_for_error = args.goal == eu.COVER_ERRORS
 
     return args
 
@@ -156,10 +165,11 @@ def _write_tests_to_suite(origin_suite, tests, overwrite, output_dir):
     """
     metadata_file = eu.get_metadata_path(origin_suite)
     _copy_file(metadata_file, origin_suite, output_dir, eu.METADATA_XML_NAME, overwrite)
+    test_names = [t.origin for t in tests]
 
     with zipfile.ZipFile(origin_suite) as inp_zip:
         for test in inp_zip.namelist():
-            if test in tests:
+            if test in test_names:
                 _copy_file(test, origin_suite, output_dir, test, overwrite)
 
 
@@ -266,9 +276,10 @@ def main():
     compute_individuals = args.individual_test_cov
     try:
         executor = execution.SuiteExecutor(
-            args.stop_after_success,
+            args.check_for_error,
             args.timelimit_per_run,
             compute_sequence=args.print_seq_file is not None,
+            reduce_tests=args.reduce_tests,
             overwrite_files=args.overwrite,
             harness_file_target=harness_file,
             compile_target=executable,
@@ -288,20 +299,27 @@ def main():
         logging.error(e.msg)
     finally:
         testsuite_folder = os.path.join(args.output_dir, SUCCESSFUL_TESTSUITE_FOLDER)
-        if exec_results.successful_test:
-            successful_test = exec_results.successful_test
+        if exec_results.successful_tests:
             _write_tests_to_suite(
                 args.test_suite,
-                [successful_test.origin],
+                exec_results.successful_tests,
                 args.overwrite,
                 testsuite_folder,
             )
-            _write_harness(args.file, successful_test, args.overwrite, args.output_dir)
+            if args.goal == eu.COVER_ERRORS:
+                # If at least one test covered an error,
+                # make the first one into an executable harness
+                _write_harness(
+                    args.file,
+                    exec_results.successful_tests[0],
+                    args.overwrite,
+                    args.output_dir,
+                )
 
         if exec_results.coverage_sequence and args.print_seq_file:
-            if not os.path.exists(testsuite_folder):
-                os.mkdir(testsuite_folder)
-            seq_file = os.path.join(testsuite_folder, args.print_seq_file)
+            if not os.path.exists(args.output_dir):
+                os.mkdir(args.output_dir)
+            seq_file = os.path.join(args.output_dir, args.print_seq_file)
             if not args.overwrite and os.path.exists(seq_file):
                 logging.info("Not overwriting %s", seq_file)
             else:

@@ -144,7 +144,7 @@ class SuiteExecutionResult:
         self.lines_executed = "0%"
         self.branches_executed = "0%"
         self.branches_taken = "0%"
-        self.successful_test = None
+        self.successful_tests = list()
         self.coverage_sequence = list()
         self.coverage_tests = list()
 
