@@ -20,6 +20,18 @@ import subprocess
 
 ERROR_STRING = "Error found."
 
+COVER_LINES = "lines"
+COVER_BRANCHES = "branches"
+COVER_CONDITIONS = "conditions"
+COVER_ERRORS = "error"
+
+COVERAGE_GOALS = {
+    "@DECISIONEDGE": COVER_BRANCHES,
+    "@CONDITIONEDGE": COVER_CONDITIONS,
+    "@BASICBLOCKENTRY": COVER_LINES,
+    "@CALL(__VERIFIER_error)": COVER_ERRORS,
+}
+
 METADATA_XML_NAME = "metadata.xml"
 
 MACHINE_MODEL_32 = "-m32"

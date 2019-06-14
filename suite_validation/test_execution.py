@@ -134,7 +134,7 @@ class TestExecutionRunner(TempDirExecutor):
 
         try:
             output_file = runner.get_executable_harness(TEST_FILE_WITHOUT_ERR)
-        except AssertionError as e:
+        except ex.ExecutionError as e:
             assert False, "Harness creation failed: %s" % e
 
         assert os.path.exists(output_file), "Harness %s not found" % output_file
@@ -150,7 +150,7 @@ class TestExecutionRunner(TempDirExecutor):
         try:
             out_file = runner.compile(TEST_FILE_WITHOUT_ERR, TEST_HARNESS, out_file)
 
-        except AssertionError as e:
+        except ex.ExecutionError as e:
             assert False, "Compilation failed: %s" % e
         assert os.path.exists(out_file)
 
@@ -158,7 +158,7 @@ class TestExecutionRunner(TempDirExecutor):
         for machine_model in MACHINE_MODELS:
             yield self._check_invalid_harness_compile_throws_error, machine_model
 
-    @raises(AssertionError)
+    @raises(ex.ExecutionError)
     def _check_invalid_harness_compile_throws_error(self, machine_model):
         runner = self.get_runner(machine_model, timelimit=None)
         _, out_file = tempfile.mkstemp()
@@ -169,7 +169,7 @@ class TestExecutionRunner(TempDirExecutor):
         for machine_model in MACHINE_MODELS:
             yield self._check_invalid_harness_compile_throws_error, machine_model
 
-    @raises(AssertionError)
+    @raises(ex.ExecutionError)
     def _check_invalid_program_compile_throws_error(self, machine_model):
         runner = self.get_runner(machine_model, timelimit=None)
         _, out_file = tempfile.mkstemp()

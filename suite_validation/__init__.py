@@ -20,6 +20,7 @@
 import argparse
 import logging
 import os
+import re
 import shutil
 import zipfile
 from suite_validation import execution
@@ -34,15 +35,19 @@ SUCCESSFUL_HARNESS_NAME = "covering-test.c"
 """Name of the file the executable harness of a successful test will be written to."""
 
 
+class IllegalArgumentError(Exception):
+    pass
+
+
 def get_parser():
     parser = argparse.ArgumentParser(prog="tbf test-suite validator")
 
     parser.add_argument(
-        "--stop-after-found-violation",
-        dest="stop_after_success",
-        action="store_true",
-        default=False,
-        help="scan for test cases recursively",
+        "--goal",
+        dest="goal_file",
+        action="store",
+        required=True,
+        help="coverage goal file",
     )
 
     parser.add_argument(
@@ -120,7 +125,15 @@ def get_parser():
 
 def parse():
     parser = get_parser()
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    if args.machine_model is None:
+        args.machine_model = eu.MACHINE_MODEL_32
+
+    args.goal = parse_coverage_goal_file(args.goal_file)
+    args.stop_after_success = args.goal == eu.COVER_ERRORS
+
+    return args
 
 
 def _write_test_to_output(
@@ -188,14 +201,33 @@ def _copy_file(
         logging.warning("No file %s in %s", relative_file_path, container)
 
 
+def parse_coverage_goal_file(goal_file: str) -> str:
+    with open(goal_file) as inp:
+        content = inp.read().strip()
+    prop_match = re.match(
+        r"COVER\s*\(\s*init\s*\(\s*main\s*\(\s*\)\s*\)\s*,\s*FQL\s*\(COVER\s+EDGES\s*\((.*)\)\s*\)\s*\)",
+        content,
+    )
+    if not prop_match:
+        raise IllegalArgumentError(
+            "No valid coverage goal specification in file {}: {}".format(
+                goal_file, content[:100]
+            )
+        )
+
+    goal = prop_match.group(1).strip()
+    if goal not in eu.COVERAGE_GOALS.keys():
+        raise IllegalArgumentError(
+            "No valid coverage goal specification: {}".format(goal)
+        )
+    return eu.COVERAGE_GOALS[goal]
+
+
 def main():
     args = parse()
 
     if not os.path.exists(args.output_dir):
         os.mkdir(args.output_dir)
-
-    if args.machine_model is None:
-        args.machine_model = eu.MACHINE_MODEL_32
 
     logger = logging.getLogger()
     if args.verbose:
