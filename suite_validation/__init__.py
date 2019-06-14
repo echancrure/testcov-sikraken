@@ -306,7 +306,7 @@ def main():
                 args.overwrite,
                 testsuite_folder,
             )
-            if args.goal == eu.COVER_ERRORS:
+            if args.check_for_error:
                 # If at least one test covered an error,
                 # make the first one into an executable harness
                 _write_harness(
