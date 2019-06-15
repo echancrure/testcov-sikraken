@@ -95,7 +95,7 @@ class TestHarness(TempDirExecutor):
         vectors.append(test_vector)
 
         test_vector = eu.TestVector("string_inputs", "dummy.xml")
-        test_vector.add("\"Some string value\"")
+        test_vector.add('"Some string value"')
         vectors.append(test_vector)
 
         test_vector = eu.TestVector("multiple_input_types", "dummy.xml")
@@ -363,20 +363,20 @@ class TestSuiteExecutor(TempDirExecutor):
         for machine_model in MACHINE_MODELS:
             yield self._check_run_suite_with_string_inputs, machine_model, SUITE_VALID_STRINGS
 
-    def _check_run_suite_with_string_inputs(
-        self, machine_model, suite_location
-    ):
+    def _check_run_suite_with_string_inputs(self, machine_model, suite_location):
         runner = self.get_runner(timelimit=2)
 
-        result_obj = runner.run(
-            TEST_FILE_WITH_STRINGS, suite_location, machine_model
-        )
+        result_obj = runner.run(TEST_FILE_WITH_STRINGS, suite_location, machine_model)
         results = result_obj.results
 
-        assert len(results) == 2 and any(
-            r == ex.COVERS for r in results
-        ) and any(r == ex.UNKNOWN for r in results), "Expected results '%s' and '%s', but got: %s" % (ex.COVERS, ex.UNKNOWN, results)
-
+        assert (
+            len(results) == 2
+            and any(r == ex.COVERS for r in results)
+            and any(r == ex.UNKNOWN for r in results)
+        ), (
+            "Expected results '%s' and '%s', but got: %s"
+            % (ex.COVERS, ex.UNKNOWN, results)
+        )
 
 
 def _get_test_directory():

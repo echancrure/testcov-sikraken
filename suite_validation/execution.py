@@ -59,7 +59,7 @@ class HarnessCreator:
             definition += ["    switch(access_counter) {"]
             for idx, item in enumerate(test_vector.vector):
                 # If there's quotes in the value, escape them for our C code
-                value = item["value"].replace(r'"', r'\"r')
+                value = item["value"].replace(r'"', r"\"r")
                 definition += ["    case " + str(idx) + ":"]
                 definition += ['        inp_var = "' + value + '";']
                 definition += ["        break;"]
