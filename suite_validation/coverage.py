@@ -75,7 +75,7 @@ class TestCoverage:
     def compute_line_coverage(self):
         if self.lines_found <= 0:
             return 1.0
-        return round(float(self.lines_hit) / float(self.lines_found), 2)
+        return round(float(self.lines_hit) / float(self.lines_found), 4)
 
     def compute_branch_conditions_executed(self):
         possible_branch_conditions_executions = (
@@ -95,13 +95,13 @@ class TestCoverage:
         return round(
             float(lines_with_branch_condition_executed)
             / float(possible_branch_conditions_executions),
-            2,
+            4,
         )
 
     def compute_branch_coverage(self):
         if self.branches_found <= 0:
             return 1.0
-        return round(float(self.branches_hit) / float(self.branches_found), 2)
+        return round(float(self.branches_hit) / float(self.branches_found), 4)
 
     def get_coverage_ratios_as_percent_expressions(self):
         line_coverage = self.compute_line_coverage()

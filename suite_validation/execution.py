@@ -556,7 +556,7 @@ class SuiteExecutor:
         # old tmp folder might still exist
         _remove_tracefile_tmp_folder()
         # old gcda, gcno or gcov files might exist and can affect coverage computation with lcov
-        _remove_coverages_files_in_working_directory(program_file)
+        _remove_coverages_files_in_working_directory()
 
         self._execute_tests(program_file, test_vectors, executor, result_target)
 
@@ -666,18 +666,13 @@ def _remove_harness_gcda_file():
         os.remove(HARNESS_GCDA_FILE)
 
 
-def _remove_coverages_files_in_working_directory(program_file):
-    harness = HARNESS_FILE_NAME[:-1]
-    program_name = os.path.basename(program_file)
-    program = program_name[:-1]
-    c_gcov_file_end = "c." + GCOV_FILE_END
-    file_endings = [c_gcov_file_end, GCDA_FILE_END, GCNO_FILE_END]
-    file_names = [harness, program]
-    for name in file_names:
-        for ending in file_endings:
-            file_name = name + ending
-            if os.path.exists(file_name):
-                os.remove(file_name)
+def _remove_coverages_files_in_working_directory():
+    extensions = (GCOV_FILE_END, GCDA_FILE_END, GCNO_FILE_END)
+    files = [
+        f for f in os.listdir(os.curdir) if os.path.isfile(f) and f.endswith(extensions)
+    ]
+    for file in files:
+        os.remove(file)
 
 
 def _parse_xml_if_testcase(xml_lines):
