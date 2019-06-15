@@ -14,6 +14,7 @@ setup(
     description='A container-based test-suite executor',
     url='https://gitlab.com/sosy-lab/software/testsuite-validator',
     packages=['suite_validation'],
+    scripts=['bin/tbf-testsuite-validator'],
     install_requires=[
         'lxml>=4.0.0',
     ],
