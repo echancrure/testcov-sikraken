@@ -30,7 +30,15 @@ int parse_input_from(char * inp_var, char * format, void * destination) {
     if (inp_var[0] == '0' && inp_var[1] == 'x') {
         res = sscanf(inp_var, "%x%c", destination, &leftover);
     } else {
-        res = sscanf(inp_var, format_with_fallback, destination, &leftover);
+      if (inp_var[0] == '\'' || inp_var[0] == '\"') {
+        int inp_length = strlen(inp_var);
+        // Remove ' at the end
+        inp_var[inp_length - 1] = '\0';
+        // Remove ' in the beginning
+        inp_var++;
+      }
+
+      res = sscanf(inp_var, format_with_fallback, destination, &leftover);
     }
     if (res != 1) {
         fprintf(stderr, "Can't parse input: '%s'\n", inp_var);
@@ -47,11 +55,6 @@ char __VERIFIER_nondet_char() {
     char val;
     char * inp_var = get_input();
     if (inp_var[0] == '\'') {
-      int inp_length = strlen(inp_var);
-      // Remove ' at the end
-      inp_var[inp_length - 1] = '\0';
-      // Remove ' in the beginning
-      inp_var++;
       parse_input_from(inp_var, "%c", &val);
     } else {
       parse_input_from(inp_var, "%hhd", &val);
@@ -159,4 +162,12 @@ unsigned char __VERIFIER_nondet_unsigned_char() {
 
 unsigned int __VERIFIER_nondet_unsigned() {
   return __VERIFIER_nondet_uint();
+}
+
+const char * __VERIFIER_nondet_string() {
+  char * val = malloc(MAX_INPUT_SIZE + 1);
+  // Read to end of line
+  parse_input("%[^\n]", val);
+  return val;
+
 }
