@@ -35,12 +35,14 @@ TEST_DIRECTORY = os.path.join(MODULE_DIRECTORY, "test")
 TEST_FILE_WITHOUT_ERR = os.path.join(TEST_DIRECTORY, "test.c")
 TEST_FILE_WITH_ERR = os.path.join(TEST_DIRECTORY, "test_false.c")
 TEST_FILE_WITH_NO_TERMINATION = os.path.join(TEST_DIRECTORY, "test_no-termination.c")
+TEST_FILE_WITH_STRINGS = os.path.join(TEST_DIRECTORY, "test_string.c")
 
 TEST_HARNESS = os.path.join(TEST_DIRECTORY, "test_harness.c")
 
 SUITE_DIR = os.path.join(TEST_DIRECTORY, "suites")
 SUITE_VALID_ZIP = os.path.join(SUITE_DIR, "suite-valid.zip")
 SUITE_VALID_NESTED_ZIP = os.path.join(SUITE_DIR, "suite-valid-nested.zip")
+SUITE_VALID_STRINGS = os.path.join(SUITE_DIR, "suite-string.zip")
 SUITE_INVALID_ZIP = os.path.join(SUITE_DIR, "suite-metadata-missing.zip")
 
 MACHINE_MODELS = (eu.MACHINE_MODEL_32, eu.MACHINE_MODEL_64)
@@ -90,6 +92,10 @@ class TestHarness(TempDirExecutor):
         test_vector.add("0")
         test_vector.add("5")
         test_vector.add("999")
+        vectors.append(test_vector)
+
+        test_vector = eu.TestVector("string_inputs", "dummy.xml")
+        test_vector.add("\"Some string value\"")
         vectors.append(test_vector)
 
         test_vector = eu.TestVector("multiple_input_types", "dummy.xml")
@@ -352,6 +358,25 @@ class TestSuiteExecutor(TempDirExecutor):
         assert len(results) == 2 and all(
             r == ex.ABORTED for r in results
         ), "Expected two results '%s': %s" % (ex.ABORTED, results)
+
+    def test_run_suite_with_string_inputs(self):
+        for machine_model in MACHINE_MODELS:
+            yield self._check_run_suite_with_string_inputs, machine_model, SUITE_VALID_STRINGS
+
+    def _check_run_suite_with_string_inputs(
+        self, machine_model, suite_location
+    ):
+        runner = self.get_runner(timelimit=2)
+
+        result_obj = runner.run(
+            TEST_FILE_WITH_STRINGS, suite_location, machine_model
+        )
+        results = result_obj.results
+
+        assert len(results) == 2 and any(
+            r == ex.COVERS for r in results
+        ) and any(r == ex.UNKNOWN for r in results), "Expected results '%s' and '%s', but got: %s" % (ex.COVERS, ex.UNKNOWN, results)
+
 
 
 def _get_test_directory():
