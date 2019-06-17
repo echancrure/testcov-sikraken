@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 lxml = ">=4.0.0"
+benchexec = ">=1.20"
 
 [dev-packages]
 black = "*"

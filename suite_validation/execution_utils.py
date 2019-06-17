@@ -206,7 +206,7 @@ def execute(command, quiet=False, input_str=None, timelimit=None):
     if output:
         logging.debug("Output of execution:\n%s", output)
     if err_output:
-        logging.debug("Error output of execution:\n%s", err_output)
+        logging.debug("Error output of execution:\n%s", err_output.decode())
 
     return ExecutionResult(returncode, output, err_output, got_aborted)
 
