@@ -43,11 +43,20 @@ GCOV_FILE_END = "gcov"
 GCDA_FILE_END = "gcda"
 GCNO_FILE_END = "gcno"
 
-LCOV_SUBFOLDER_TRACE_FILE = "tmp_tracefiles"
+LCOV_SUBFOLDER_TRACE_FILE = "tracefiles"
 LCOV_SUMMARY_TRACE_FILE = "tracefile_summary.info"
 LCOV_CURRENT_TRACE_FILE = "current_test.info"
 LCOV_WITH_BRANCH_COVERAGE = "lcov_branch_coverage=1"
 LCOV_NO_RECURSION = "--no-recursion"
+LCOV_USED_GCOV_TOOL = "/bin/llvm-gcov"
+
+LCOV_COMMAND_PREFIX = [
+    "lcov",
+    "--gcov-tool",
+    LCOV_USED_GCOV_TOOL,
+    "--rc",
+    LCOV_WITH_BRANCH_COVERAGE,
+]
 
 
 class ExecutionError(Exception):
@@ -170,10 +179,10 @@ class ExecutionRunner:
         self._overwrite = overwrite_files
 
     def _get_compile_cmd(
-        self, program_file, harness_file, output_file, c_version="gnu11"
+        self, program_file, harness_file, output_file, c_version="gnu90"
     ):
         mm_arg = "-m64" if self.machine_model == eu.MACHINE_MODEL_64 else "-m32"
-        cmd = ["gcc"]
+        cmd = ["clang"]
         cmd += [
             "-std={}".format(c_version),
             mm_arg,
@@ -310,18 +319,15 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
             logging.info("Aborted test run is not considered for coverage")
         return result
 
-    def get_coverage_for_individual_test(self, program_file):
+    def get_current_test_coverage(self, program_file):
         program_name = os.path.basename(program_file)
         if self.harness_file:
             assert self.harness_file.endswith(".c")
             data_file = self.harness_file[:-1] + "gcda"
             data_file = os.path.basename(data_file)  # data file is in cwd
             if os.path.exists(data_file):
-                cmd = [
-                    "lcov",
+                cmd = LCOV_COMMAND_PREFIX + [
                     "-c",
-                    "--rc",
-                    LCOV_WITH_BRANCH_COVERAGE,
                     "-d",
                     ".",
                     LCOV_NO_RECURSION,
@@ -333,15 +339,11 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
                     test_coverage = cov.get_test_coverage_from_lcov_file(
                         program_name, LCOV_CURRENT_TRACE_FILE
                     )
-                    self.move_tracefile_into_subfolder_and_combine_with_previous(
-                        LCOV_CURRENT_TRACE_FILE
-                    )
                     return test_coverage
                 logging.warning(
                     "Trace file '%s' not created. Returning empty test coverage.",
                     LCOV_CURRENT_TRACE_FILE,
                 )
-
         else:
             logging.warning(
                 "Coverage requested without any execution. Returning empty test coverage."
@@ -359,10 +361,7 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
             eu.execute(cmd, quiet=True)
 
         if os.path.exists(trace_file_summary):
-            cmd = [
-                "lcov",
-                "--rc",
-                LCOV_WITH_BRANCH_COVERAGE,
+            cmd = LCOV_COMMAND_PREFIX + [
                 "-a",
                 trace_file,
                 "-a",
@@ -371,73 +370,28 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
                 trace_file_summary,
             ]
             eu.execute(cmd, quiet=True)
-            summarize_coverage_info = "--summary"
-            cmd = ["lcov", summarize_coverage_info, trace_file_summary]
+            cmd = ["lcov", "--summary", trace_file_summary]
             eu.execute(cmd, quiet=True)
         else:
             shutil.move(trace_file, trace_file_summary)
 
-    @staticmethod
-    def get_coverage_of_summarized_trace_file(program_file):
-        lines_executed = None
-        branches_executed = None
-        branches_taken = None
+    def get_coverage(self, program_file):
 
         trace_file_summary = (
             LCOV_SUBFOLDER_TRACE_FILE + os.sep + LCOV_SUMMARY_TRACE_FILE
         )
+
         if os.path.exists(trace_file_summary):
             program_name = os.path.basename(program_file)
             test_coverage_summary = cov.get_test_coverage_from_lcov_file(
                 program_name, trace_file_summary
             )
-
-            lines_executed, branches_executed, branches_taken = (
-                test_coverage_summary.get_coverage_ratios_as_percent_expressions()
-            )
-
         else:
-            logging.warning(
-                "Summary trace file '%s' does not exist in '%s'. Returning defaults.",
-                LCOV_SUMMARY_TRACE_FILE,
-                LCOV_SUBFOLDER_TRACE_FILE,
-            )
+            test_coverage_summary = self.get_current_test_coverage(program_file)
 
-        if not lines_executed:
-            lines_executed = "0%"
-        if not branches_executed:
-            branches_executed = "0%"
-        if not branches_taken:
-            branches_taken = "0%"
-
-        return lines_executed, branches_executed, branches_taken
-
-    def get_coverage(self, program_file):
-        lines_executed = None
-        branches_executed = None
-        branches_taken = None
-
-        if self.harness_file:
-            assert self.harness_file.endswith(".c")
-            data_file = self.harness_file[:-1] + "gcda"
-            data_file = os.path.basename(data_file)  # data file is in cwd
-
-            if os.path.exists(data_file):
-                cmd = ["gcov", "-bc", data_file]
-                res = eu.execute(cmd, quiet=True)
-                full_cov = res.stdout.splitlines()
-
-                program_name = os.path.basename(program_file)
-                for number, line in enumerate(full_cov):
-                    if line.startswith("File") and program_name in line:
-                        lines_executed = self._get_gcov_val(full_cov[number + 1])
-                        branches_executed = self._get_gcov_val(full_cov[number + 2])
-                        branches_taken = self._get_gcov_val(full_cov[number + 3])
-                        break
-        else:
-            logging.debug(
-                "Coverage requested without any execution. Returning defaults."
-            )
+        lines_executed, branches_executed, branches_taken = (
+            test_coverage_summary.get_coverage_ratios_as_percent_expressions()
+        )
 
         if not lines_executed:
             lines_executed = "0%"
@@ -554,13 +508,11 @@ class SuiteExecutor:
         # old trace file in working directory might still exist
         _remove_current_tracefile()
         # old tmp folder might still exist
-        _remove_tracefile_tmp_folder()
+        _remove_tracefile_folder()
         # old gcda, gcno or gcov files might exist and can affect coverage computation with lcov
         _remove_coverages_files_in_working_directory()
 
         self._execute_tests(program_file, test_vectors, executor, result_target)
-
-        _remove_tracefile_tmp_folder()
 
         return result_target
 
@@ -606,23 +558,29 @@ class SuiteExecutor:
             for tv in test_vectors:
                 next_result = executor.run(program_file, tv)
 
+                coverage_test = None
+
                 if self._compute_individual_test_coverages:
-                    coverage_test = executor.get_coverage_for_individual_test(
-                        program_file
-                    )
+                    coverage_test = executor.get_current_test_coverage(program_file)
                     coverage_test.set_result(next_result)
                     coverage_test.set_test_vector(tv)
                     result_target.coverage_tests.append(coverage_test)
+
+                    if os.path.exists(LCOV_CURRENT_TRACE_FILE):
+                        executor.move_tracefile_into_subfolder_and_combine_with_previous(
+                            LCOV_CURRENT_TRACE_FILE
+                        )
 
                     _remove_current_tracefile()
                     _remove_harness_gcda_file()
 
                 if self._compute_sequence:
                     # if we use individual tests with lcov we extract the info from the summarized file
-                    if self._compute_individual_test_coverages:
-                        result_target.lines_executed, result_target.branches_executed, result_target.branches_taken = executor.get_coverage_of_summarized_trace_file(
-                            program_file
+                    if coverage_test:
+                        result_target.lines_executed, result_target.branches_executed, result_target.branches_taken = (
+                            coverage_test.get_coverage_ratios_as_percent_expressions()
                         )
+
                     else:
                         result_target.lines_executed, result_target.branches_executed, result_target.branches_taken = executor.get_coverage(
                             program_file
@@ -641,17 +599,12 @@ class SuiteExecutor:
 
         finally:
             if not self._compute_sequence:
-                if self._compute_individual_test_coverages:
-                    result_target.lines_executed, result_target.branches_executed, result_target.branches_taken = executor.get_coverage_of_summarized_trace_file(
-                        program_file
-                    )
-                else:
-                    result_target.lines_executed, result_target.branches_executed, result_target.branches_taken = executor.get_coverage(
-                        program_file
-                    )
+                result_target.lines_executed, result_target.branches_executed, result_target.branches_taken = executor.get_coverage(
+                    program_file
+                )
 
 
-def _remove_tracefile_tmp_folder():
+def _remove_tracefile_folder():
     if os.path.isdir(LCOV_SUBFOLDER_TRACE_FILE):
         shutil.rmtree(LCOV_SUBFOLDER_TRACE_FILE, ignore_errors=True)
 
