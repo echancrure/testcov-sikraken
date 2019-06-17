@@ -20,15 +20,23 @@ void __VERIFIER_error() { fprintf(stderr, "Error found.\n"); exit(1); }
 
 char * get_input();
 
-int parse_input_from(char * inp_var, char * format, void * destination) {
-    char val;
+// taken from https://stackoverflow.com/a/32496721
+void replace_char(char * str, char find, char replace){
+    char * current_pos = strchr(str,find);
+    while (current_pos){
+        *current_pos = replace;
+        current_pos = strchr(current_pos,find);
+    }
+}
+
+void parse_input_from(char * inp_var, char * format, void * destination) {
     char format_with_fallback[9];
     strcpy(format_with_fallback, format);
     strcat(format_with_fallback, "%c");
     char leftover;
     int res;
     if (inp_var[0] == '0' && inp_var[1] == 'x') {
-        res = sscanf(inp_var, "%x%c", destination, &leftover);
+        replace_char(format_with_fallback, 'd', 'x');
     } else {
       if (inp_var[0] == '\'' || inp_var[0] == '\"') {
         int inp_length = strlen(inp_var);
@@ -37,9 +45,9 @@ int parse_input_from(char * inp_var, char * format, void * destination) {
         // Remove ' in the beginning
         inp_var++;
       }
-
-      res = sscanf(inp_var, format_with_fallback, destination, &leftover);
     }
+    res = sscanf(inp_var, format_with_fallback, destination, &leftover);
+
     if (res != 1) {
         fprintf(stderr, "Can't parse input: '%s'\n", inp_var);
         abort_prog();
