@@ -48,7 +48,7 @@ LCOV_SUMMARY_TRACE_FILE = "tracefile_summary.info"
 LCOV_CURRENT_TRACE_FILE = "current_test.info"
 LCOV_WITH_BRANCH_COVERAGE = "lcov_branch_coverage=1"
 LCOV_NO_RECURSION = "--no-recursion"
-LCOV_USED_GCOV_TOOL = "/bin/llvm-gcov"
+LCOV_USED_GCOV_TOOL = "llvm-gcov"
 
 LCOV_COMMAND_PREFIX = [
     "lcov",

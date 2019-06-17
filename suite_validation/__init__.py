@@ -231,6 +231,7 @@ def parse_coverage_goal_file(goal_file: str) -> str:
         )
     return eu.COVERAGE_GOALS[goal]
 
+
 def _print_suite_execution_results(exec_results):
     print("---Results---")
     print("Tests run:", len(exec_results.results))
