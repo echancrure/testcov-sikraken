@@ -8,7 +8,7 @@
 
 FROM python:3.6
 
-RUN apt update && apt install -y gcc-multilib g++-multilib lcov
+RUN apt update && apt install -y gcc-multilib g++-multilib lcov clang
 
 RUN pip install -U pip && pip install \
   coverage \
