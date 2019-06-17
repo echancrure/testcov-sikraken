@@ -108,9 +108,9 @@ class TestCoverage:
         branch_condition_coverage = self.compute_branch_conditions_executed()
         branch_coverage = self.compute_branch_coverage()
         return (
-            str(line_coverage * 100) + "%",
-            str(branch_condition_coverage * 100) + "%",
-            str(branch_coverage * 100) + "%",
+            str(round(line_coverage * 100, 2)) + "%",
+            str(round(branch_condition_coverage * 100, 2)) + "%",
+            str(round(branch_coverage * 100, 2)) + "%",
         )
 
 

@@ -507,12 +507,13 @@ class SuiteExecutor:
         # this method call raises an ExecutionError if the given test suite is invalid
         test_vectors = self._get_described_vectors(test_suite)
 
-        # old trace file in working directory might still exist
-        _remove_current_tracefile()
-        # old tmp folder might still exist
-        _remove_tracefile_folder()
-        # old gcda, gcno or gcov files might exist and can affect coverage computation with lcov
-        _remove_coverages_files_in_working_directory()
+        if self._overwrite_files:
+            # old trace file in working directory might still exist
+            _remove_current_tracefile()
+            # old trace file folder might still exist
+            _remove_tracefile_folder()
+            # old gcda, gcno or gcov files might exist
+            _remove_coverages_files_in_working_directory()
 
         self._execute_tests(program_file, test_vectors, executor, result_target)
 
