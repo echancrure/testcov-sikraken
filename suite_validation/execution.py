@@ -181,7 +181,7 @@ class ExecutionRunner:
         self._overwrite = overwrite_files
 
     def _get_compile_cmd(
-        self, program_file, harness_file, output_file, c_version="gnu90"
+        self, program_file, harness_file, output_file, c_version="gnu11"
     ):
         mm_arg = "-m64" if self.machine_model == eu.MACHINE_MODEL_64 else "-m32"
         cmd = ["clang"]
