@@ -39,9 +39,9 @@ ABORTED = "abort"
 
 HARNESS_GCDA_FILE = "harness.gcda"
 
-GCOV_FILE_END = "gcov"
-GCDA_FILE_END = "gcda"
-GCNO_FILE_END = "gcno"
+GCOV_FILE_END = ".gcov"
+GCDA_FILE_END = ".gcda"
+GCNO_FILE_END = ".gcno"
 
 LCOV_SUBFOLDER_TRACE_FILE = "tracefiles"
 LCOV_SUMMARY_TRACE_FILE = "tracefile_summary.info"
