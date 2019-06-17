@@ -1,0 +1,21 @@
+Metadata-Version: 2.0
+Name: tfbuilder
+Version: 1.3.dev0
+Summary: An xml-based format for easy exchange of test suites
+Home-page: https://gitlab.com/sosy-lab/software/test-format
+Author: Dirk Beyer
+Author-email: UNKNOWN
+License: multiple
+Keywords: xml exchange test suite test-case generation verification
+Platform: Linux
+Classifier: Development Status :: 3 - Alpha
+Classifier: Environment :: Console
+Classifier: Intended Audience :: Science/Research
+Classifier: Operation System :: POSIX :: Linux
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Topic :: Software Development :: Testing
+Requires-Dist: lxml (>=4.0.0)
+
+UNKNOWN
+
+

@@ -26,14 +26,18 @@ import zipfile
 from suite_validation import execution
 from suite_validation import execution_utils as eu
 from suite_validation import coverage as cov
+from suite_validation import metadata_utils
 
 __VERSION__ = "v1.1-dev"
+
+__NAME__ = "test-suite validator"
 
 SUCCESSFUL_TESTSUITE_FOLDER = "test-suite"
 SUCCESSFUL_TEST_NAME = "covering-test.xml"
 """Name of the file a successful test will be written to."""
 SUCCESSFUL_HARNESS_NAME = "covering-test.c"
 """Name of the file the executable harness of a successful test will be written to."""
+REDUCED_TESTSUITE_NAME = "reduced-suite.zip"
 
 
 class IllegalArgumentError(Exception):
@@ -120,6 +124,15 @@ def get_parser():
     )
 
     parser.add_argument(
+        "--create-reduced-suite",
+        dest="reduce_tests",
+        action="store_true",
+        default=False,
+        help="create a reduced test suite",
+        required=False,
+    )
+
+    parser.add_argument(
         "--verbose",
         dest="verbose",
         action="store_true",
@@ -140,41 +153,59 @@ def parse():
         args.machine_model = eu.MACHINE_MODEL_32
 
     args.goal = parse_coverage_goal_file(args.goal_file)
-    args.stop_after_success = args.goal == eu.COVER_ERRORS
+    args.check_for_error = args.goal == eu.COVER_ERRORS
 
     return args
 
 
-def _write_test_to_output(
-    program_file, test_container, successful_test, overwrite, output_dir
+def _write_tests_to_suite(
+    program_file, origin_suite, tests, overwrite, coverage_goal, output_suite
 ):
     """
-    Writes, for the given test, the original XML definition and an executable harness
-    to the current working directory.
+    Writes the given tests from the given test suite to a new suite.
+
+    :param str origin_suite: Path to the zip-file that contains the original test suite
+    :param List[utils.TestVector] tests: Test vector to create files for.
+    :param bool overwrite: Whether to overwrite existing files.
+    :param str output_dir: Directory to write to.
+    """
+    if os.path.exists(output_suite) and overwrite:
+        logging.debug(
+            "File %s already exists and 'overwrite' option set - removing it.",
+            output_suite,
+        )
+        os.remove(output_suite)
+
+    output_metadata = _create_metadata(origin_suite, program_file, coverage_goal)
+    with zipfile.ZipFile(output_suite, "a") as outp_zip:
+        outp_zip.writestr(metadata_utils.METADATA_XML_NAME, output_metadata)
+
+    test_names = [t.origin for t in tests]
+    with zipfile.ZipFile(origin_suite) as inp_zip:
+        for test in inp_zip.namelist():
+            if test in test_names:
+                _copy_file(test, origin_suite, output_suite, test)
+
+
+def _create_metadata(origin_suite: str, program_file: str, coverage_goal: str) -> str:
+    producer = " ".join([__NAME__, __VERSION__])
+    return metadata_utils.create_for_reduced(
+        origin_suite, producer, program_file, coverage_goal
+    )
+
+
+def _write_harness(program_file, test_vector, overwrite, output_dir):
+    """
+    Writes, for the given test, an executable harness to the output folder.
 
     :param str program_file: Path to the program file.
-    :param str test_container: Path to the zip-file that contains the successful test
-    :param utils.TestVector successful_test: Test vector to create files for.
+    :param eu.TestVector test_vector: test vector to create harness for.
     :param bool overwrite: Whether to overwrite existing files.
     :param str output_dir: Output directory to write into.
     """
-    successful_test_file = successful_test.origin
-    test_directory = os.path.dirname(successful_test_file)
-    metadata_file = os.path.join(test_directory, eu.METADATA_XML_NAME)
-    _copy_file(
-        metadata_file, test_container, output_dir, eu.METADATA_XML_NAME, overwrite
-    )
-
-    _copy_file(
-        successful_test_file,
-        test_container,
-        output_dir,
-        SUCCESSFUL_TEST_NAME,
-        overwrite,
-    )
 
     test_c_file = os.path.join(output_dir, SUCCESSFUL_HARNESS_NAME)
-    harness_content = execution.HarnessCreator().convert(program_file, successful_test)
+    harness_content = execution.HarnessCreator().convert(program_file, test_vector)
     if not overwrite and os.path.exists(test_c_file):
         logging.info("Not overwriting %s", test_c_file)
     else:
@@ -185,29 +216,28 @@ def _write_test_to_output(
     logging.info("Successful test data written to %s", SUCCESSFUL_TESTSUITE_FOLDER)
 
 
-def _copy_file(
-    relative_file_path, container, dest_directory, dest_name, overwrite=True
-):
-    file_dest = os.path.join(dest_directory, dest_name)
-    if not overwrite and os.path.exists(file_dest):
-        logging.info("Not overwriting %s", file_dest)
-        return
-    os.makedirs(dest_directory, exist_ok=True)
-
+def _copy_file(relative_file_path, origin_container, dest_container, dest_name):
     logging.debug(
         "Copying %s from %s to %s/%s",
         relative_file_path,
-        container,
-        dest_directory,
+        origin_container,
+        dest_container,
         dest_name,
     )
     try:
-        with zipfile.ZipFile(container) as inp_zip:
-            source = inp_zip.open(relative_file_path)
-            with source, open(file_dest, "wb+") as target:
-                shutil.copyfileobj(source, target)
+        with zipfile.ZipFile(dest_container, "a") as outp_zip:
+            if dest_name in outp_zip.namelist():
+                logging.info(
+                    "%s already exists in %s - not adding to the zip file, as it would be a duplicate",
+                    dest_name,
+                    dest_container,
+                )
+            else:
+                with zipfile.ZipFile(origin_container) as inp_zip:
+                    content = inp_zip.read(relative_file_path)
+                outp_zip.writestr(dest_name, content)
     except KeyError:
-        logging.warning("No file %s in %s", relative_file_path, container)
+        logging.warning("No file %s in %s", relative_file_path, origin_container)
 
 
 def parse_coverage_goal_file(goal_file: str) -> str:
@@ -264,9 +294,10 @@ def main():
     compute_individuals = args.individual_test_cov
     try:
         executor = execution.SuiteExecutor(
-            args.stop_after_success,
+            args.check_for_error,
             args.timelimit_per_run,
             compute_sequence=args.print_seq_file is not None,
+            reduce_tests=args.reduce_tests,
             overwrite_files=args.overwrite,
             harness_file_target=harness_file,
             compile_target=executable,
@@ -285,20 +316,29 @@ def main():
     except execution.ExecutionError as e:
         logging.error(e.msg)
     finally:
-        testsuite_folder = os.path.join(args.output_dir, SUCCESSFUL_TESTSUITE_FOLDER)
-        if exec_results.successful_test:
-            _write_test_to_output(
+        if exec_results.successful_tests:
+            _write_tests_to_suite(
                 args.file,
                 args.test_suite,
-                exec_results.successful_test,
+                exec_results.successful_tests,
                 args.overwrite,
-                testsuite_folder,
+                args.goal,
+                os.path.join(args.output_dir, REDUCED_TESTSUITE_NAME),
             )
+            if args.check_for_error:
+                # If at least one test covered an error,
+                # make the first one into an executable harness
+                _write_harness(
+                    args.file,
+                    exec_results.successful_tests[0],
+                    args.overwrite,
+                    args.output_dir,
+                )
 
         if exec_results.coverage_sequence and args.print_seq_file:
-            if not os.path.exists(testsuite_folder):
-                os.mkdir(testsuite_folder)
-            seq_file = os.path.join(testsuite_folder, args.print_seq_file)
+            if not os.path.exists(args.output_dir):
+                os.mkdir(args.output_dir)
+            seq_file = os.path.join(args.output_dir, args.print_seq_file)
             if not args.overwrite and os.path.exists(seq_file):
                 logging.info("Not overwriting %s", seq_file)
             else:

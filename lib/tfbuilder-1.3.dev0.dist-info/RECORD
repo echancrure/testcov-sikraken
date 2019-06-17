@@ -1,0 +1,15 @@
+tfbuilder-1.3.dev0.dist-info/DESCRIPTION.rst,sha256=OCTuuN6LcWulhHS3d5rfjdsQtW22n7HENFRh6jC6ego,10
+tfbuilder-1.3.dev0.dist-info/INSTALLER,sha256=zuuue4knoyJ-UwPPXg8fezS7VCrXJQrAP7zeNuwvFQg,4
+tfbuilder-1.3.dev0.dist-info/METADATA,sha256=mleQEre9vXJzTMoswfQ0QAC5TaS49TGA68nQtviEPLU,647
+tfbuilder-1.3.dev0.dist-info/RECORD,,
+tfbuilder-1.3.dev0.dist-info/WHEEL,sha256=0mO7-aKM6K9CHeURc5NDYZyLWH5lmR-r4TtPinHxz7Y,93
+tfbuilder-1.3.dev0.dist-info/metadata.json,sha256=ieQwD8JgBaA4pSDAAtwGblz-cn8w0zLUiZ5qnZMXhuI,901
+tfbuilder-1.3.dev0.dist-info/top_level.txt,sha256=AADwifJEi0cZGqveYeRQQcBlt1vgQ5S0oGfIOHajVbU,10
+tfbuilder/__init__.py,sha256=-MSNcNyblcfAPJq8M5L0GJF0qfr9njIjwDVGMIkY4Ag,9295
+tfbuilder/__pycache__/__init__.cpython-36.pyc,,
+tfbuilder/__pycache__/architecture.cpython-36.pyc,,
+tfbuilder/__pycache__/specs.cpython-36.pyc,,
+tfbuilder/__pycache__/test_tfbuilder.cpython-36.pyc,,
+tfbuilder/architecture.py,sha256=yS-yy3UUampYjxPixaGFK5T4OSpDb4uc3ZDSI4eLsuE,882
+tfbuilder/specs.py,sha256=bdyJ2-jyvg_ngZljHqXpOpZN_h081mAaw-saBKeSUJE,1401
+tfbuilder/test_tfbuilder.py,sha256=k4N5YAKZeXpHIvSHxnBMW1ZOlVoeBoxfWgrKBvAyEEs,5347

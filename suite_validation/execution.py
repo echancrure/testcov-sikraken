@@ -18,7 +18,6 @@
 """Module for creation and execution of test harnesses from test-format XML files."""
 
 import logging
-import xml.etree.ElementTree as ET
 import re
 import os
 import zipfile
@@ -28,9 +27,9 @@ from lxml import etree
 
 from suite_validation import execution_utils as eu
 from suite_validation import coverage as cov
+from suite_validation import metadata_utils as mu
 
 HARNESS_FILE_NAME = "harness.c"
-ARCHITECTURE_TAG = "architecture"
 
 COVERS = "false"
 UNKNOWN = "unknown"
@@ -429,21 +428,23 @@ class SuiteExecutor:
 
     def __init__(
         self,
-        stop_after_found_error,
+        check_for_error,
         timelimit_per_run,
         harness_file_target="harness.c",
         compile_target="a.out",
         compute_sequence=False,
+        reduce_tests=False,
         overwrite_files=True,
         isolate_tests=True,
         compute_individuals=True,
     ):
-        self._stop_after_success = stop_after_found_error
+        self._check_for_error = check_for_error
         self._timelimit = timelimit_per_run
 
         self._harness_file_target = harness_file_target
         self._compile_target = compile_target
         self._compute_sequence = compute_sequence
+        self._reduce_tests = reduce_tests
         self._overwrite_files = overwrite_files
         self._isolate_tests = isolate_tests
         self._compute_individual_test_coverages = compute_individuals
@@ -491,16 +492,16 @@ class SuiteExecutor:
                 self._overwrite_files,
             )
 
-        metadata = self._get_metadata(test_suite)
+        metadata = mu.get_metadata(test_suite)
         if metadata is None:
-            raise ExecutionError("No %s found" % eu.METADATA_XML_NAME)
+            raise ExecutionError("No %s found" % mu.METADATA_XML_NAME)
 
-        architecture = metadata.find(ARCHITECTURE_TAG)
+        architecture = metadata[mu.ARCHITECTURE]
         if architecture is not None:
-            if ("32" in architecture.text) != ("32" in machine_model):
+            if ("32" in architecture) != ("32" in machine_model):
                 logging.warning(
                     "Architecture in metadata.xml different from expected: '%s' vs. '%s'",
-                    architecture.text,
+                    architecture,
                     machine_model,
                 )
 
@@ -520,16 +521,6 @@ class SuiteExecutor:
         return result_target
 
     @staticmethod
-    def _get_metadata(test_suite):
-        """Return the metadata of the given test suite."""
-        with zipfile.ZipFile(test_suite) as zip_inp:
-            for name in zip_inp.namelist():
-                if os.path.basename(name) == eu.METADATA_XML_NAME:
-                    with zip_inp.open(name) as metadata_inp:
-                        return ET.parse(metadata_inp)
-            return None
-
-    @staticmethod
     def _get_described_vectors(test_suite):
         """Return a generator that produces the test vectors described by the given test suite.
 
@@ -538,9 +529,9 @@ class SuiteExecutor:
         logging.debug("Looking for tests in %s", test_suite)
         with zipfile.ZipFile(test_suite) as zip_inp:
             if not any(
-                os.path.basename(f) == eu.METADATA_XML_NAME for f in zip_inp.namelist()
+                os.path.basename(f) == mu.METADATA_XML_NAME for f in zip_inp.namelist()
             ):
-                raise ExecutionError("No %s in %s" % (eu.METADATA_XML_NAME, test_suite))
+                raise ExecutionError("No %s in %s" % (mu.METADATA_XML_NAME, test_suite))
 
             for xml_file in (l for l in zip_inp.namelist() if l.endswith(".xml")):
                 logging.debug("Considering %s", xml_file)
@@ -577,7 +568,7 @@ class SuiteExecutor:
                     _remove_current_tracefile()
                     _remove_harness_gcda_file()
 
-                if self._compute_sequence:
+                if self._compute_sequence or self._reduce_tests:
                     # if we use individual tests with lcov we extract the info from the summarized file
                     if coverage_test:
                         result_target.lines_executed, result_target.branches_executed, result_target.branches_taken = (
@@ -588,17 +579,30 @@ class SuiteExecutor:
                         result_target.lines_executed, result_target.branches_executed, result_target.branches_taken = executor.get_coverage(
                             program_file
                         )
-                    result_target.coverage_sequence.append(
-                        float(result_target.branches_taken.split("%")[0])
-                    )
+
+                    new_coverage = float(result_target.branches_taken.split("%")[0])
+                    if self._reduce_tests:
+                        if result_target.coverage_sequence:
+                            old_coverage = result_target.coverage_sequence[-1]
+                        else:
+                            old_coverage = 0
+                        if not self._check_for_error and old_coverage < new_coverage:
+                            logging.debug(
+                                "Test %s increased coverage from %s%% to %s%%",
+                                tv.origin,
+                                old_coverage,
+                                new_coverage,
+                            )
+                            result_target.successful_tests.append(tv)
+
+                    result_target.coverage_sequence.append(new_coverage)
 
                 result_target.results.append(next_result)
 
-                if next_result == COVERS:
-                    result_target.successful_test = tv
-                    if self._stop_after_success:
-                        logging.info("Stopping. Error found for test %s", tv)
-                        break
+                if next_result == COVERS and self._check_for_error:
+                    result_target.successful_tests.append(tv)
+                    logging.info("Stopping. Error found for test %s", tv)
+                    break
 
         finally:
             if not self._compute_sequence:

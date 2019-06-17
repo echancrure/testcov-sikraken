@@ -20,10 +20,10 @@ import subprocess
 
 ERROR_STRING = "Error found."
 
-COVER_LINES = "lines"
-COVER_BRANCHES = "branches"
-COVER_CONDITIONS = "conditions"
-COVER_ERRORS = "error"
+COVER_LINES = "COVER( init(main()), FQL(COVER EDGES(@BASICBLOCKENTRY)) )"
+COVER_BRANCHES = "COVER( init(main()), FQL(COVER EDGES(@DECISIONEDGE)) )"
+COVER_CONDITIONS = "COVER( init(main()), FQL(COVER EDGES(@CONDITIONEDGE)) )"
+COVER_ERRORS = "COVER( init(main()), FQL(COVER EDGES(@CALL(__VERIFIER_error))) )"
 
 COVERAGE_GOALS = {
     "@DECISIONEDGE": COVER_BRANCHES,
@@ -31,8 +31,6 @@ COVERAGE_GOALS = {
     "@BASICBLOCKENTRY": COVER_LINES,
     "@CALL(__VERIFIER_error)": COVER_ERRORS,
 }
-
-METADATA_XML_NAME = "metadata.xml"
 
 MACHINE_MODEL_32 = "-m32"
 MACHINE_MODEL_64 = "-m64"
@@ -140,7 +138,7 @@ class SuiteExecutionResult:
         self.lines_executed = "0%"
         self.branches_executed = "0%"
         self.branches_taken = "0%"
-        self.successful_test = None
+        self.successful_tests = list()
         self.coverage_sequence = list()
         self.coverage_tests = list()
 
