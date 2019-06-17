@@ -17,6 +17,7 @@ setup(
     scripts=['bin/tbf-testsuite-validator'],
     install_requires=[
         'lxml>=4.0.0',
+        'benchexec>=1.20',
     ],
     setup_requires=[
         'nose>=1.0',

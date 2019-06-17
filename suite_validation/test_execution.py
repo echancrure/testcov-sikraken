@@ -296,7 +296,11 @@ class TestSuiteExecutor(TempDirExecutor):
         harness_file = _get_harness_file_target()
         compile_output_file = _get_compile_target()
         return ex.SuiteExecutor(
-            stop_after_found, timelimit, harness_file, compile_output_file
+            stop_after_found,
+            timelimit,
+            harness_file,
+            compile_output_file,
+            isolate_tests=False,
         )
 
     def test_run_suite_valid(self):

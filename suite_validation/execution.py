@@ -224,12 +224,11 @@ class ExecutionRunner:
 
         if executable and os.path.exists(executable):
             run_result = eu.execute(
-                [executable],
+                self._get_execute_cmd(executable),
                 quiet=True,
                 input_str=input_vector,
                 timelimit=self.timelimit,
             )
-
             if eu.found_err(run_result):
                 logging.debug("Error found for test %s", test_vector)
                 return COVERS
@@ -240,6 +239,10 @@ class ExecutionRunner:
                 logging.debug("Non-0 return code for test %s", test_vector)
             return UNKNOWN
         return ERROR
+
+    @staticmethod
+    def _get_execute_cmd(executable):
+        return [executable]
 
     @staticmethod
     def _get_input_vector(test_vector, escape_newline=False):
@@ -330,6 +333,25 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
         return lines_executed, branches_executed, branches_taken
 
 
+class IsolatingRunner(CoverageMeasuringExecutionRunner):
+    @staticmethod
+    def _get_execute_cmd(executable):
+        # At the moment, this does not consider executables provided through PATH
+        return [
+            "containerexec",
+            "--overlay-dir",
+            os.getcwd(),
+            "--hidden-dir",
+            "/sys/kernel/debug",
+            "--result-files",
+            "harness.gcda",
+            "--output-dir",
+            ".",
+            "--",
+            os.path.join(".", os.path.relpath(executable, start="./")),
+        ]
+
+
 class SuiteExecutor:
     """Provides methods to execute a full test suite in the XML format."""
 
@@ -341,6 +363,7 @@ class SuiteExecutor:
         compile_target="a.out",
         compute_sequence=False,
         overwrite_files=True,
+        isolate_tests=True,
     ):
         self._stop_after_success = stop_after_found_error
         self._timelimit = timelimit_per_run
@@ -349,6 +372,7 @@ class SuiteExecutor:
         self._compile_target = compile_target
         self._compute_sequence = compute_sequence
         self._overwrite_files = overwrite_files
+        self._isolate_tests = isolate_tests
 
     def run(self, program_file, test_suite, machine_model, result_target=None):
         """Execute the given tests on the given program.
@@ -376,13 +400,22 @@ class SuiteExecutor:
         if result_target is None:
             result_target = eu.SuiteExecutionResult()
 
-        executor = CoverageMeasuringExecutionRunner(
-            machine_model,
-            self._timelimit,
-            self._harness_file_target,
-            self._compile_target,
-            self._overwrite_files,
-        )
+        if self._isolate_tests:
+            executor = IsolatingRunner(
+                machine_model,
+                self._timelimit,
+                self._harness_file_target,
+                self._compile_target,
+                self._overwrite_files,
+            )
+        else:
+            executor = CoverageMeasuringExecutionRunner(
+                machine_model,
+                self._timelimit,
+                self._harness_file_target,
+                self._compile_target,
+                self._overwrite_files,
+            )
 
         metadata = self._get_metadata(test_suite)
         if metadata is None:
