@@ -586,7 +586,7 @@ class SuiteExecutor:
                             old_coverage = result_target.coverage_sequence[-1]
                         else:
                             old_coverage = 0
-                        if old_coverage < new_coverage:
+                        if not self._check_for_error and old_coverage < new_coverage:
                             logging.debug(
                                 "Test %s increased coverage from %s%% to %s%%",
                                 tv.origin,
