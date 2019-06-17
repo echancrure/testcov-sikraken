@@ -22,7 +22,7 @@ char * get_input();
 
 int parse_input_from(char * inp_var, char * format, void * destination) {
     char val;
-    char format_with_fallback[7];
+    char format_with_fallback[9];
     strcpy(format_with_fallback, format);
     strcat(format_with_fallback, "%c");
     char leftover;
