@@ -259,13 +259,25 @@ def get_test_coverage_from_lcov_file(program_name, trace_file):
 
 def write_test_coverages_to_dir(output_dir, overwrite, exec_results):
     output_file = os.path.join(output_dir, FILE_NAME_TEST_COVERAGES)
-    with open(output_file, mode="w" if overwrite else "a") as individual_test_cov_file:
-        writer = csv.writer(
-            individual_test_cov_file, delimiter=DELIMITER_TEST_COVERAGES
-        )
-        if overwrite:
+    if overwrite:
+        with open(output_file, mode="w") as individual_test_cov_file:
+            writer = csv.writer(
+                individual_test_cov_file, delimiter=DELIMITER_TEST_COVERAGES
+            )
             writer.writerow(HEADER)
-        _write_csv_rows_from_test_coverages(writer, exec_results.coverage_tests)
+            _write_csv_rows_from_test_coverages(writer, exec_results.coverage_tests)
+    else:
+        if not os.path.exists(output_file):
+            with open(output_file, mode="w") as individual_test_cov_file:
+                writer = csv.writer(
+                    individual_test_cov_file, delimiter=DELIMITER_TEST_COVERAGES
+                )
+            writer.writerow(HEADER)
+        with open(output_file, mode="a") as individual_test_cov_file:
+            writer = csv.writer(
+                individual_test_cov_file, delimiter=DELIMITER_TEST_COVERAGES
+            )
+            _write_csv_rows_from_test_coverages(writer, exec_results.coverage_tests)
 
 
 def _write_csv_rows_from_test_coverages(writer, test_coverages):
