@@ -21,8 +21,8 @@ from enum import Enum
 import os
 import logging
 import shutil
-from suite_validation import execution_utils as eu
 import csv
+from suite_validation import execution_utils as eu
 
 # Constants for csv output
 FILE_NAME_TEST_COVERAGES = "individual-test-coverages.csv"
