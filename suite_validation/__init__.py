@@ -47,12 +47,22 @@ class IllegalArgumentError(Exception):
 def get_parser():
     parser = argparse.ArgumentParser(prog="test-suite validator")
 
+    parser.add_argument("--version", "-v", action="version", version=__VERSION__)
+
     parser.add_argument(
         "--goal",
         dest="goal_file",
         action="store",
         required=True,
         help="coverage goal file",
+    )
+
+    parser.add_argument(
+        "--test-suite",
+        dest="test_suite",
+        action="store",
+        help="zip-file that contains test suite",
+        required=True,
     )
 
     parser.add_argument(
@@ -65,22 +75,12 @@ def get_parser():
     )
 
     parser.add_argument(
-        "--no-overwrite",
-        dest="overwrite",
-        action="store_false",
-        default=True,
-        help="don't overwrite existing files (e.g., the harness or executable)",
-    )
-
-    parser.add_argument(
         "--output",
         dest="output_dir",
         action="store",
         default="output",
         help="output directory to write to",
     )
-
-    parser.add_argument("--version", "-v", action="version", version=__VERSION__)
 
     machine_model_args = parser.add_mutually_exclusive_group()
     machine_model_args.add_argument(
@@ -99,11 +99,19 @@ def get_parser():
     )
 
     parser.add_argument(
-        "--test-suite",
-        dest="test_suite",
-        action="store",
-        help="zip-file that contains test suite",
-        required=True,
+        "--verbose",
+        dest="verbose",
+        action="store_true",
+        default=False,
+        help="show messages verbose",
+    )
+
+    parser.add_argument(
+        "--no-overwrite",
+        dest="overwrite",
+        action="store_false",
+        default=True,
+        help="don't overwrite existing files (e.g., the harness or executable)",
     )
 
     parser.add_argument(
@@ -140,14 +148,6 @@ def get_parser():
         default=True,
         help="don't create plots for coverage statistics",
         required=False,
-    )
-
-    parser.add_argument(
-        "--verbose",
-        dest="verbose",
-        action="store_true",
-        default=False,
-        help="show messages verbose",
     )
 
     parser.add_argument("file", action="store", help="program file")
