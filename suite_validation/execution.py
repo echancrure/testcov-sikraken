@@ -428,7 +428,7 @@ class SuiteExecutor:
 
     def __init__(
         self,
-        check_for_error,
+        goal,
         timelimit_per_run,
         harness_file_target="harness.c",
         compile_target="a.out",
@@ -438,7 +438,8 @@ class SuiteExecutor:
         isolate_tests=True,
         compute_individuals=True,
     ):
-        self._check_for_error = check_for_error
+        self._check_for_error = goal == eu.COVER_ERRORS
+        self._goal = goal
         self._timelimit = timelimit_per_run
 
         self._harness_file_target = harness_file_target
@@ -544,6 +545,18 @@ class SuiteExecutor:
                     else:
                         logging.debug("File %s is no valid testcase", xml_file)
 
+    def _get_coverage_for_goal(self, result_target):
+        if self._goal == eu.COVER_BRANCHES:
+            return result_target.branches_taken
+        if self._goal == eu.COVER_CONDITIONS:
+            return result_target.branches_executed
+        if self._goal == eu.COVER_LINES:
+            return result_target.lines_executed
+        if self._goal == eu.COVER_ERRORS:
+            return result_target.branches_taken
+        assert False, "Unhandled coverage goal: {}".format(self._goal)
+        return None
+
     def _execute_tests(self, program_file, test_vectors, executor, result_target):
         """Executes all test vectors on the given program using the given executor
         and puts the results into result_target."""
@@ -580,7 +593,9 @@ class SuiteExecutor:
                             program_file
                         )
 
-                    new_coverage = float(result_target.branches_taken.split("%")[0])
+                    new_coverage = float(
+                        self._get_coverage_for_goal(result_target).split("%")[0]
+                    )
                     if self._reduce_tests:
                         if result_target.coverage_sequence:
                             old_coverage = result_target.coverage_sequence[-1]

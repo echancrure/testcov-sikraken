@@ -295,7 +295,7 @@ def main():
     compute_individuals = args.individual_test_cov
     try:
         executor = execution.SuiteExecutor(
-            args.check_for_error,
+            args.goal,
             args.timelimit_per_run,
             compute_sequence=args.print_seq_file is not None,
             reduce_tests=args.reduce_tests,
