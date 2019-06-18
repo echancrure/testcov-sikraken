@@ -27,9 +27,12 @@ For development, we use the [`black`](https://github.com/python/black) formatter
 [`pylint`](https://www.pylint.org/)
 and [`nosetest`](https://nose.readthedocs.io/en/latest/).
 
-You can use [`pipenv`](https://github.com/pypa/pipenv)
-to install dependencies automatically.
+## Installation
 
+To install, you can run `pip install .`
+or `python3 setup.py install`.
+
+You can also use [`pipenv`](https://github.com/pypa/pipenv).
 
 ## Support
 
