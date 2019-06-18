@@ -295,20 +295,11 @@ class TestSuiteExecutor(TempDirExecutor):
         self.program_file = TEST_FILE_WITH_ERR
 
     @staticmethod
-    def get_runner(stop_after_found=False, timelimit=None):
-        harness_file = _get_harness_file_target()
-        compile_output_file = _get_compile_target()
-        return ex.SuiteExecutor(
-            stop_after_found,
-            timelimit,
-            harness_file,
-            compile_output_file,
-            isolate_tests=False,
-        )
-
-    @staticmethod
-    def get_runner_with_goal(
-        goal, timelimit=None, compute_sequence=True, compute_individuals=True
+    def get_runner(
+        goal=eu.COVER_BRANCHES,
+        timelimit=None,
+        compute_sequence=True,
+        compute_individuals=True,
     ):
         harness_file = _get_harness_file_target()
         compile_output_file = _get_compile_target()
@@ -403,24 +394,19 @@ class TestSuiteExecutor(TempDirExecutor):
 
     def test_compute_individuals_produces_same_coverage(self):
         for machine_model in MACHINE_MODELS:
-            yield self._compare_run_suite_with_config_sequence_and_individual_coverage, machine_model, SUITE_VALID_ZIP
+            for goal in eu.COVERAGE_GOALS.values():
+                runners = [
+                    self.get_runner(goal),
+                    self.get_runner(goal, compute_individuals=False),
+                    self.get_runner(goal, compute_sequence=False),
+                    self.get_runner(
+                        goal, compute_sequence=False, compute_individuals=False
+                    ),
+                ]
+                runners_tuples = itertools.combinations(runners, 2)
 
-    def _compare_run_suite_with_config_sequence_and_individual_coverage(
-        self, machine_model, suite_location
-    ):
-        for goal in eu.COVERAGE_GOALS.values():
-            runner_first = self.get_runner_with_goal(goal)
-            runner_second = self.get_runner_with_goal(goal, compute_individuals=False)
-            runner_third = self.get_runner_with_goal(goal, compute_sequence=False)
-            runner_fourth = self.get_runner_with_goal(
-                goal, compute_sequence=False, compute_individuals=False
-            )
-            runners = [runner_first, runner_second, runner_third, runner_fourth]
-            runners_tuples = list(itertools.combinations(runners, 2))
-            for runners in runners_tuples:
-                self._compare_coverage_results(
-                    runners[0], runners[1], suite_location, machine_model
-                )
+                for r1, r2 in runners_tuples:
+                    yield self._compare_coverage_results, r1, r2, SUITE_VALID_ZIP, machine_model
 
     def _compare_coverage_results(
         self, runner_one, runner_two, suite_location, machine_model
