@@ -16,7 +16,12 @@ about its usage.
 ## Requirements
 
 * Python >= 3.5
+* clang and llvm >= 3.9
+
+The following requirements are automatically installed by `pipenv` or `setup.py` upon installation,
+but can also be installed manually (e.g., through `pip`):
 * lxml >= 4.0
+* BenchExec >= 1.20
 
 For development, we use the [`black`](https://github.com/python/black) formatter,
 [`pylint`](https://www.pylint.org/)
