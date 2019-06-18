@@ -107,28 +107,29 @@ def get_parser():
     )
 
     parser.add_argument(
-        "--sequence-file",
+        "--no-sequence-file",
         dest="print_seq_file",
-        action="store",
-        default=None,
-        help="print sequence of accumulated coverage per executed test to file",
+        action="store_const",
+        const=None,
+        default="coverage.seq",
+        help="don't print sequence of accumulated coverage per executed test to file",
         required=False,
     )
 
     parser.add_argument(
-        "--individual-test-coverage",
+        "--no-individual-test-coverage",
         dest="individual_test_cov",
-        action="store_true",
-        default=False,
-        help="print coverage of each test to file",
+        action="store_false",
+        default=True,
+        help="don't print coverage of each test to file",
     )
 
     parser.add_argument(
-        "--create-reduced-suite",
+        "--no-create-reduced-suite",
         dest="reduce_tests",
-        action="store_true",
-        default=False,
-        help="create a reduced test suite",
+        action="store_false",
+        default=True,
+        help="don't create a reduced test suite",
         required=False,
     )
 
