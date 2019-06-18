@@ -1,5 +1,5 @@
-# tbf-testsuite-validator is tool for validation and execution of test suites.
-# This file is part of tbf-testsuite-validator.
+# testsuite-validator is tool for validation and execution of test suites.
+# This file is part of testsuite-validator.
 #
 # Copyright (C) 2018  Dirk Beyer
 # All rights reserved.
@@ -15,7 +15,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Main module of tbf-testsuite-validator."""
+"""Main module of testsuite-validator."""
 
 import argparse
 import logging
@@ -45,7 +45,7 @@ class IllegalArgumentError(Exception):
 
 
 def get_parser():
-    parser = argparse.ArgumentParser(prog="tbf test-suite validator")
+    parser = argparse.ArgumentParser(prog="test-suite validator")
 
     parser.add_argument(
         "--goal",

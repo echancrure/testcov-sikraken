@@ -8,13 +8,13 @@ with open('suite_validation/__init__.py') as inp:
                         re.M).group(1)
 
 setup(
-    name='tbf-testsuite-validator',
+    name='testsuite-validator',
     version=VERSION,
     author='Dirk Beyer',
     description='A container-based test-suite executor',
     url='https://gitlab.com/sosy-lab/software/testsuite-validator',
     packages=['suite_validation'],
-    scripts=['bin/tbf-testsuite-validator'],
+    scripts=['bin/testsuite-validator'],
     install_requires=[
         'lxml>=4.0.0',
         'benchexec>=1.20',
