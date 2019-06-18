@@ -21,10 +21,17 @@ from enum import Enum
 import os
 import logging
 import shutil
+import csv
 from suite_validation import execution_utils as eu
 
-FILE_NAME_TEST_COVERAGES = "individual-test-coverages"
+# Constants for csv output
+FILE_NAME_TEST_COVERAGES = "individual-test-coverages.csv"
 LINES_COVERED = "Lines covered"
+BRANCH_CONDITIONS_EXECUTED = "Branch conditions executed"
+BRANCHES_COVERED = "Branches covered"
+TEST = "Test"
+HEADER = [TEST, LINES_COVERED, BRANCH_CONDITIONS_EXECUTED, BRANCHES_COVERED]
+DELIMITER_TEST_COVERAGES = "\t"
 
 MODULE_DIRECTORY = os.path.join(os.path.dirname(__file__), os.path.pardir)
 
@@ -119,14 +126,24 @@ class TestCoverage:
             return 1.0
         return round(float(self.branches_hit) / float(self.branches_found), 4)
 
-    def get_coverage_ratios_as_percent_expressions(self):
+    def compute_coverage_ratios_in_percent(self):
         line_coverage = self.compute_line_coverage()
         branch_condition_coverage = self.compute_branch_conditions_executed()
         branch_coverage = self.compute_branch_coverage()
         return (
-            str(round(line_coverage * 100, 2)) + "%",
-            str(round(branch_condition_coverage * 100, 2)) + "%",
-            str(round(branch_coverage * 100, 2)) + "%",
+            round(line_coverage * 100, 2),
+            round(branch_condition_coverage * 100, 2),
+            round(branch_coverage * 100, 2),
+        )
+
+    def get_coverage_ratios_as_percent_expressions(self):
+        line_coverage, branch_condition_coverage, branch_coverage = (
+            self.compute_coverage_ratios_in_percent()
+        )
+        return (
+            str(line_coverage) + "%",
+            str(branch_condition_coverage) + "%",
+            str(branch_coverage) + "%",
         )
 
 
@@ -240,21 +257,34 @@ def get_test_coverage_from_lcov_file(program_name, trace_file):
     )
 
 
-def write_test_coverages_to_dir(output_dir, program, exec_results):
+def write_test_coverages_to_dir(output_dir, overwrite, exec_results):
     output_file = os.path.join(output_dir, FILE_NAME_TEST_COVERAGES)
-    with open(output_file, "w") as outp:
-        outp.write("Program: " + program + "\n")
-        for test_coverage in exec_results.coverage_tests:
-            outp.write("\n")
-            outp.write("Test input: " + str(test_coverage.test_vector) + "\n")
-            outp.write("Test result: " + test_coverage.result + "\n")
-            lines_executed, branches_executed, branches_taken = (
-                test_coverage.get_coverage_ratios_as_percent_expressions()
-            )
-            outp.write("Lines covered: " + lines_executed + "\n")
-            outp.write("Branch conditions executed: " + branches_executed + "\n")
-            outp.write("Branches covered: " + branches_taken + "\n")
-        outp.close()
+    write_header = False
+    if not os.path.exists(output_file) or overwrite:
+        write_header = True
+    mode = "w" if overwrite else "a"
+    with open(output_file, mode=mode) as individual_test_cov_file:
+        writer = csv.writer(
+            individual_test_cov_file, delimiter=DELIMITER_TEST_COVERAGES
+        )
+        if write_header:
+            writer.writerow(HEADER)
+        _write_csv_rows_from_test_coverages(writer, exec_results.coverage_tests)
+
+
+def _write_csv_rows_from_test_coverages(writer, test_coverages):
+    for test_coverage in test_coverages:
+        lines_executed, branches_executed, branches_taken = (
+            test_coverage.compute_coverage_ratios_in_percent()
+        )
+        writer.writerow(
+            [
+                test_coverage.test_vector.origin,
+                lines_executed,
+                branches_executed,
+                branches_taken,
+            ]
+        )
 
 
 def combine_tracefile_with_previous(trace_file, trace_file_summary):
