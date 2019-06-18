@@ -23,6 +23,9 @@ but can also be installed manually (e.g., through `pip`):
 * lxml >= 4.0
 * BenchExec >= 1.20
 
+Optional, for plotting (if not available, run `testsuite-validator` with argument `--no-plots`):
+* matplotlib >= 3.1.0
+
 For development, we use the [`black`](https://github.com/python/black) formatter,
 [`pylint`](https://www.pylint.org/)
 and [`nosetest`](https://nose.readthedocs.io/en/latest/).

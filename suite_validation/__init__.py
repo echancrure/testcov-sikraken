@@ -134,6 +134,15 @@ def get_parser():
     )
 
     parser.add_argument(
+        "--no-plots",
+        dest="write_plots",
+        action="store_false",
+        default=True,
+        help="don't create plots for coverage statistics",
+        required=False,
+    )
+
+    parser.add_argument(
         "--verbose",
         dest="verbose",
         action="store_true",
@@ -350,6 +359,15 @@ def main():
             cov.write_test_coverages_to_dir(
                 args.output_dir, args.overwrite, exec_results
             )
+        if args.write_plots:
+            try:
+                from suite_validation import plotting
+
+                plotting.create_plots(
+                    exec_results, args.goal, args.output_dir, args.overwrite
+                )
+            except ImportError as e:
+                logging.warning("Not plotting coverage statistics: %s", e.msg)
 
         print()
         _print_suite_execution_results(exec_results)
