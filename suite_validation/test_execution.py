@@ -272,7 +272,7 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
             runner.run(test_file, tv)
             tracefile_folder = ex.SuiteExecutor.create_tracefile_folder()
             target_tracefile = ex.SuiteExecutor.get_tracefile_path(tracefile_folder)
-            lines, _, branches = runner.get_coverage(test_file, target_tracefile)
+            lines, _, branches = runner.get_coverage(test_file, target_tracefile).get_coverage_ratios_as_percent_expressions()
             lines = float(lines.split("%")[0])  # remove '%' and parantheses at end
             branches = float(
                 branches.split("%")[0]
@@ -405,32 +405,43 @@ class TestSuiteExecutor(TempDirExecutor):
                 ]
                 runners_tuples = itertools.combinations(runners, 2)
 
-                for r1, r2 in runners_tuples:
-                    yield self._compare_coverage_results, r1, r2, SUITE_VALID_ZIP, machine_model
+                for runner1, runner2 in runners_tuples:
+                    yield self._check_coverage_results_equal, runner1, runner2, SUITE_VALID_ZIP, machine_model
 
-    def _compare_coverage_results(
-        self, runner_one, runner_two, suite_location, machine_model
+    @staticmethod
+    def _get_config_str(runner):
+        # pylint: disable=protected-access
+        return "SuiteExecutor[ComputeInd={},ComputeSeq={}]".format(
+            runner._compute_individual_test_coverages, runner._compute_sequence
+        )
+
+    def _check_coverage_results_equal(
+        self, runner1, runner2, suite_location, machine_model
     ):
-        result_obj = runner_one.run(self.program_file, suite_location, machine_model)
-        line_coverage_no_individuals, branch_conditions_executed_no_individuals, branch_coverage_no_individuals = (
+        result_obj = runner1.run(self.program_file, suite_location, machine_model)
+        lines1, conditions1, branches1 = (
             result_obj.lines_executed,
             result_obj.branches_executed,
             result_obj.branches_taken,
         )
 
-        result_obj = runner_two.run(TEST_FILE_WITH_ERR, suite_location, machine_model)
-        line_coverage_individuals, branch_conditions_executed_individuals, branch_coverage_individuals = (
+        result_obj = runner2.run(self.program_file, suite_location, machine_model)
+        lines2, conditions2, branches2 = (
             result_obj.lines_executed,
             result_obj.branches_executed,
             result_obj.branches_taken,
         )
 
-        eq_(line_coverage_individuals, line_coverage_no_individuals)
+        config1 = self._get_config_str(runner1)
+        config2 = self._get_config_str(runner2)
+        err_msg = "Unequal for {} and {}".format(config1, config2)
+        eq_(lines1, lines2, err_msg + ": {} vs {}".format(lines1, lines2))
         eq_(
-            branch_conditions_executed_individuals,
-            branch_conditions_executed_no_individuals,
+            conditions1,
+            conditions2,
+            err_msg + ": {} vs {}".format(conditions1, conditions2)
         )
-        eq_(branch_coverage_individuals, branch_coverage_no_individuals)
+        eq_(branches1, branches2, err_msg + ": {} vs {}".format(branches1, branches2))
 
 
 def _get_test_directory():
