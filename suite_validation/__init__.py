@@ -349,7 +349,9 @@ def main():
                     )
 
         if exec_results.coverage_tests:
-            cov.write_test_coverages_to_dir(args.output_dir, args.file, exec_results)
+            cov.write_test_coverages_to_dir(
+                args.output_dir, args.overwrite, exec_results
+            )
 
         print()
         _print_suite_execution_results(exec_results)
