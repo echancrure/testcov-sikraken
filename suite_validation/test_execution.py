@@ -330,7 +330,7 @@ class TestSuiteExecutor(TempDirExecutor):
         conds_ex = result_obj.branches_executed
         branches = result_obj.branches_taken
 
-        assert len(results) == 2, "Not both tests executed"
+        eq_(len(results), 2, "Not both tests executed")
         assert results.count(ex.COVERS) == 1 and results.count(ex.UNKNOWN) == 1, (
             "Expected exactly one result to be %s and one to be %s: %s"
             % (ex.COVERS, ex.UNKNOWN, results)
@@ -425,12 +425,12 @@ class TestSuiteExecutor(TempDirExecutor):
             result_obj.branches_taken,
         )
 
-        assert line_coverage_individuals == line_coverage_no_individuals
-        assert (
-            branch_conditions_executed_individuals
-            == branch_conditions_executed_no_individuals
+        eq_(line_coverage_individuals, line_coverage_no_individuals)
+        eq_(
+            branch_conditions_executed_individuals,
+            branch_conditions_executed_no_individuals,
         )
-        assert branch_coverage_individuals == branch_coverage_no_individuals
+        eq_(branch_coverage_individuals, branch_coverage_no_individuals)
 
 
 def _get_test_directory():
