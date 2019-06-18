@@ -337,8 +337,6 @@ def main():
                 )
 
         if exec_results.coverage_sequence and args.print_seq_file:
-            if not os.path.exists(args.output_dir):
-                os.mkdir(args.output_dir)
             seq_file = os.path.join(args.output_dir, args.print_seq_file)
             if not args.overwrite and os.path.exists(seq_file):
                 logging.info("Not overwriting %s", seq_file)
