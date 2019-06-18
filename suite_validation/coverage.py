@@ -30,6 +30,7 @@ LINES_COVERED = "Lines covered"
 BRANCH_CONDITIONS_EXECUTED = "Branch conditions executed"
 BRANCHES_COVERED = "Branches covered"
 TEST = "Test"
+HEADER = [TEST, LINES_COVERED, BRANCH_CONDITIONS_EXECUTED, BRANCHES_COVERED]
 DELIMITER_TEST_COVERAGES = "\t"
 
 MODULE_DIRECTORY = os.path.join(os.path.dirname(__file__), os.path.pardir)
@@ -258,23 +259,13 @@ def get_test_coverage_from_lcov_file(program_name, trace_file):
 
 def write_test_coverages_to_dir(output_dir, overwrite, exec_results):
     output_file = os.path.join(output_dir, FILE_NAME_TEST_COVERAGES)
-    if overwrite:
-        with open(output_file, mode="w") as individual_test_cov_file:
-            writer = csv.writer(
-                individual_test_cov_file, delimiter=DELIMITER_TEST_COVERAGES
-            )
-            writer.writerow(
-                [TEST, LINES_COVERED, BRANCH_CONDITIONS_EXECUTED, BRANCHES_COVERED]
-            )
-            _write_csv_rows_from_test_coverages(writer, exec_results.coverage_tests)
-        individual_test_cov_file.close()
-    else:
-        with open(output_file, mode="a") as individual_test_cov_file:
-            writer = csv.writer(
-                individual_test_cov_file, delimiter=DELIMITER_TEST_COVERAGES
-            )
-            _write_csv_rows_from_test_coverages(writer, exec_results.coverage_tests)
-        individual_test_cov_file.close()
+    with open(output_file, mode="w" if overwrite else "a") as individual_test_cov_file:
+        writer = csv.writer(
+            individual_test_cov_file, delimiter=DELIMITER_TEST_COVERAGES
+        )
+        if overwrite:
+            writer.writerow(HEADER)
+        _write_csv_rows_from_test_coverages(writer, exec_results.coverage_tests)
 
 
 def _write_csv_rows_from_test_coverages(writer, test_coverages):
