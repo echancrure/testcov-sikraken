@@ -270,10 +270,8 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
         for tv in vectors:
             runner.run(test_file, tv)
             tracefile_folder = ex.SuiteExecutor.create_tracefile_folder()
-            output_tracefile = ex.SuiteExecutor.get_tracefile_path(tracefile_folder)
-            lines, _, branches = runner.get_coverage(
-                test_file, output_tracefile, tracefile_folder
-            )
+            target_tracefile = ex.SuiteExecutor.get_tracefile_path(tracefile_folder)
+            lines, _, branches = runner.get_coverage(test_file, target_tracefile)
             lines = float(lines.split("%")[0])  # remove '%' and parantheses at end
             branches = float(
                 branches.split("%")[0]

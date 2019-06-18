@@ -20,9 +20,25 @@
 from enum import Enum
 import os
 import logging
+import shutil
+from suite_validation import execution_utils as eu
 
 FILE_NAME_TEST_COVERAGES = "individual-test-coverages"
 LINES_COVERED = "Lines covered"
+
+MODULE_DIRECTORY = os.path.join(os.path.dirname(__file__), os.path.pardir)
+
+LCOV_WITH_BRANCH_COVERAGE = "lcov_branch_coverage=1"
+LCOV_NO_RECURSION = "--no-recursion"
+LCOV_USED_GCOV_TOOL = os.path.join(MODULE_DIRECTORY, "bin/llvm-gcov")
+
+LCOV_COMMAND_PREFIX = [
+    "lcov",
+    "--gcov-tool",
+    LCOV_USED_GCOV_TOOL,
+    "--rc",
+    LCOV_WITH_BRANCH_COVERAGE,
+]
 
 
 class LcovPrefix(Enum):
@@ -239,3 +255,40 @@ def write_test_coverages_to_dir(output_dir, program, exec_results):
             outp.write("Branch conditions executed: " + branches_executed + "\n")
             outp.write("Branches covered: " + branches_taken + "\n")
         outp.close()
+
+
+def combine_tracefile_with_previous(trace_file, trace_file_summary):
+    if os.path.exists(trace_file_summary):
+        cmd = LCOV_COMMAND_PREFIX + [
+            "-a",
+            trace_file,
+            "-a",
+            trace_file_summary,
+            "-o",
+            trace_file_summary,
+        ]
+        eu.execute(cmd, quiet=True)
+    else:
+        shutil.move(trace_file, trace_file_summary)
+
+
+def get_test_coverage_from_data_file(program_name, data_file, output_tracefile):
+    if os.path.exists(data_file):
+        cmd = LCOV_COMMAND_PREFIX + [
+            "-c",
+            "-d",
+            ".",
+            LCOV_NO_RECURSION,
+            "-o",
+            output_tracefile,
+        ]
+        eu.execute(cmd, quiet=True)
+        if os.path.exists(output_tracefile):
+            test_coverage = get_test_coverage_from_lcov_file(
+                program_name, output_tracefile
+            )
+            return test_coverage
+    logging.warning(
+        "Trace file '%s' not created. Returning empty test coverage.", output_tracefile
+    )
+    return TestCoverage(program_name)
