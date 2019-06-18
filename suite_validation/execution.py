@@ -318,9 +318,7 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
 
         if os.path.exists(target_tracefile):
             program_name = os.path.basename(program_file)
-            return cov.get_test_coverage_from_lcov_file(
-                program_name, target_tracefile
-            )
+            return cov.get_test_coverage_from_lcov_file(program_name, target_tracefile)
 
         return self.compute_test_coverage(program_file, target_tracefile)
 
@@ -524,7 +522,9 @@ class SuiteExecutor:
                             program_file, output_tracefile
                         )
 
-                    result_target.lines_executed, result_target.branches_executed, result_target.branches_taken = coverage_summary.get_coverage_ratios_as_percent_expressions()
+                    result_target.lines_executed, result_target.branches_executed, result_target.branches_taken = (
+                        coverage_summary.get_coverage_ratios_as_percent_expressions()
+                    )
 
                     del coverage_summary  # not needed anymore after computation
 
@@ -556,15 +556,13 @@ class SuiteExecutor:
 
         finally:
             if os.path.exists(summary_file):
-                coverage_summary = executor.get_coverage(
-                    program_file, summary_file
-                )
+                coverage_summary = executor.get_coverage(program_file, summary_file)
             else:
                 # if we have no summary file, we compute the info from the gcda
-                coverage_summary = executor.get_coverage(
-                    program_file, output_tracefile
-                )
-            result_target.lines_executed, result_target.branches_executed, result_target.branches_taken = coverage_summary.get_coverage_ratios_as_percent_expressions()
+                coverage_summary = executor.get_coverage(program_file, output_tracefile)
+            result_target.lines_executed, result_target.branches_executed, result_target.branches_taken = (
+                coverage_summary.get_coverage_ratios_as_percent_expressions()
+            )
 
             _remove_tracefile_folder(tracefile_folder)
 

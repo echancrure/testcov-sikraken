@@ -272,7 +272,9 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
             runner.run(test_file, tv)
             tracefile_folder = ex.SuiteExecutor.create_tracefile_folder()
             target_tracefile = ex.SuiteExecutor.get_tracefile_path(tracefile_folder)
-            lines, _, branches = runner.get_coverage(test_file, target_tracefile).get_coverage_ratios_as_percent_expressions()
+            lines, _, branches = runner.get_coverage(
+                test_file, target_tracefile
+            ).get_coverage_ratios_as_percent_expressions()
             lines = float(lines.split("%")[0])  # remove '%' and parantheses at end
             branches = float(
                 branches.split("%")[0]
@@ -439,7 +441,7 @@ class TestSuiteExecutor(TempDirExecutor):
         eq_(
             conditions1,
             conditions2,
-            err_msg + ": {} vs {}".format(conditions1, conditions2)
+            err_msg + ": {} vs {}".format(conditions1, conditions2),
         )
         eq_(branches1, branches2, err_msg + ": {} vs {}".format(branches1, branches2))
 
