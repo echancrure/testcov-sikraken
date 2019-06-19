@@ -20,6 +20,7 @@
 import logging
 import re
 import os
+import sys
 import tempfile
 import zipfile
 import shutil
@@ -608,6 +609,7 @@ class SuiteExecutor:
 
         tracefile_folder = self.create_tracefile_folder()
         try:
+            print("Executing tests.", file=sys.stderr, end="", flush=True)
             for tv in test_vectors:
                 next_result = executor.run(program_file, tv)
 
@@ -624,7 +626,9 @@ class SuiteExecutor:
                     result_target.successful_tests.append(tv)
                     logging.info("Stopping. Error found for test %s", tv)
                     break
+                print(".", file=sys.stderr, end="", flush=True)
         finally:
+            print("Done!", file=sys.stderr, flush=True)  # print newline
             try:
                 summary_file = self._get_summary_file(tracefile_folder)
                 if os.path.exists(summary_file):
