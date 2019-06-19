@@ -252,8 +252,9 @@ class ExecutionRunner:
             return UNKNOWN
         return ERROR
 
-    @staticmethod
-    def _get_execute_cmd(executable):
+    def _get_execute_cmd(self, executable):
+        # pylint: disable=no-self-use
+        # `self` may be used by children
         return [executable]
 
     @staticmethod
@@ -324,22 +325,53 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
 
 
 class IsolatingRunner(CoverageMeasuringExecutionRunner):
-    @staticmethod
-    def _get_execute_cmd(executable):
+    def __init__(
+        self,
+        machine_model,
+        timelimit_per_run,
+        harness_file_target="harness.c",
+        compile_target="a.out",
+        overwrite_files=True,
+        memlimit="100MB",
+        timelimit="20s",
+        cores="2",
+    ):
+        super().__init__(
+            machine_model,
+            timelimit_per_run,
+            harness_file_target,
+            compile_target,
+            overwrite_files,
+        )
+        self._memlimit = memlimit
+        self._timelimit = timelimit
+        self._cpu_cores = cores
+
+    def _get_execute_cmd(self, executable):
         # At the moment, this does not consider executables provided through PATH
-        return [
-            "runexec",
-            "--overlay-dir",
-            os.getcwd(),
-            "--hidden-dir",
-            "/sys/kernel/debug",
-            "--result-files",
-            "harness.gcda",
-            "--output-dir",
-            ".",
-            "--",
-            os.path.join(".", os.path.relpath(executable, start="./")),
-        ]
+        resource_options = []
+        if self._memlimit:
+            resource_options += ["--memlimit", self._memlimit]
+        if self._timelimit:
+            resource_options += ["--timelimit", self._timelimit]
+        if self._cpu_cores:
+            resource_options += ["--cores", self._cpu_cores]
+        return (
+            ["runexec"]
+            + resource_options
+            + [
+                "--overlay-dir",
+                os.getcwd(),
+                "--hidden-dir",
+                "/sys/kernel/debug",
+                "--result-files",
+                "harness.gcda",
+                "--output-dir",
+                ".",
+                "--",
+                os.path.join(".", os.path.relpath(executable, start="./")),
+            ]
+        )
 
 
 class SuiteExecutor:

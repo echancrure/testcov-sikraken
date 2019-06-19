@@ -70,10 +70,10 @@ class TestCoverage:
         file_name,
         lines_hit_counter_dic=None,
         lines_hit=0,
-        lines_found=0,
+        lines_found=None,
         branch_condition_hit_counter_dic=None,
         branches_hit=0,
-        branches_found=0,
+        branches_found=None,
     ):
         self.filename = file_name
         self.lines_hit_counter_dic = lines_hit_counter_dic
@@ -84,10 +84,6 @@ class TestCoverage:
         self.branches_found = branches_found
         self.test_vector = ""
         self.result = ""
-        if self.lines_hit_counter_dic is None:
-            self.lines_hit_counter_dic = {}
-        if self.branch_condition_hit_counter_dic is None:
-            self.branch_condition_hit_counter_dic = {}
 
     def set_test_vector(self, test_vector):
         self.test_vector = test_vector
@@ -96,11 +92,16 @@ class TestCoverage:
         self.result = result
 
     def compute_line_coverage(self):
-        if self.lines_found <= 0:
+        if self.lines_found is None:
+            return 0
+        if self.lines_found == 0:
             return 1.0
         return round(float(self.lines_hit) / float(self.lines_found), 4)
 
     def compute_branch_conditions_executed(self):
+        if self.branch_condition_hit_counter_dic is None:
+            return 0
+
         possible_branch_conditions_executions = (
             len(self.branch_condition_hit_counter_dic.keys()) * 2
         )
@@ -113,7 +114,7 @@ class TestCoverage:
                 lines_with_branch_condition_executed += 1
             if conditions_executed[1]:
                 lines_with_branch_condition_executed += 1
-        if possible_branch_conditions_executions <= 0:
+        if possible_branch_conditions_executions == 0:
             return 1.0
         return round(
             float(lines_with_branch_condition_executed)
@@ -122,7 +123,9 @@ class TestCoverage:
         )
 
     def compute_branch_coverage(self):
-        if self.branches_found <= 0:
+        if self.branches_found is None:
+            return 0
+        if self.branches_found == 0:
             return 1.0
         return round(float(self.branches_hit) / float(self.branches_found), 4)
 
