@@ -395,6 +395,7 @@ class SuiteExecutor:
         memlimit=None,
         cores=None,
         use_runexec=True,
+        info_output=False,
     ):
         self._check_for_error = goal == eu.COVER_ERRORS
         self._goal = goal
@@ -410,6 +411,8 @@ class SuiteExecutor:
         self._memlimit = memlimit
         self._cpu_cores = cores
         self._use_runexec = use_runexec
+
+        self._info_target = sys.stderr if info_output else None
 
     def run(self, program_file, test_suite, machine_model, result_target=None):
         """Execute the given tests on the given program.
@@ -609,7 +612,7 @@ class SuiteExecutor:
 
         tracefile_folder = self.create_tracefile_folder()
         try:
-            print("⏳ Executing tests.", file=sys.stderr, end="", flush=True)
+            print("⏳ Executing tests.", file=self._info_target, end="", flush=True)
             for tv in test_vectors:
                 next_result = executor.run(program_file, tv)
 
@@ -626,9 +629,9 @@ class SuiteExecutor:
                     result_target.successful_tests.append(tv)
                     logging.info("Stopping. Error found for test %s", tv)
                     break
-                print(".", file=sys.stderr, end="", flush=True)
+                print(".", file=self._info_target, end="", flush=True)
         finally:
-            print("\n✔️  Done!", file=sys.stderr, flush=True)  # print newline
+            print("\n✔️  Done!", file=self._info_target, flush=True)  # print newline
             try:
                 summary_file = self._get_summary_file(tracefile_folder)
                 if os.path.exists(summary_file):

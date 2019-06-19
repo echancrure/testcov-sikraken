@@ -355,6 +355,7 @@ def main():
             memlimit=args.memlimit,
             cores=args.cpu_cores,
             use_runexec=args.use_runexec,
+            info_output=True,
         )
 
         executor.run(args.file, args.test_suite, args.machine_model, exec_results)
