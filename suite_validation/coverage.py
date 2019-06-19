@@ -48,6 +48,12 @@ LCOV_COMMAND_PREFIX = [
 ]
 
 
+class CoverageCreationError(Exception):
+    def __init__(self, msg):
+        super().__init__()
+        self.msg = msg
+
+
 class LcovPrefix(Enum):
     FILEPATH = "SF:"
     BRANCH_LINE_CONDITION_HIT_COUNTER = "BRDA:"
@@ -321,7 +327,4 @@ def get_test_coverage_from_data_file(program_name, data_file, output_tracefile):
                 program_name, output_tracefile
             )
             return test_coverage
-    logging.warning(
-        "Trace file '%s' not created. Returning empty test coverage.", output_tracefile
-    )
-    return TestCoverage(program_name)
+    raise CoverageCreationError("Trace file '%s' not created." % output_tracefile)

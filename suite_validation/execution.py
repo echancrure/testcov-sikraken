@@ -310,7 +310,8 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
             return cov.get_test_coverage_from_data_file(
                 program_name, data_file, output_tracefile
             )
-        logging.warning(
+
+        logging.info(
             "Coverage requested without any execution. Returning empty test coverage."
         )
         return cov.TestCoverage(program_name)
@@ -528,61 +529,69 @@ class SuiteExecutor:
             for tv in test_vectors:
                 next_result = executor.run(program_file, tv)
 
-                if self._compute_individual_test_coverages:
+                try:
+                    if self._compute_individual_test_coverages:
 
-                    coverage_test = executor.compute_test_coverage(
-                        program_file, output_tracefile
-                    )
-                    coverage_test.set_result(next_result)
-                    coverage_test.set_test_vector(tv)
-                    result_target.coverage_tests.append(coverage_test)
-
-                    # Create the summary for final output
-                    if os.path.exists(output_tracefile):
-                        cov.combine_tracefile_with_previous(
-                            output_tracefile, summary_file
-                        )
-                        _remove_current_tracefile(output_tracefile)
-                    _remove_harness_gcda_file()
-                    del (
-                        coverage_test
-                    )  # not needed anymore after being stored in result_target
-
-                if self._compute_sequence or self._reduce_tests:
-                    if os.path.exists(summary_file):
-                        coverage_summary = executor.get_coverage(
-                            program_file, summary_file
-                        )
-                    else:
-                        # if we have no summary file, we compute the info from the gcda
-                        coverage_summary = executor.compute_test_coverage(
+                        coverage_test = executor.compute_test_coverage(
                             program_file, output_tracefile
                         )
+                        coverage_test.set_result(next_result)
+                        coverage_test.set_test_vector(tv)
+                        result_target.coverage_tests.append(coverage_test)
 
-                    result_target.lines_executed, result_target.branches_executed, result_target.branches_taken = (
-                        coverage_summary.get_coverage_ratios_as_percent_expressions()
-                    )
-
-                    del coverage_summary  # not needed anymore after computation
-
-                    new_coverage = float(
-                        self._get_coverage_for_goal(result_target).split("%")[0]
-                    )
-                    if self._reduce_tests:
-                        if result_target.coverage_sequence:
-                            old_coverage = result_target.coverage_sequence[-1]
-                        else:
-                            old_coverage = 0
-                        if not self._check_for_error and old_coverage < new_coverage:
-                            logging.debug(
-                                "Test %s increased coverage from %s%% to %s%%",
-                                tv.origin,
-                                old_coverage,
-                                new_coverage,
+                        # Create the summary for final output
+                        if os.path.exists(output_tracefile):
+                            cov.combine_tracefile_with_previous(
+                                output_tracefile, summary_file
                             )
-                            result_target.successful_tests.append(tv)
+                            _remove_current_tracefile(output_tracefile)
+                        _remove_harness_gcda_file()
+                        del (
+                            coverage_test
+                        )  # not needed anymore after being stored in result_target
 
-                    result_target.coverage_sequence.append(new_coverage)
+                    if self._compute_sequence or self._reduce_tests:
+                        if os.path.exists(summary_file):
+                            coverage_summary = executor.get_coverage(
+                                program_file, summary_file
+                            )
+                        else:
+                            # if we have no summary file, we compute the info from the gcda
+                            coverage_summary = executor.compute_test_coverage(
+                                program_file, output_tracefile
+                            )
+
+                        result_target.lines_executed, result_target.branches_executed, result_target.branches_taken = (
+                            coverage_summary.get_coverage_ratios_as_percent_expressions()
+                        )
+
+                        del coverage_summary  # not needed anymore after computation
+
+                        new_coverage = float(
+                            self._get_coverage_for_goal(result_target).split("%")[0]
+                        )
+                        if self._reduce_tests:
+                            if result_target.coverage_sequence:
+                                old_coverage = result_target.coverage_sequence[-1]
+                            else:
+                                old_coverage = 0
+                            if (
+                                not self._check_for_error
+                                and old_coverage < new_coverage
+                            ):
+                                logging.debug(
+                                    "Test %s increased coverage from %s%% to %s%%",
+                                    tv.origin,
+                                    old_coverage,
+                                    new_coverage,
+                                )
+                                result_target.successful_tests.append(tv)
+
+                        result_target.coverage_sequence.append(new_coverage)
+                except cov.CoverageCreationError as e:
+                    logging.info(
+                        "Coverage couldn't be created for test %s: %s", tv.origin, e.msg
+                    )
 
                 result_target.results.append(next_result)
 
@@ -592,14 +601,18 @@ class SuiteExecutor:
                     break
 
         finally:
-            if os.path.exists(summary_file):
-                coverage_summary = executor.get_coverage(program_file, summary_file)
-            else:
-                # if we have no summary file, we compute the info from the gcda
-                coverage_summary = executor.get_coverage(program_file, output_tracefile)
-            result_target.lines_executed, result_target.branches_executed, result_target.branches_taken = (
-                coverage_summary.get_coverage_ratios_as_percent_expressions()
-            )
+            try:
+                if os.path.exists(summary_file):
+                    coverage_summary = executor.get_coverage(program_file, summary_file)
+                else:
+                    # if we have no summary file, we compute the info from the gcda
+                    coverage_summary = executor.get_coverage(program_file, output_tracefile)
+
+                result_target.lines_executed, result_target.branches_executed, result_target.branches_taken = (
+                    coverage_summary.get_coverage_ratios_as_percent_expressions()
+                )
+            except cov.CoverageCreationError as e:
+                logging.info("Coverage couldn't be created for test suite: %s", e.msg)
 
             _remove_tracefile_folder(tracefile_folder)
 
