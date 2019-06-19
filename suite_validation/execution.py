@@ -328,7 +328,7 @@ class IsolatingRunner(CoverageMeasuringExecutionRunner):
     def _get_execute_cmd(executable):
         # At the moment, this does not consider executables provided through PATH
         return [
-            "containerexec",
+            "runexec",
             "--overlay-dir",
             os.getcwd(),
             "--hidden-dir",
