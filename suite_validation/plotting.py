@@ -105,8 +105,11 @@ def _write_coverage_sequence_plot(exec_results, coverage_goal, output_file):
     steps = int(len(exec_results.coverage_sequence) / 10)
     last_idx = -steps - 1
     for idx, cov in enumerate(exec_results.coverage_sequence, 1):
-        if last_idx + steps <= idx and cov > last_cov:
-            ax.text(idx, cov + 0.5, "%.2f" % float(cov), ha="center", va="bottom")
+        if (
+            last_idx + steps <= idx
+            and exec_results.coverage_sequence[-1] > cov > last_cov
+        ):
+            ax.text(idx, cov + 1.5, "%.2f" % float(cov), ha="center", va="bottom")
             last_idx = idx
         last_cov = cov
 
