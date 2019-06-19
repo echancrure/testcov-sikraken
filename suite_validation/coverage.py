@@ -26,11 +26,11 @@ from suite_validation import execution_utils as eu
 
 # Constants for csv output
 FILE_NAME_TEST_COVERAGES = "individual-test-coverages.csv"
-LINES_COVERED = "Lines covered"
-BRANCH_CONDITIONS_EXECUTED = "Branch conditions executed"
-BRANCHES_COVERED = "Branches covered"
+LINES_COVERED = "Line Coverage"
+BRANCHES_COVERED = "Branch Coverage"
+CONDITIONS_COVERED = "Condition Coverage"
 TEST = "Test"
-HEADER = [TEST, LINES_COVERED, BRANCH_CONDITIONS_EXECUTED, BRANCHES_COVERED]
+HEADER = [TEST, LINES_COVERED, BRANCHES_COVERED, CONDITIONS_COVERED]
 DELIMITER_TEST_COVERAGES = "\t"
 
 MODULE_DIRECTORY = os.path.join(os.path.dirname(__file__), os.path.pardir)
