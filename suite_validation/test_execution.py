@@ -37,6 +37,7 @@ TEST_FILE_WITHOUT_ERR = os.path.join(TEST_DIRECTORY, "test.c")
 TEST_FILE_WITH_ERR = os.path.join(TEST_DIRECTORY, "test_false.c")
 TEST_FILE_WITH_NO_TERMINATION = os.path.join(TEST_DIRECTORY, "test_no-termination.c")
 TEST_FILE_WITH_STRINGS = os.path.join(TEST_DIRECTORY, "test_string.c")
+TEST_FILE_COVERAGE = os.path.join(TEST_DIRECTORY, "test_coverages.c")
 
 TEST_HARNESS = os.path.join(TEST_DIRECTORY, "test_harness.c")
 
@@ -45,6 +46,7 @@ SUITE_VALID_ZIP = os.path.join(SUITE_DIR, "suite-valid.zip")
 SUITE_VALID_NESTED_ZIP = os.path.join(SUITE_DIR, "suite-valid-nested.zip")
 SUITE_VALID_STRINGS = os.path.join(SUITE_DIR, "suite-string.zip")
 SUITE_INVALID_ZIP = os.path.join(SUITE_DIR, "suite-metadata-missing.zip")
+SUITE_COVERAGE = os.path.join(SUITE_DIR, "suite-coverages.zip")
 
 MACHINE_MODELS = (eu.MACHINE_MODEL_32, eu.MACHINE_MODEL_64)
 
@@ -435,6 +437,7 @@ class TestSuiteExecutor(TempDirExecutor):
         config1 = self._get_config_str(runner1)
         config2 = self._get_config_str(runner2)
         err_msg = "Unequal for {} and {}".format(config1, config2)
+
         eq_(lines1, lines2, err_msg + ": {} vs {}".format(lines1, lines2))
         eq_(
             conditions1,
@@ -442,6 +445,24 @@ class TestSuiteExecutor(TempDirExecutor):
             err_msg + ": {} vs {}".format(conditions1, conditions2),
         )
         eq_(branches1, branches2, err_msg + ": {} vs {}".format(branches1, branches2))
+
+    def test_coverages_correct(self):
+        for machine_model in MACHINE_MODELS:
+            for goal in eu.COVERAGE_GOALS.values():
+                runner = self.get_runner(goal)
+                yield self._check_coverage_results_correct, runner, machine_model
+
+    @staticmethod
+    def _check_coverage_results_correct(runner, machine_model):
+        result_obj = runner.run(TEST_FILE_COVERAGE, SUITE_COVERAGE, machine_model)
+        cov = result_obj.coverage_total
+
+        eq_(cov.line_coverage, 68.75)
+        eq_(cov.branch_coverage, 50)
+        eq_(cov.condition_coverage, 33.33)
+        eq_(cov.lines_total, 16)
+        eq_(cov.branches_total, 8)
+        eq_(cov.conditions_total, 12)
 
 
 def _get_test_directory():
