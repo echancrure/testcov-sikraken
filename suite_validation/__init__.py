@@ -45,7 +45,10 @@ class IllegalArgumentError(Exception):
 
 
 def get_parser():
-    parser = argparse.ArgumentParser(prog="test-suite validator")
+    parser = argparse.ArgumentParser(
+        prog="test-suite validator",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
 
     parser.add_argument("--version", "-v", action="version", version=__VERSION__)
 
@@ -75,6 +78,23 @@ def get_parser():
     )
 
     parser.add_argument(
+        "--memlimit",
+        dest="memlimit",
+        action="store",
+        default="2GB",
+        help="memory limit for each execution",
+    )
+
+    parser.add_argument(
+        "--cpu-cores",
+        dest="cpu_cores",
+        action="store",
+        type=int,
+        default="1",
+        help="cpu core limit for each execution",
+    )
+
+    parser.add_argument(
         "--output",
         dest="output_dir",
         action="store",
@@ -88,14 +108,16 @@ def get_parser():
         dest="machine_model",
         action="store_const",
         const=eu.MACHINE_MODEL_32,
-        help="Use 32 bit machine model",
+        default=eu.MACHINE_MODEL_32,
+        help="use 32 bit machine model",
     )
     machine_model_args.add_argument(
         "-64",
         dest="machine_model",
         action="store_const",
         const=eu.MACHINE_MODEL_64,
-        help="Use 64 bit machine model",
+        default=eu.MACHINE_MODEL_32,
+        help="use 64 bit machine model",
     )
 
     parser.add_argument(
@@ -104,23 +126,6 @@ def get_parser():
         action="store_true",
         default=False,
         help="show messages verbose",
-    )
-
-    parser.add_argument(
-        "--memlimit",
-        dest="memlimit",
-        action="store",
-        default=None,
-        help="Use runexec with memory limit instead of just containers",
-    )
-
-    parser.add_argument(
-        "--cpu-cores",
-        dest="cpu_cores",
-        action="store",
-        type=int,
-        default=None,
-        help="Use runexec with CPU core limit, instead of just containers",
     )
 
     parser.add_argument(
@@ -136,7 +141,7 @@ def get_parser():
         dest="print_seq_file",
         action="store_const",
         const=None,
-        default="coverage.seq",
+        default="coverage-sequence.csv",
         help="don't print sequence of accumulated coverage per executed test to file",
         required=False,
     )
@@ -183,9 +188,6 @@ def get_parser():
 def parse():
     parser = get_parser()
     args = parser.parse_args()
-
-    if args.machine_model is None:
-        args.machine_model = eu.MACHINE_MODEL_32
 
     args.goal = parse_coverage_goal_file(args.goal_file)
     args.check_for_error = args.goal == eu.COVER_ERRORS
