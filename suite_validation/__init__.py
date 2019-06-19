@@ -167,6 +167,14 @@ def get_parser():
         required=False,
     )
 
+    parser.add_argument(
+        "--no-runexec",
+        dest="use_runexec",
+        action="store_false",
+        default=True,
+        help="Don't use runexec, but only containerexec. Necessary if no access to cgroups is possible. No resource limits will be considered.",
+    )
+
     parser.add_argument("file", action="store", help="program file")
 
     return parser
@@ -331,6 +339,7 @@ def main():
             compute_individuals=compute_individuals,
             memlimit=args.memlimit,
             cores=args.cpu_cores,
+            use_runexec=args.use_runexec,
         )
 
         executor.run(args.file, args.test_suite, args.machine_model, exec_results)

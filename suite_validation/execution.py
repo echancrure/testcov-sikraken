@@ -335,6 +335,7 @@ class IsolatingRunner(CoverageMeasuringExecutionRunner):
         overwrite_files=True,
         memlimit=None,
         cores=None,
+        use_runexec=True,
     ):
         super().__init__(
             machine_model,
@@ -346,11 +347,13 @@ class IsolatingRunner(CoverageMeasuringExecutionRunner):
         self._memlimit = memlimit
         self._timelimit = timelimit_per_run
         self._cpu_cores = cores
+        self._use_runexec = use_runexec
 
     def _get_execute_cmd(self, executable):
         # At the moment, this does not consider executables provided through PATH
-        if self._memlimit or self._cpu_cores:
-            resource_options = []
+        if self._use_runexec:
+            # always try to limit processes
+            resource_options = ["--set-cgroup-value", "pids.max=5000"]
             if self._memlimit:
                 resource_options += ["--memlimit", self._memlimit]
             if self._timelimit:
@@ -390,6 +393,7 @@ class SuiteExecutor:
         compute_individuals=True,
         memlimit=None,
         cores=None,
+        use_runexec=True,
     ):
         self._check_for_error = goal == eu.COVER_ERRORS
         self._goal = goal
@@ -404,6 +408,7 @@ class SuiteExecutor:
         self._compute_individual_test_coverages = compute_individuals
         self._memlimit = memlimit
         self._cpu_cores = cores
+        self._use_runexec = use_runexec
 
     def run(self, program_file, test_suite, machine_model, result_target=None):
         """Execute the given tests on the given program.
@@ -440,6 +445,7 @@ class SuiteExecutor:
                 self._overwrite_files,
                 self._memlimit,
                 self._cpu_cores,
+                self._use_runexec,
             )
         else:
             executor = CoverageMeasuringExecutionRunner(
