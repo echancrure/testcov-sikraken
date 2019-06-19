@@ -135,9 +135,7 @@ class SuiteExecutionResult:
 
     def __init__(self):
         self.results = list()
-        self.lines_executed = "0%"
-        self.branches_executed = "0%"
-        self.branches_taken = "0%"
+        self.coverage_total = None
         self.successful_tests = list()
         self.coverage_sequence = list()
         self.coverage_tests = list()

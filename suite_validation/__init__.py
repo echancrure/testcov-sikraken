@@ -300,11 +300,22 @@ def parse_coverage_goal_file(goal_file: str) -> str:
 
 
 def _print_suite_execution_results(exec_results):
+    coverage = exec_results.coverage_total
     print("---Results---")
     print("Tests run:", len(exec_results.results))
-    print("Lines covered:", exec_results.lines_executed)
-    print("Branch conditions executed:", exec_results.branches_executed)
-    print("Branches covered:", exec_results.branches_taken)
+    print(
+        "Lines covered: {} (of {})".format(coverage.line_coverage, coverage.lines_total)
+    )
+    print(
+        "Branches covered: {} (of {})".format(
+            coverage.branch_coverage, coverage.branches_total
+        )
+    )
+    print(
+        "Conditions covered: {} (of {})".format(
+            coverage.condition_coverage, coverage.conditions_total
+        )
+    )
 
     if any(r == execution.COVERS for r in exec_results.results):
         verdict = "TRUE"

@@ -504,15 +504,13 @@ class SuiteExecutor:
                     else:
                         logging.debug("File %s is no valid testcase", xml_file)
 
-    def _get_coverage_for_goal(self, result_target):
-        if self._goal == eu.COVER_BRANCHES:
-            return result_target.branches_taken
+    def _get_coverage_for_goal(self, coverage):
+        if self._goal in [eu.COVER_BRANCHES, eu.COVER_ERRORS]:
+            return coverage.branch_coverage
         if self._goal == eu.COVER_CONDITIONS:
-            return result_target.branches_executed
+            return coverage.condition_coverage
         if self._goal == eu.COVER_LINES:
-            return result_target.lines_executed
-        if self._goal == eu.COVER_ERRORS:
-            return result_target.branches_taken
+            return coverage.line_coverage
         assert False, "Unhandled coverage goal: {}".format(self._goal)
         return None
 
@@ -571,15 +569,12 @@ class SuiteExecutor:
                 result_target.coverage_tests.append(coverage_test)
 
             if self._compute_sequence or self._reduce_tests:
-                coverage_summary = self._compute_summed_coverage(
+                result_target.coverage_total = self._compute_summed_coverage(
                     program_file, output_tracefile, summary_file, executor
-                )
-                result_target.lines_executed, result_target.branches_executed, result_target.branches_taken = (
-                    coverage_summary.get_coverage_ratios_as_percent_expressions()
                 )
 
                 new_coverage = float(
-                    self._get_coverage_for_goal(result_target).split("%")[0]
+                    self._get_coverage_for_goal(result_target.coverage_total)
                 )
                 if self._reduce_tests:
                     if result_target.coverage_sequence:
@@ -629,17 +624,16 @@ class SuiteExecutor:
             try:
                 summary_file = self._get_summary_file(tracefile_folder)
                 if os.path.exists(summary_file):
-                    coverage_summary = executor.get_coverage(program_file, summary_file)
+                    result_target.coverage_total = executor.get_coverage(
+                        program_file, summary_file
+                    )
                 else:
                     # if we have no summary file, we compute the info from the gcda
                     output_tracefile = self.get_tracefile_path(tracefile_folder)
-                    coverage_summary = executor.get_coverage(
+                    result_target.coverage_total = executor.get_coverage(
                         program_file, output_tracefile
                     )
 
-                result_target.lines_executed, result_target.branches_executed, result_target.branches_taken = (
-                    coverage_summary.get_coverage_ratios_as_percent_expressions()
-                )
             except cov.CoverageCreationError as e:
                 logging.info("Coverage couldn't be created for test suite: %s", e.msg)
 

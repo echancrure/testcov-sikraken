@@ -40,15 +40,16 @@ def _prepare_axis_for_plot(coverage_goal: str):
 
 def _write_individual_coverages_plot(exec_results, coverage_goal, output_file):
     coverages = exec_results.coverage_tests
+    coverage = exec_results.coverage_total
     if coverage_goal in [eu.COVER_BRANCHES, eu.COVER_ERRORS]:
-        select_cov = lambda cov: cov.compute_branch_coverage()
-        total_coverage = float(exec_results.branches_taken[:-1])
+        select_cov = lambda cov: cov.branch_coverage
+        total_coverage = float(coverage.branch_coverage)
     elif coverage_goal == eu.COVER_CONDITIONS:
-        select_cov = lambda cov: cov.compute_branch_conditions_executed()
-        total_coverage = float(exec_results.branches_executed[:-1])
+        select_cov = lambda cov: cov.branch_conditions_executed
+        total_coverage = float(coverage.branch_conditions_executed)
     elif coverage_goal == eu.COVER_LINES:
-        select_cov = lambda cov: cov.compute_line_coverage()
-        total_coverage = float(exec_results.lines_executed[:-1])
+        select_cov = lambda cov: cov.line_coverage
+        total_coverage = float(coverage.line_coverage)
 
     ax = _prepare_axis_for_plot(coverage_goal)
 
@@ -68,7 +69,7 @@ def _write_individual_coverages_plot(exec_results, coverage_goal, output_file):
 
     # ax.set_xticks(range(len(coverages)), [c.filename for c in coverages])
     test_names = [os.path.basename(c.test_vector.origin) for c in coverages]
-    coverages_selected = [select_cov(c) * 100 for c in coverages]
+    coverages_selected = [select_cov(c) for c in coverages]
     bars = ax.bar(test_names, coverages_selected, color="blue", alpha=0.7)
     autolabel(bars)
 

@@ -267,26 +267,24 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
         runner = self.get_runner(machine_model, None)
         test_file = TEST_FILE_WITHOUT_ERR
 
-        old_lines, old_branches = 0, 0
+        old_line_cov, old_branch_cov = 0, 0
         for tv in vectors:
             runner.run(test_file, tv)
             tracefile_folder = ex.SuiteExecutor.create_tracefile_folder()
             target_tracefile = ex.SuiteExecutor.get_tracefile_path(tracefile_folder)
-            lines, _, branches = runner.get_coverage(
-                test_file, target_tracefile
-            ).get_coverage_ratios_as_percent_expressions()
-            lines = float(lines.split("%")[0])  # remove '%' and parantheses at end
-            branches = float(
-                branches.split("%")[0]
-            )  # remove '%' and parantheses at end
+            coverage = runner.get_coverage(test_file, target_tracefile)
 
-            assert lines > 0, "Line coverage at 0"
-            assert branches > 0, "Branch coverage at 0"
-            assert lines > old_lines, "Line coverage didn't increase"
-            assert branches > old_branches, "Branch coverage didn't increase"
+            assert coverage.line_coverage > 0, "Line coverage at 0"
+            assert coverage.branch_coverage > 0, "Branch coverage at 0"
+            assert (
+                coverage.line_coverage > old_line_cov
+            ), "Line coverage didn't increase"
+            assert (
+                coverage.branch_coverage > old_branch_cov
+            ), "Branch coverage didn't increase"
 
-            old_lines = lines
-            old_branches = branches
+            old_line_cov = coverage.line_coverage
+            old_branch_cov = coverage.branch_coverage
 
 
 class TestSuiteExecutor(TempDirExecutor):
@@ -328,9 +326,9 @@ class TestSuiteExecutor(TempDirExecutor):
 
         result_obj = runner.run(self.program_file, suite_location, machine_model)
         results = result_obj.results
-        lines = result_obj.lines_executed
-        conds_ex = result_obj.branches_executed
-        branches = result_obj.branches_taken
+        lines = result_obj.coverage_total.line_coverage
+        conds_ex = result_obj.coverage_total.condition_coverage
+        branches = result_obj.coverage_total.branch_coverage
 
         eq_(len(results), 2, "Not both tests executed")
         assert results.count(ex.COVERS) == 1 and results.count(ex.UNKNOWN) == 1, (
@@ -422,16 +420,16 @@ class TestSuiteExecutor(TempDirExecutor):
     ):
         result_obj = runner1.run(self.program_file, suite_location, machine_model)
         lines1, conditions1, branches1 = (
-            result_obj.lines_executed,
-            result_obj.branches_executed,
-            result_obj.branches_taken,
+            result_obj.coverage_total.line_coverage,
+            result_obj.coverage_total.condition_coverage,
+            result_obj.coverage_total.branch_coverage,
         )
 
         result_obj = runner2.run(self.program_file, suite_location, machine_model)
         lines2, conditions2, branches2 = (
-            result_obj.lines_executed,
-            result_obj.branches_executed,
-            result_obj.branches_taken,
+            result_obj.coverage_total.line_coverage,
+            result_obj.coverage_total.condition_coverage,
+            result_obj.coverage_total.branch_coverage,
         )
 
         config1 = self._get_config_str(runner1)

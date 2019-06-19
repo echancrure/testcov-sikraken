@@ -57,8 +57,8 @@ class CoverageCreationError(Exception):
 class LcovPrefix(Enum):
     FILEPATH = "SF:"
     BRANCH_LINE_CONDITION_HIT_COUNTER = "BRDA:"
-    BRANCHES_FOUND = "BRF:"
-    BRANCHES_HIT = "BRH:"
+    CONDITIONS_FOUND = "BRF:"
+    CONDITIONS_TAKEN = "BRH:"
     LINE_HIT_COUNTER = "DA:"
     LINES_NONZERO_HIT_COUNTER = "LH:"
     LINES_FOUND = "LF:"
@@ -78,16 +78,16 @@ class TestCoverage:
         lines_hit=0,
         lines_found=None,
         branch_condition_hit_counter_dic=None,
-        branches_hit=0,
-        branches_found=None,
+        conditions_taken=0,
+        conditions_found=None,
     ):
         self.filename = file_name
         self.lines_hit_counter_dic = lines_hit_counter_dic
         self.lines_hit = lines_hit
-        self.lines_found = lines_found
+        self.lines_total = lines_found
         self.branch_condition_hit_counter_dic = branch_condition_hit_counter_dic
-        self.branches_hit = branches_hit
-        self.branches_found = branches_found
+        self.conditions_taken = conditions_taken
+        self.conditions_total = conditions_found
         self.test_vector = ""
         self.result = ""
 
@@ -97,20 +97,16 @@ class TestCoverage:
     def set_result(self, result):
         self.result = result
 
-    def compute_line_coverage(self):
-        if self.lines_found is None:
+    @property
+    def line_coverage(self):
+        if self.lines_total is None:
             return 0
-        if self.lines_found == 0:
+        if self.lines_total == 0:
             return 1.0
-        return round(float(self.lines_hit) / float(self.lines_found), 4)
+        return round(float(self.lines_hit) / float(self.lines_total) * 100, 2)
 
-    def compute_branch_conditions_executed(self):
-        if self.branch_condition_hit_counter_dic is None:
-            return 0
-
-        possible_branch_conditions_executions = (
-            len(self.branch_condition_hit_counter_dic.keys()) * 2
-        )
+    @property
+    def branch_coverage(self):
         lines_with_branch_condition_executed = 0
         for line_with_branch_condition in self.branch_condition_hit_counter_dic.keys():
             conditions_executed = self.branch_condition_hit_counter_dic[
@@ -120,39 +116,32 @@ class TestCoverage:
                 lines_with_branch_condition_executed += 1
             if conditions_executed[1]:
                 lines_with_branch_condition_executed += 1
-        if possible_branch_conditions_executions == 0:
+        if self.branches_total is None:
+            return 0
+        if self.branches_total == 0:
             return 1.0
         return round(
             float(lines_with_branch_condition_executed)
-            / float(possible_branch_conditions_executions),
-            4,
+            / float(self.branches_total)
+            * 100,
+            2,
         )
 
-    def compute_branch_coverage(self):
-        if self.branches_found is None:
+    @property
+    def branches_total(self):
+        if self.branch_condition_hit_counter_dic is None:
+            return None
+
+        return len(self.branch_condition_hit_counter_dic.keys()) * 2
+
+    @property
+    def condition_coverage(self):
+        if self.conditions_total is None:
             return 0
-        if self.branches_found == 0:
+        if self.conditions_total == 0:
             return 1.0
-        return round(float(self.branches_hit) / float(self.branches_found), 4)
-
-    def compute_coverage_ratios_in_percent(self):
-        line_coverage = self.compute_line_coverage()
-        branch_condition_coverage = self.compute_branch_conditions_executed()
-        branch_coverage = self.compute_branch_coverage()
-        return (
-            round(line_coverage * 100, 2),
-            round(branch_condition_coverage * 100, 2),
-            round(branch_coverage * 100, 2),
-        )
-
-    def get_coverage_ratios_as_percent_expressions(self):
-        line_coverage, branch_condition_coverage, branch_coverage = (
-            self.compute_coverage_ratios_in_percent()
-        )
-        return (
-            str(line_coverage) + "%",
-            str(branch_condition_coverage) + "%",
-            str(branch_coverage) + "%",
+        return round(
+            float(self.conditions_taken) / float(self.conditions_total) * 100, 2
         )
 
 
@@ -191,9 +180,9 @@ def get_test_coverage_from_lcov_file(program_name, trace_file):
     lines_hit_counter_dic = {}
     lines_hit = 0
     lines_found = 0
-    branch_condition_hit_counter_dic = {}
-    branches_hit = 0
-    branches_found = 0
+    branches_hit_counter = {}
+    conditions_taken = 0
+    conditions_found = 0
     if os.path.exists(trace_file):
         lcov_sector = LcovSector.BEFORE_TEST_RECORD.value
         with open(trace_file) as file:
@@ -216,15 +205,15 @@ def get_test_coverage_from_lcov_file(program_name, trace_file):
                             line, LcovPrefix.BRANCH_LINE_CONDITION_HIT_COUNTER.value
                         )
                         _examine_branch_line_condition(
-                            branch_line_information, branch_condition_hit_counter_dic
+                            branch_line_information, branches_hit_counter
                         )
-                    elif line.startswith(LcovPrefix.BRANCHES_FOUND.value):
-                        branches_found = int(
-                            remove_prefix(line, LcovPrefix.BRANCHES_FOUND.value)
+                    elif line.startswith(LcovPrefix.CONDITIONS_FOUND.value):
+                        conditions_found = int(
+                            remove_prefix(line, LcovPrefix.CONDITIONS_FOUND.value)
                         )
-                    elif line.startswith(LcovPrefix.BRANCHES_HIT.value):
-                        branches_hit = int(
-                            remove_prefix(line, LcovPrefix.BRANCHES_HIT.value)
+                    elif line.startswith(LcovPrefix.CONDITIONS_TAKEN.value):
+                        conditions_taken = int(
+                            remove_prefix(line, LcovPrefix.CONDITIONS_TAKEN.value)
                         )
                     elif line.startswith(LcovPrefix.LINE_HIT_COUNTER.value):
                         line_with_counter = remove_prefix(
@@ -260,9 +249,9 @@ def get_test_coverage_from_lcov_file(program_name, trace_file):
         lines_hit_counter_dic,
         lines_hit,
         lines_found,
-        branch_condition_hit_counter_dic,
-        branches_hit,
-        branches_found,
+        branches_hit_counter,
+        conditions_taken,
+        conditions_found,
     )
 
 
@@ -283,15 +272,12 @@ def write_test_coverages_to_dir(output_dir, overwrite, exec_results):
 
 def _write_csv_rows_from_test_coverages(writer, test_coverages):
     for test_coverage in test_coverages:
-        lines_executed, branches_executed, branches_taken = (
-            test_coverage.compute_coverage_ratios_in_percent()
-        )
         writer.writerow(
             [
                 test_coverage.test_vector.origin,
-                lines_executed,
-                branches_executed,
-                branches_taken,
+                test_coverage.line_coverage,
+                test_coverage.branch_coverage,
+                test_coverage.condition_coverage,
             ]
         )
 
