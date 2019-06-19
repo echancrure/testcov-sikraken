@@ -339,7 +339,7 @@ class IsolatingRunner(CoverageMeasuringExecutionRunner):
     ):
         super().__init__(
             machine_model,
-            timelimit_per_run,
+            timelimit_per_run if not use_runexec else None,
             harness_file_target,
             compile_target,
             overwrite_files,
