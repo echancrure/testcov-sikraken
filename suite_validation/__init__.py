@@ -73,7 +73,7 @@ def get_parser():
         dest="timelimit_per_run",
         action="store",
         type=int,
-        default=20,
+        default=3,
         help="timelimit for each single test execution",
     )
 
