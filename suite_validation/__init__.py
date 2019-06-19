@@ -107,6 +107,23 @@ def get_parser():
     )
 
     parser.add_argument(
+        "--memlimit",
+        dest="memlimit",
+        action="store",
+        default=None,
+        help="Use runexec with memory limit instead of just containers",
+    )
+
+    parser.add_argument(
+        "--cpu-cores",
+        dest="cpu_cores",
+        action="store",
+        type=int,
+        default=None,
+        help="Use runexec with CPU core limit, instead of just containers",
+    )
+
+    parser.add_argument(
         "--no-overwrite",
         dest="overwrite",
         action="store_false",
@@ -312,6 +329,8 @@ def main():
             harness_file_target=harness_file,
             compile_target=executable,
             compute_individuals=compute_individuals,
+            memlimit=args.memlimit,
+            cores=args.cpu_cores,
         )
 
         executor.run(args.file, args.test_suite, args.machine_model, exec_results)

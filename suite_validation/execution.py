@@ -332,9 +332,8 @@ class IsolatingRunner(CoverageMeasuringExecutionRunner):
         harness_file_target="harness.c",
         compile_target="a.out",
         overwrite_files=True,
-        memlimit="100MB",
-        timelimit="20s",
-        cores="2",
+        memlimit=None,
+        cores=None,
     ):
         super().__init__(
             machine_model,
@@ -344,34 +343,34 @@ class IsolatingRunner(CoverageMeasuringExecutionRunner):
             overwrite_files,
         )
         self._memlimit = memlimit
-        self._timelimit = timelimit
+        self._timelimit = timelimit_per_run
         self._cpu_cores = cores
 
     def _get_execute_cmd(self, executable):
         # At the moment, this does not consider executables provided through PATH
-        resource_options = []
-        if self._memlimit:
-            resource_options += ["--memlimit", self._memlimit]
-        if self._timelimit:
-            resource_options += ["--timelimit", self._timelimit]
-        if self._cpu_cores:
-            resource_options += ["--cores", self._cpu_cores]
-        return (
-            ["runexec"]
-            + resource_options
-            + [
-                "--overlay-dir",
-                os.getcwd(),
-                "--hidden-dir",
-                "/sys/kernel/debug",
-                "--result-files",
-                "harness.gcda",
-                "--output-dir",
-                ".",
-                "--",
-                os.path.join(".", os.path.relpath(executable, start="./")),
-            ]
-        )
+        if self._memlimit or self._cpu_cores:
+            resource_options = []
+            if self._memlimit:
+                resource_options += ["--memlimit", self._memlimit]
+            if self._timelimit:
+                resource_options += ["--timelimit", str(self._timelimit)]
+            if self._cpu_cores:
+                resource_options += ["--cores", str(self._cpu_cores)]
+            cmd = ["runexec", "--container", "--input", "-"] + resource_options
+        else:
+            cmd = ["containerexec"]
+        return cmd + [
+            "--overlay-dir",
+            os.getcwd(),
+            "--hidden-dir",
+            "/sys/kernel/debug",
+            "--result-files",
+            "harness.gcda",
+            "--output-dir",
+            ".",
+            "--",
+            os.path.join(".", os.path.relpath(executable, start="./")),
+        ]
 
 
 class SuiteExecutor:
@@ -388,6 +387,8 @@ class SuiteExecutor:
         overwrite_files=True,
         isolate_tests=True,
         compute_individuals=True,
+        memlimit=None,
+        cores=None,
     ):
         self._check_for_error = goal == eu.COVER_ERRORS
         self._goal = goal
@@ -400,6 +401,8 @@ class SuiteExecutor:
         self._overwrite_files = overwrite_files
         self._isolate_tests = isolate_tests
         self._compute_individual_test_coverages = compute_individuals
+        self._memlimit = memlimit
+        self._cpu_cores = cores
 
     def run(self, program_file, test_suite, machine_model, result_target=None):
         """Execute the given tests on the given program.
@@ -434,6 +437,8 @@ class SuiteExecutor:
                 self._harness_file_target,
                 self._compile_target,
                 self._overwrite_files,
+                self._memlimit,
+                self._cpu_cores,
             )
         else:
             executor = CoverageMeasuringExecutionRunner(
