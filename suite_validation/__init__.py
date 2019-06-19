@@ -304,15 +304,17 @@ def _print_suite_execution_results(exec_results):
     print("---Results---")
     print("Tests run:", len(exec_results.results))
     print(
-        "Lines covered: {} (of {})".format(coverage.line_coverage, coverage.lines_total)
+        "Lines covered: {}% (of {})".format(
+            coverage.line_coverage, coverage.lines_total
+        )
     )
     print(
-        "Branches covered: {} (of {})".format(
+        "Branches covered: {}% (of {})".format(
             coverage.branch_coverage, coverage.branches_total
         )
     )
     print(
-        "Conditions covered: {} (of {})".format(
+        "Conditions covered: {}% (of {})".format(
             coverage.condition_coverage, coverage.conditions_total
         )
     )
