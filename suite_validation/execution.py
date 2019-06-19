@@ -493,7 +493,11 @@ class SuiteExecutor:
             ):
                 raise ExecutionError("No %s in %s" % (mu.METADATA_XML_NAME, test_suite))
 
-            for xml_file in (l for l in zip_inp.namelist() if l.endswith(".xml")):
+            for xml_file in (
+                l
+                for l in zip_inp.namelist()
+                if l.endswith(".xml") and not os.path.basename(l) == "metadata.xml"
+            ):
                 logging.debug("Considering %s", xml_file)
                 with zip_inp.open(xml_file) as xml_inp:
                     xml_lines = xml_inp.readlines()
