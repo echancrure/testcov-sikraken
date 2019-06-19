@@ -609,7 +609,7 @@ class SuiteExecutor:
 
         tracefile_folder = self.create_tracefile_folder()
         try:
-            print("Executing tests.", file=sys.stderr, end="", flush=True)
+            print("⏳ Executing tests.", file=sys.stderr, end="", flush=True)
             for tv in test_vectors:
                 next_result = executor.run(program_file, tv)
 
@@ -628,7 +628,7 @@ class SuiteExecutor:
                     break
                 print(".", file=sys.stderr, end="", flush=True)
         finally:
-            print("Done!", file=sys.stderr, flush=True)  # print newline
+            print("\n✔️  Done!", file=sys.stderr, flush=True)  # print newline
             try:
                 summary_file = self._get_summary_file(tracefile_folder)
                 if os.path.exists(summary_file):
