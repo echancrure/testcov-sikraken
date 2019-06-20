@@ -53,33 +53,39 @@ def _write_individual_coverages_plot(exec_results, coverage_goal, output_file):
 
     ax = _prepare_axis_for_plot(coverage_goal)
 
+    # ax.set_xticks(range(len(coverages)), [c.filename for c in coverages])
+    test_names = [os.path.basename(c.test_vector.origin) for c in coverages]
+    coverages_selected = [select_cov(c) for c in coverages]
+
     def autolabel(rects):
         """
         Attach a text label above each bar displaying its height
         """
         for rect in rects:
             height = rect.get_height()
-            ax.text(
-                rect.get_x() + rect.get_width() / 2.0,
-                height + 0.1,
-                "%.2f" % float(height),
-                ha="center",
-                va="bottom",
-            )
+            if height < max(coverages_selected):
+                ax.text(
+                    rect.get_x() + rect.get_width() / 2.0,
+                    height + 0.1,
+                    "%.2f" % float(height),
+                    ha="center",
+                    va="bottom",
+                )
 
-    # ax.set_xticks(range(len(coverages)), [c.filename for c in coverages])
-    test_names = [os.path.basename(c.test_vector.origin) for c in coverages]
-    coverages_selected = [select_cov(c) for c in coverages]
-    bars = ax.bar(test_names, coverages_selected, color="blue", alpha=0.7)
+    bars = ax.bar(
+        range(len(coverages_selected)), coverages_selected, color="blue", alpha=0.7
+    )
     autolabel(bars)
 
-    ax.tick_params(axis="x", labelrotation="auto")
+    ax.set_xticks(range(len(coverages_selected)))
+    ax.set_xticklabels(test_names, rotation=90)
     ax.axhline(total_coverage, dashes=(1, 1), alpha=0.7)
     ax.text(
         0,
         total_coverage + 2,
         "Accumulated coverage of all tests: {}%".format(total_coverage),
     )
+    plt.tight_layout()
     plt.savefig(output_file)
     plt.clf()
 
