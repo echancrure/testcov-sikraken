@@ -30,7 +30,7 @@ from suite_validation import metadata_utils
 
 __VERSION__ = "v1.1-dev"
 
-__NAME__ = "test-suite validator"
+__NAME__ = "testsuite-validator"
 
 SUCCESSFUL_TESTSUITE_FOLDER = "test-suite"
 SUCCESSFUL_TEST_NAME = "covering-test.xml"
@@ -46,8 +46,7 @@ class IllegalArgumentError(Exception):
 
 def get_parser():
     parser = argparse.ArgumentParser(
-        prog="test-suite validator",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        prog=__NAME__, formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
     parser.add_argument("--version", "-v", action="version", version=__VERSION__)
