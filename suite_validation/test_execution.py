@@ -191,7 +191,7 @@ class TestExecutionRunner(TempDirExecutor):
 
         for machine_model in MACHINE_MODELS:
             for timelimit in (None, 5, 10, 99999):
-                yield self._check_test_execution_runs, machine_model, timelimit, TEST_FILE_WITHOUT_ERR, simple_vector, ex.UNKNOWN
+                yield self._check_test_execution_runs, machine_model, timelimit, TEST_FILE_WITHOUT_ERR, simple_vector, eu.TestResult.UNKNOWN
 
     def _check_test_execution_runs(
         self, machine_model, timelimit, test_file, test_vector, expected
@@ -218,18 +218,18 @@ class TestExecutionRunner(TempDirExecutor):
 
         for machine_model in MACHINE_MODELS:
             for timelimit in (None, 5, 10):
-                yield self._check_test_execution_runs, machine_model, timelimit, TEST_FILE_WITH_ERR, covering_vector, ex.COVERS
+                yield self._check_test_execution_runs, machine_model, timelimit, TEST_FILE_WITH_ERR, covering_vector, eu.TestResult.COVERS
 
         for machine_model in MACHINE_MODELS:
             for timelimit in (None, 5, 10):
-                yield self._check_test_execution_runs, machine_model, timelimit, TEST_FILE_WITH_ERR, missing_vector, ex.UNKNOWN
+                yield self._check_test_execution_runs, machine_model, timelimit, TEST_FILE_WITH_ERR, missing_vector, eu.TestResult.UNKNOWN
 
     def test_execution_run_non_terminating_with_timelimit(self):
         empty_vector = eu.TestVector("dummy", "dummy.xml")
         timelimit = 3
 
         for machine_model in MACHINE_MODELS:
-            yield self._check_test_execution_runs, machine_model, timelimit, TEST_FILE_WITH_NO_TERMINATION, empty_vector, ex.ABORTED
+            yield self._check_test_execution_runs, machine_model, timelimit, TEST_FILE_WITH_NO_TERMINATION, empty_vector, eu.TestResult.ABORTED
 
 
 class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
@@ -333,9 +333,12 @@ class TestSuiteExecutor(TempDirExecutor):
         branches = result_obj.coverage_total.branch_coverage
 
         eq_(len(results), 2, "Not both tests executed")
-        assert results.count(ex.COVERS) == 1 and results.count(ex.UNKNOWN) == 1, (
+        assert (
+            results.count(eu.TestResult.COVERS) == 1
+            and results.count(eu.TestResult.UNKNOWN) == 1
+        ), (
             "Expected exactly one result to be %s and one to be %s: %s"
-            % (ex.COVERS, ex.UNKNOWN, results)
+            % (eu.TestResult.COVERS, eu.TestResult.UNKNOWN, results)
         )
         assert (
             lines and conds_ex and branches
@@ -372,8 +375,8 @@ class TestSuiteExecutor(TempDirExecutor):
         results = result_obj.results
 
         assert len(results) == 2 and all(
-            r == ex.ABORTED for r in results
-        ), "Expected two results '%s': %s" % (ex.ABORTED, results)
+            r == eu.TestResult.ABORTED for r in results
+        ), "Expected two results '%s': %s" % (eu.TestResult.ABORTED, results)
 
     def test_run_suite_with_string_inputs(self):
         for machine_model in MACHINE_MODELS:
@@ -387,11 +390,11 @@ class TestSuiteExecutor(TempDirExecutor):
 
         assert (
             len(results) == 2
-            and any(r == ex.COVERS for r in results)
-            and any(r == ex.UNKNOWN for r in results)
+            and any(r == eu.TestResult.COVERS for r in results)
+            and any(r == eu.TestResult.UNKNOWN for r in results)
         ), (
             "Expected results '%s' and '%s', but got: %s"
-            % (ex.COVERS, ex.UNKNOWN, results)
+            % (eu.TestResult.COVERS, eu.TestResult.UNKNOWN, results)
         )
 
     def test_compute_individuals_produces_same_coverage(self):

@@ -32,12 +32,6 @@ from suite_validation import coverage as cov
 from suite_validation import metadata_utils as mu
 
 HARNESS_FILE_NAME = "harness.c"
-
-COVERS = "false"
-UNKNOWN = "unknown"
-ERROR = "error"
-ABORTED = "abort"
-
 HARNESS_GCDA_FILE = "harness.gcda"
 
 GCOV_FILE_END = ".gcov"
@@ -244,14 +238,14 @@ class ExecutionRunner:
             )
             if eu.found_err(run_result):
                 logging.debug("Error found for test %s", test_vector)
-                return COVERS
+                return eu.TestResult.COVERS
             if run_result.got_aborted:
                 logging.info("Aborted execution for test %s", test_vector)
-                return ABORTED
+                return eu.TestResult.ABORTED
             if run_result.returncode != 0:
                 logging.debug("Non-0 return code for test %s", test_vector)
-            return UNKNOWN
-        return ERROR
+            return eu.TestResult.UNKNOWN
+        return eu.TestResult.ERROR
 
     def _get_execute_cmd(self, executable):
         # pylint: disable=no-self-use
@@ -296,19 +290,21 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
 
         return return_value
 
-    def run(self, program_file, test_vector):
+    def run(self, program_file, test_vector: eu.TestVector) -> eu.TestResult:
         result = super().run(program_file, test_vector)
-        if result == ABORTED:
+        if result == eu.TestResult.ABORTED:
             logging.info("Aborted test run is not considered for coverage")
         return result
 
-    def compute_test_coverage(self, program_file, output_tracefile):
+    def compute_test_coverage_from_gcda_file(
+        self, program_file, output_tracefile
+    ) -> cov.TestCoverage:
         program_name = os.path.basename(program_file)
         if self.harness_file:
             assert self.harness_file.endswith(".c")
             data_file = self.harness_file[:-1] + "gcda"
             data_file = os.path.basename(data_file)  # data file is in cwd
-            return cov.get_test_coverage_from_data_file(
+            return cov.create_trace_file_and_get_test_coverage(
                 program_name, data_file, output_tracefile
             )
 
@@ -321,9 +317,9 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
 
         if os.path.exists(target_tracefile):
             program_name = os.path.basename(program_file)
-            return cov.get_test_coverage_from_lcov_file(program_name, target_tracefile)
+            return cov.get_test_coverage_from_trace_file(program_name, target_tracefile)
 
-        return self.compute_test_coverage(program_file, target_tracefile)
+        return self.compute_test_coverage_from_gcda_file(program_file, target_tracefile)
 
 
 class IsolatingRunner(CoverageMeasuringExecutionRunner):
@@ -531,55 +527,74 @@ class SuiteExecutor:
         return os.path.join(tracefile_folder, LCOV_CURRENT_TRACE_FILE)
 
     @staticmethod
-    def _compute_individual_coverage(
-        result, test_vector, program_file, output_tracefile, summary_tracefile, executor
-    ):
-        coverage_test = executor.compute_test_coverage(program_file, output_tracefile)
+    def _compute_coverage(
+        result: eu.TestResult,
+        test_vector: eu.TestVector,
+        program_file,
+        output_tracefile,
+        executor,
+    ) -> cov.TestCoverage:
+        coverage_test = executor.compute_test_coverage_from_gcda_file(
+            program_file, output_tracefile
+        )
         coverage_test.set_result(result)
         coverage_test.set_test_vector(test_vector)
-
-        # Create the summary for final output
-        if os.path.exists(output_tracefile):
-            cov.combine_tracefile_with_previous(output_tracefile, summary_tracefile)
-            _remove_current_tracefile(output_tracefile)
-        _remove_harness_gcda_file()
         return coverage_test
 
     @staticmethod
-    def _compute_summed_coverage(
-        program_file, output_tracefile, summary_file, executor
-    ):
-        if os.path.exists(summary_file):
-            return executor.get_coverage(program_file, summary_file)
-        # if we have no summary file, we compute the info from the gcda
-        return executor.compute_test_coverage(program_file, output_tracefile)
+    def _compute_individual_coverage(
+        result: eu.TestResult,
+        test_vector: eu.TestVector,
+        program_file,
+        output_tracefile,
+        executor,
+    ) -> cov.TestCoverage:
+        coverage_test = SuiteExecutor._compute_coverage(
+            result, test_vector, program_file, output_tracefile, executor
+        )
+        if os.path.exists(output_tracefile):
+            _remove_current_tracefile(output_tracefile)
+        _remove_harness_gcda_file()
+        return coverage_test
 
     @staticmethod
     def _get_summary_file(tracefile_folder):
         return os.path.join(tracefile_folder, LCOV_SUMMARY_TRACE_FILE)
 
     def _compute_coverages(
-        self, result_target, next_result, program_file, tv, executor, tracefile_folder
+        self,
+        result_target: eu.SuiteExecutionResult,
+        next_result: eu.TestResult,
+        program_file,
+        tv: eu.TestVector,
+        executor,
+        tracefile_folder,
     ):
 
         output_tracefile = self.get_tracefile_path(tracefile_folder)
-        summary_file = self._get_summary_file(tracefile_folder)
+        current_individual_coverage = None
         try:
             if self._compute_individual_test_coverages:
                 coverage_test = self._compute_individual_coverage(
-                    next_result,
-                    tv,
-                    program_file,
-                    output_tracefile,
-                    summary_file,
-                    executor,
+                    next_result, tv, program_file, output_tracefile, executor
                 )
+                if current_individual_coverage is None:
+                    current_individual_coverage = coverage_test
                 result_target.coverage_tests.append(coverage_test)
+                _remove_harness_gcda_file()
 
             if self._compute_sequence or self._reduce_tests:
-                result_target.coverage_total = self._compute_summed_coverage(
-                    program_file, output_tracefile, summary_file, executor
-                )
+                if current_individual_coverage:
+                    if result_target.coverage_total:
+                        result_target.coverage_total = cov.TestCoverage.merge(
+                            current_individual_coverage, result_target.coverage_total
+                        )
+                    else:
+                        result_target.coverage_total = current_individual_coverage
+                else:
+                    result_target.coverage_total = self._compute_coverage(
+                        next_result, tv, program_file, output_tracefile, executor
+                    )
 
                 new_coverage = float(
                     self._get_coverage_for_goal(result_target.coverage_total)
@@ -625,7 +640,7 @@ class SuiteExecutor:
                     tracefile_folder,
                 )
 
-                if next_result == COVERS and self._check_for_error:
+                if next_result == eu.TestResult.COVERS and self._check_for_error:
                     result_target.successful_tests.append(tv)
                     logging.info("Stopping. Error found for test %s", tv)
                     break
@@ -641,7 +656,7 @@ class SuiteExecutor:
                 else:
                     # if we have no summary file, we compute the info from the gcda
                     output_tracefile = self.get_tracefile_path(tracefile_folder)
-                    result_target.coverage_total = executor.get_coverage(
+                    result_target.coverage_total = executor.compute_test_coverage_from_gcda_file(
                         program_file, output_tracefile
                     )
 

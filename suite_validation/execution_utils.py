@@ -17,6 +17,7 @@
 # limitations under the License.
 import logging
 import subprocess
+from enum import Enum
 
 ERROR_STRING = "Error found."
 
@@ -128,6 +129,13 @@ class TestVector:
 
     def __str__(self):
         return self.origin + " " + str(self.vector)
+
+
+class TestResult(Enum):
+    COVERS = "false"
+    UNKNOWN = "unknown"
+    ERROR = "error"
+    ABORTED = "abort"
 
 
 class SuiteExecutionResult:

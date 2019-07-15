@@ -21,7 +21,6 @@ import argparse
 import logging
 import os
 import re
-import shutil
 import zipfile
 from suite_validation import execution
 from suite_validation import execution_utils as eu
@@ -321,7 +320,7 @@ def _print_suite_execution_results(exec_results):
             )
         )
 
-    if any(r == execution.COVERS for r in exec_results.results):
+    if any(r == eu.TestResult.COVERS for r in exec_results.results):
         verdict = "TRUE"
     else:
         verdict = "UNKNOWN"
