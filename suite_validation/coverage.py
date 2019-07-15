@@ -123,7 +123,7 @@ class CoverageComparable:
 class ConditionsEntry(CoverageComparable):
     def __init__(self, program_line: int, conditions_hit_counter: Dict[int, int]):
         self.program_line = program_line
-        self.conditions_hit_counter: Dict[int, int] = conditions_hit_counter
+        self.conditions_hit_counter = conditions_hit_counter
 
     def same_program_line(self, other: "ConditionsEntry") -> bool:
         return self.program_line == other.program_line
@@ -238,7 +238,7 @@ class ConditionsCoverage(CoverageComparable):
 
 class LinesCoverage(CoverageComparable):
     def __init__(self, program_lines_hit_counter: Dict[int, int]):
-        self.lines_hit_counter: Dict[int, int] = program_lines_hit_counter
+        self.lines_hit_counter = program_lines_hit_counter
 
     @property
     def lines_hit(self) -> int:
@@ -289,7 +289,7 @@ class LinesCoverage(CoverageComparable):
 
 
 class BranchesCoverage(CoverageComparable):
-    def __init__(self, branches_hit_counter: Dict):
+    def __init__(self, branches_hit_counter: Dict[int, List[bool]]):
         self.branches_hit_counter = branches_hit_counter
 
     @property
@@ -352,9 +352,9 @@ class TestCoverage:
         conditions_coverage: ConditionsCoverage = None,
     ):
         self.filename = file_name
-        self.lines_coverage: LinesCoverage = lines_coverage
-        self.branches_coverage: BranchesCoverage = branches_coverage
-        self.conditions_coverage: ConditionsCoverage = conditions_coverage
+        self.lines_coverage = lines_coverage
+        self.branches_coverage = branches_coverage
+        self.conditions_coverage = conditions_coverage
         self.test_vector = ""
         self.result = ""
 
