@@ -272,9 +272,7 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
         old_line_cov, old_branch_cov = 0, 0
         for tv in vectors:
             runner.run(test_file, tv)
-            tracefile_folder = ex.SuiteExecutor.create_tracefile_folder()
-            target_tracefile = ex.SuiteExecutor.get_tracefile_path(tracefile_folder)
-            coverage = runner.get_coverage(test_file, target_tracefile)
+            coverage = runner.compute_test_coverage_from_gcda_file(test_file)
 
             assert coverage.line_coverage > 0, "Line coverage at 0"
             assert coverage.branch_coverage > 0, "Branch coverage at 0"
