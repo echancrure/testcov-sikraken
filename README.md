@@ -15,7 +15,7 @@ about its usage.
 
 ## Requirements
 
-* Python >= 3.5
+* Python >= 3.6
 * clang and llvm >= 3.9
 
 The following requirements are automatically installed by `pipenv` or `setup.py` upon installation,

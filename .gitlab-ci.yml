@@ -30,11 +30,6 @@ check-format:
   variables:
     PYTHON_VERSION: '3.7'
 
-unit-tests:python-3.5:
-  <<: *unit-tests
-  variables:
-    PYTHON_VERSION: '3.5'
-
 unit-tests:python-3.6:
   <<: *unit-tests
   variables:
