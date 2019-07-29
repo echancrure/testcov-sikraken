@@ -162,6 +162,15 @@ def get_parser():
     )
 
     parser.add_argument(
+        "--no-efficient-test-suite",
+        dest="efficient_tests",
+        action="store_false",
+        default=True,
+        help="don't create an efficient test suite",
+        required=False,
+    )
+
+    parser.add_argument(
         "--no-plots",
         dest="write_plots",
         action="store_false",
@@ -349,6 +358,7 @@ def main():
             args.timelimit_per_run,
             compute_sequence=args.print_seq_file is not None,
             reduce_tests=args.reduce_tests,
+            efficient_tests=args.efficient_tests,
             overwrite_files=args.overwrite,
             harness_file_target=harness_file,
             compile_target=executable,
