@@ -28,6 +28,7 @@ from lxml import etree
 from suite_validation import execution_utils as eu
 from suite_validation import coverage as cov
 from suite_validation import metadata_utils as mu
+from suite_validation import coverage_strategy as covstr
 
 HARNESS_FILE_NAME = "harness.c"
 HARNESS_GCDA_FILE = "harness.gcda"
@@ -495,16 +496,6 @@ class SuiteExecutor:
                     else:
                         logging.debug("File %s is no valid testcase", xml_file)
 
-    def _get_coverage_for_goal(self, coverage):
-        if self._goal in [eu.COVER_BRANCHES, eu.COVER_ERRORS]:
-            return coverage.branch_coverage
-        if self._goal == eu.COVER_CONDITIONS:
-            return coverage.condition_coverage
-        if self._goal == eu.COVER_LINES:
-            return coverage.line_coverage
-        assert False, "Unhandled coverage goal: {}".format(self._goal)
-        return None
-
     @staticmethod
     def _compute_coverage(
         result: eu.TestResult, test_vector: eu.TestVector, program_file, executor
@@ -546,7 +537,7 @@ class SuiteExecutor:
 
             if self._compute_sequence or self._reduce_tests:
                 new_coverage = float(
-                    self._get_coverage_for_goal(result_target.coverage_total)
+                    result_target.coverage_total.get_coverage_for_goal(self._goal)
                 )
                 if self._reduce_tests:
                     if result_target.coverage_sequence:
@@ -590,6 +581,10 @@ class SuiteExecutor:
                 print(".", file=self._info_target, end="", flush=True)
         finally:
             print("\n✔️  Done!", file=self._info_target, flush=True)  # print newline
+            if result_target.coverage_tests:
+                result_target.efficient_coverage_tests = covstr.find_efficient_tests(
+                    result_target.coverage_tests.copy(), self._goal
+                )
 
 
 def _remove_lcov_trace_file():

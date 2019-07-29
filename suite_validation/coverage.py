@@ -25,11 +25,13 @@ import csv
 from typing import Dict
 from typing import Tuple
 from typing import List
+from typing import Optional
 from abc import ABCMeta, abstractmethod
 from suite_validation import execution_utils as eu
 
 # Constants for csv output
-FILE_NAME_TEST_COVERAGES = "individual-test-coverages.csv"
+FILE_NAME_INDIVIDUAL_TEST_COVERAGES = "individual-test-coverages.csv"
+FILE_NAME_EFFICIENT_TEST_COVERAGES = "efficient-test-coverages.csv"
 LINES_COVERED = "Line Coverage"
 BRANCHES_COVERED = "Branch Coverage"
 CONDITIONS_COVERED = "Condition Coverage"
@@ -101,6 +103,24 @@ class CoverageComparable:
         :param other:
         :return: Tuple(covered_only_by_self, covered_only_by_other)
         """
+        raise NotImplementedError
+
+    @abstractmethod
+    def is_coverage_for_program_line_extended(
+        self, other: "CoverageComparable", program_line
+    ) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
+    def is_program_line_covered(self, program_line) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
+    def relevant_program_lines(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def total_summed_coverage(self) -> int:
         raise NotImplementedError
 
     def covers(self, other: "CoverageComparable") -> bool:
@@ -182,9 +202,39 @@ class ConditionsEntry(CoverageComparable):
             divide(conditions_only_covered_by_other, self.conditions_total),
         )
 
+    def is_program_line_covered(self, program_line) -> bool:
+        assert program_line == self.program_line
+        for condition in self.conditions_hit_counter.values():
+            if condition <= 0:
+                return False
+        return True
+
+    def is_coverage_for_program_line_extended(
+        self, other: "ConditionsEntry", program_line
+    ):
+        assert program_line == self.program_line
+        for key in self.conditions_hit_counter.keys():
+            if (
+                self.conditions_hit_counter[key]
+                <= 0
+                < other.conditions_hit_counter[key]
+            ):
+                return True
+        return False
+
+    def relevant_program_lines(self):
+        return [self.program_line]
+
+    def total_summed_coverage(self):
+        summed_coverage = 0
+        for value in self.conditions_hit_counter.values():
+            if value > 0:
+                summed_coverage += 1
+        return summed_coverage
+
 
 class ConditionsCoverage(CoverageComparable):
-    def __init__(self, conditions_entries):
+    def __init__(self, conditions_entries: List[ConditionsEntry]):
         self.conditions_entries = conditions_entries
 
     @property
@@ -215,6 +265,12 @@ class ConditionsCoverage(CoverageComparable):
                     )
         return ConditionsCoverage(summarized_conditions_entries)
 
+    def get_conditions_entry(self, program_line) -> Optional[ConditionsEntry]:
+        for entry in self.conditions_entries:
+            if entry.program_line == program_line:
+                return entry
+        return None
+
     def compute_coverage_relation(
         self, other: "ConditionsCoverage"
     ) -> Tuple[float, float]:
@@ -223,10 +279,18 @@ class ConditionsCoverage(CoverageComparable):
         for conditions_self in self.conditions_entries:
             for conditions_other in other.conditions_entries:
                 if conditions_self.same_program_line(conditions_other):
-                    conditions_only_covered_by_self, conditions_only_covered_by_other = (
+                    (
                         conditions_only_covered_by_self,
-                        conditions_only_covered_by_other
-                        + conditions_self.compute_coverage_relation(conditions_other),
+                        conditions_only_covered_by_other,
+                    ) = map(
+                        sum,
+                        zip(
+                            (
+                                conditions_only_covered_by_self,
+                                conditions_only_covered_by_other,
+                            ),
+                            conditions_self.compute_coverage_relation(conditions_other),
+                        ),
                     )
         if self.conditions_total == 0:
             return 0.0, 0.0
@@ -234,6 +298,36 @@ class ConditionsCoverage(CoverageComparable):
             divide(conditions_only_covered_by_self, self.conditions_total),
             divide(conditions_only_covered_by_other, self.conditions_total),
         )
+
+    def is_program_line_covered(self, program_line) -> bool:
+        if program_line not in self.relevant_program_lines():
+            return False
+        condition_entry = None
+        for entry in self.conditions_entries:
+            if entry.program_line == program_line:
+                condition_entry = entry
+                break
+        if condition_entry is None:
+            return False
+        return condition_entry.is_program_line_covered(program_line)
+
+    def is_coverage_for_program_line_extended(
+        self, other: "ConditionsCoverage", program_line
+    ) -> bool:
+        return self.get_conditions_entry(
+            program_line
+        ).is_coverage_for_program_line_extended(
+            other.get_conditions_entry(program_line), program_line
+        )
+
+    def relevant_program_lines(self):
+        return [entry.program_line for entry in self.conditions_entries]
+
+    def total_summed_coverage(self):
+        summed_coverage = 0
+        for entry in self.conditions_entries:
+            summed_coverage += entry.total_summed_coverage()
+        return summed_coverage
 
 
 class LinesCoverage(CoverageComparable):
@@ -286,6 +380,22 @@ class LinesCoverage(CoverageComparable):
             divide(lines_self_covers_other, self.lines_total),
             divide(lines_other_covers_self, self.lines_total),
         )
+
+    def is_program_line_covered(self, program_line) -> bool:
+        return self.lines_hit_counter[program_line] > 0
+
+    def is_coverage_for_program_line_extended(
+        self, other: "LinesCoverage", program_line
+    ) -> bool:
+        return not self.is_program_line_covered(
+            program_line
+        ) and other.is_program_line_covered(program_line)
+
+    def relevant_program_lines(self):
+        return self.lines_hit_counter.keys()
+
+    def total_summed_coverage(self):
+        return self.lines_hit
 
 
 class BranchesCoverage(CoverageComparable):
@@ -341,6 +451,36 @@ class BranchesCoverage(CoverageComparable):
     ) -> Tuple[float, float]:
         # pylint: disable=unused-argument
         return 1.0, 1.0
+
+    def is_program_line_covered(self, program_line):
+        if program_line not in self.relevant_program_lines():
+            return False
+        branches_taken = self.branches_hit_counter[program_line]
+        return branches_taken[0] and branches_taken[1]
+
+    def is_coverage_for_program_line_extended(
+        self, other: "BranchesCoverage", program_line
+    ) -> bool:
+        branch_taken_self = self.branches_hit_counter[program_line]
+        branch_taken_other = other.branches_hit_counter[program_line]
+        return (
+            not branch_taken_self[0]
+            and branch_taken_other[0]
+            or not branch_taken_self[1]
+            and branch_taken_other[1]
+        )
+
+    def relevant_program_lines(self):
+        return self.branches_hit_counter.keys()
+
+    def total_summed_coverage(self):
+        summed_coverage = 0
+        for branches_taken in self.branches_hit_counter.values():
+            if branches_taken[0]:
+                summed_coverage += 1
+            if branches_taken[1]:
+                summed_coverage += 1
+        return summed_coverage
 
 
 class TestCoverage:
@@ -416,6 +556,26 @@ class TestCoverage:
         if self.conditions_total == 0:
             return 1.0
         return round(float(self.conditions_hit) / float(self.conditions_total) * 100, 2)
+
+    def get_coverage_type_for_goal(self, goal) -> CoverageComparable:
+        if goal in [eu.COVER_BRANCHES, eu.COVER_ERRORS]:
+            return self.branches_coverage
+        if goal == eu.COVER_CONDITIONS:
+            return self.conditions_coverage
+        if goal == eu.COVER_LINES:
+            return self.lines_coverage
+        assert False, "Unhandled coverage goal: {}".format(goal)
+        return None
+
+    def get_coverage_for_goal(self, goal) -> float:
+        if goal in [eu.COVER_BRANCHES, eu.COVER_ERRORS]:
+            return self.branch_coverage
+        if goal == eu.COVER_CONDITIONS:
+            return self.condition_coverage
+        if goal == eu.COVER_LINES:
+            return self.line_coverage
+        assert False, "Unhandled coverage goal: {}".format(goal)
+        return None
 
     @staticmethod
     def merge(
@@ -616,8 +776,8 @@ def get_test_coverage_from_trace_file(program_name, trace_file) -> TestCoverage:
     )
 
 
-def write_test_coverages_to_dir(output_dir, overwrite, exec_results):
-    output_file = os.path.join(output_dir, FILE_NAME_TEST_COVERAGES)
+def write_test_coverages_to_dir(output_dir, overwrite, test_coverages, file_name):
+    output_file = os.path.join(output_dir, file_name)
     write_header = False
     if not os.path.exists(output_file) or overwrite:
         write_header = True
@@ -628,7 +788,7 @@ def write_test_coverages_to_dir(output_dir, overwrite, exec_results):
         )
         if write_header:
             writer.writerow(HEADER)
-        _write_csv_rows_from_test_coverages(writer, exec_results.coverage_tests)
+        _write_csv_rows_from_test_coverages(writer, test_coverages)
 
 
 def _write_csv_rows_from_test_coverages(writer, test_coverages):

@@ -402,8 +402,19 @@ def main():
 
         if exec_results.coverage_tests:
             cov.write_test_coverages_to_dir(
-                args.output_dir, args.overwrite, exec_results
+                args.output_dir,
+                args.overwrite,
+                exec_results.coverage_tests,
+                cov.FILE_NAME_INDIVIDUAL_TEST_COVERAGES,
             )
+        if exec_results.efficient_coverage_tests:
+            cov.write_test_coverages_to_dir(
+                args.output_dir,
+                args.overwrite,
+                exec_results.efficient_coverage_tests,
+                cov.FILE_NAME_EFFICIENT_TEST_COVERAGES,
+            )
+
         if args.write_plots:
             try:
                 from suite_validation import plotting
