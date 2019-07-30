@@ -140,7 +140,8 @@ class CoverageComparable:
         return only_covered_by_other > 0
 
 
-class ConditionsEntry(CoverageComparable):
+class ConditionsEntry:
+    # does not implement CoverageComparable
     def __init__(self, program_line: int, conditions_hit_counter: Dict[int, int]):
         self.program_line = program_line
         self.conditions_hit_counter = conditions_hit_counter
@@ -178,9 +179,7 @@ class ConditionsEntry(CoverageComparable):
             conditions_entry_1.program_line, summarized_conditions_hit_counter
         )
 
-    def compute_coverage_relation(
-        self, other: "ConditionsEntry"
-    ) -> Tuple[float, float]:
+    def compute_coverage_relation(self, other: "ConditionsEntry") -> Tuple[int, int]:
         assert self.program_line == other.program_line
         conditions_only_covered_by_self = 0
         conditions_only_covered_by_other = 0
@@ -197,22 +196,15 @@ class ConditionsEntry(CoverageComparable):
                 < self.conditions_hit_counter[key]
             ):
                 conditions_only_covered_by_self += 1
-        return (
-            divide(conditions_only_covered_by_self, self.conditions_total),
-            divide(conditions_only_covered_by_other, self.conditions_total),
-        )
+        return conditions_only_covered_by_self, conditions_only_covered_by_other
 
-    def is_program_line_covered(self, program_line) -> bool:
-        assert program_line == self.program_line
+    def is_program_line_covered(self) -> bool:
         for condition in self.conditions_hit_counter.values():
             if condition <= 0:
                 return False
         return True
 
-    def is_coverage_for_program_line_extended(
-        self, other: "ConditionsEntry", program_line
-    ):
-        assert program_line == self.program_line
+    def is_coverage_for_program_line_extended(self, other: "ConditionsEntry"):
         for key in self.conditions_hit_counter.keys():
             if (
                 self.conditions_hit_counter[key]
@@ -309,15 +301,15 @@ class ConditionsCoverage(CoverageComparable):
                 break
         if condition_entry is None:
             return False
-        return condition_entry.is_program_line_covered(program_line)
+        return condition_entry.is_program_line_covered()
 
     def is_coverage_for_program_line_extended(
         self, other: "ConditionsCoverage", program_line
     ) -> bool:
-        return self.get_conditions_entry(
-            program_line
-        ).is_coverage_for_program_line_extended(
-            other.get_conditions_entry(program_line), program_line
+        condition_entry_self = self.get_conditions_entry(program_line)
+        condition_entry_other = other.get_conditions_entry(program_line)
+        return condition_entry_self.is_coverage_for_program_line_extended(
+            condition_entry_other
         )
 
     def relevant_program_lines(self):
@@ -449,8 +441,23 @@ class BranchesCoverage(CoverageComparable):
     def compute_coverage_relation(
         self, other: "BranchesCoverage"
     ) -> Tuple[float, float]:
-        # pylint: disable=unused-argument
-        return 1.0, 1.0
+        number_branches_taken_only_self = 0
+        number_branches_taken_only_other = 0
+        for program_line in self.relevant_program_lines():
+            branches_taken_self = self.branches_hit_counter[program_line]
+            branches_taken_other = other.branches_hit_counter[program_line]
+            if branches_taken_self[0] <= 0 < branches_taken_other[0]:
+                number_branches_taken_only_other += 1
+            if branches_taken_other[0] <= 0 < branches_taken_self[0]:
+                number_branches_taken_only_self += 1
+            if branches_taken_self[1] <= 0 < branches_taken_other[1]:
+                number_branches_taken_only_other += 1
+            if branches_taken_other[1] <= 0 < branches_taken_self[1]:
+                number_branches_taken_only_self += 1
+        return (
+            divide(number_branches_taken_only_self, self.branches_total),
+            divide(number_branches_taken_only_other, other.branches_total),
+        )
 
     def is_program_line_covered(self, program_line):
         if program_line not in self.relevant_program_lines():

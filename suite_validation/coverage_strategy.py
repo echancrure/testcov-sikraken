@@ -22,14 +22,16 @@ def compute_test_coverage_with_highest_extension(
 def find_efficient_tests(
     test_coverages: List[cov.TestCoverage], goal
 ) -> List[cov.TestCoverage]:
+    test_coverages = test_coverages[:]
     total_test_coverage = max(
         test_coverages,
         key=lambda test_coverage: test_coverage.get_coverage_type_for_goal(
             goal
         ).total_summed_coverage(),
     )
-    efficient_test_coverages = [copy.deepcopy(total_test_coverage)]
     test_coverages.remove(total_test_coverage)
+    efficient_test_coverages = [total_test_coverage]
+    total_test_coverage = copy.deepcopy(total_test_coverage)
     program_lines = total_test_coverage.get_coverage_type_for_goal(
         goal
     ).relevant_program_lines()

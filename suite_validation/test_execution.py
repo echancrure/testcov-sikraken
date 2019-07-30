@@ -25,6 +25,8 @@ import itertools
 from nose.tools import timed
 from nose.tools import raises
 from nose.tools import eq_
+import suite_validation.coverage as cov
+import suite_validation.coverage_strategy as cov_str
 import suite_validation.execution as ex
 import suite_validation.execution_utils as eu
 import suite_validation
@@ -456,14 +458,225 @@ class TestSuiteExecutor(TempDirExecutor):
     @staticmethod
     def _check_coverage_results_correct(runner, machine_model):
         result_obj = runner.run(TEST_FILE_COVERAGE, SUITE_COVERAGE, machine_model)
-        cov = result_obj.coverage_total
+        test_coverage = result_obj.coverage_total
 
-        eq_(cov.line_coverage, 68.75)
-        eq_(cov.branch_coverage, 50)
-        eq_(cov.condition_coverage, 33.33)
-        eq_(cov.lines_total, 16)
-        eq_(cov.branches_total, 8)
-        eq_(cov.conditions_total, 12)
+        eq_(test_coverage.line_coverage, 68.75)
+        eq_(test_coverage.branch_coverage, 50)
+        eq_(test_coverage.condition_coverage, 33.33)
+        eq_(test_coverage.lines_total, 16)
+        eq_(test_coverage.branches_total, 8)
+        eq_(test_coverage.conditions_total, 12)
+
+
+class TestCoverageChecker:
+
+    bad_test_coverage = cov.TestCoverage(
+        "dummy_file",
+        cov.LinesCoverage(
+            {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0}
+        ),
+        cov.BranchesCoverage({4: [False, False], 8: [False, False]}),
+        cov.ConditionsCoverage(
+            [
+                cov.ConditionsEntry(4, {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0}),
+                cov.ConditionsEntry(8, {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0}),
+            ]
+        ),
+    )
+
+    perfect_test_coverage = cov.TestCoverage(
+        "dummy_file",
+        cov.LinesCoverage(
+            {1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1}
+        ),
+        cov.BranchesCoverage({4: [True, True], 8: [True, True]}),
+        cov.ConditionsCoverage(
+            [
+                cov.ConditionsEntry(4, {0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1}),
+                cov.ConditionsEntry(8, {0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1}),
+            ]
+        ),
+    )
+
+    half_perfect_test_coverage = cov.TestCoverage(
+        "dummy_file",
+        cov.LinesCoverage(
+            {1: 0, 2: 1, 3: 0, 4: 1, 5: 0, 6: 1, 7: 0, 8: 1, 9: 0, 10: 1}
+        ),
+        cov.BranchesCoverage({4: [True, False], 8: [True, False]}),
+        cov.ConditionsCoverage(
+            [
+                cov.ConditionsEntry(4, {0: 1, 1: 1, 2: 1, 3: 0, 4: 0, 5: 0}),
+                cov.ConditionsEntry(8, {0: 1, 1: 1, 2: 1, 3: 0, 4: 0, 5: 0}),
+            ]
+        ),
+    )
+
+    half_perfect_test_coverage_complementary = cov.TestCoverage(
+        "dummy_file",
+        cov.LinesCoverage(
+            {1: 1, 2: 0, 3: 1, 4: 0, 5: 1, 6: 0, 7: 1, 8: 0, 9: 1, 10: 0}
+        ),
+        cov.BranchesCoverage({4: [False, True], 8: [False, True]}),
+        cov.ConditionsCoverage(
+            [
+                cov.ConditionsEntry(4, {0: 0, 1: 0, 2: 0, 3: 1, 4: 1, 5: 1}),
+                cov.ConditionsEntry(8, {0: 0, 1: 0, 2: 0, 3: 1, 4: 1, 5: 1}),
+            ]
+        ),
+    )
+
+    test_coverage_group_one = [
+        bad_test_coverage,
+        perfect_test_coverage,
+        half_perfect_test_coverage,
+        half_perfect_test_coverage_complementary,
+    ]
+    test_coverage_group_two = [
+        bad_test_coverage,
+        half_perfect_test_coverage,
+        half_perfect_test_coverage_complementary,
+    ]
+
+    def test_basic_test_coverage_computations(self):
+
+        for goal in eu.COVERAGE_GOALS.values():
+            first_extends_second, second_extends_first = self.perfect_test_coverage.get_coverage_type_for_goal(
+                goal
+            ).compute_coverage_relation(
+                self.bad_test_coverage.get_coverage_type_for_goal(goal)
+            )
+            eq_(first_extends_second, 1.0)
+            eq_(second_extends_first, 0.0)
+
+        total_test_coverage = cov.TestCoverage.merge(
+            self.bad_test_coverage, self.perfect_test_coverage
+        )
+        for goal in eu.COVERAGE_GOALS.values():
+            first_extends_second, second_extends_first = total_test_coverage.get_coverage_type_for_goal(
+                goal
+            ).compute_coverage_relation(
+                self.perfect_test_coverage.get_coverage_type_for_goal(goal)
+            )
+            eq_(first_extends_second, 0.0)
+            eq_(second_extends_first, 0.0)
+
+        for goal in eu.COVERAGE_GOALS.values():
+            first_extends_second, second_extends_first = self.half_perfect_test_coverage.get_coverage_type_for_goal(
+                goal
+            ).compute_coverage_relation(
+                self.half_perfect_test_coverage_complementary.get_coverage_type_for_goal(
+                    goal
+                )
+            )
+            eq_(first_extends_second, 0.5)
+            eq_(second_extends_first, 0.5)
+
+        for test_coverage in self.test_coverage_group_one:
+            eq_(test_coverage.lines_total, 10)
+            goal = eu.COVER_BRANCHES
+            eq_(
+                len(
+                    test_coverage.get_coverage_type_for_goal(
+                        goal
+                    ).relevant_program_lines()
+                ),
+                2,
+            )
+            goal = eu.COVER_CONDITIONS
+            eq_(
+                len(
+                    test_coverage.get_coverage_type_for_goal(
+                        goal
+                    ).relevant_program_lines()
+                ),
+                2,
+            )
+            goal = eu.COVER_LINES
+            eq_(
+                len(
+                    test_coverage.get_coverage_type_for_goal(
+                        goal
+                    ).relevant_program_lines()
+                ),
+                10,
+            )
+
+        goal = eu.COVER_BRANCHES
+        eq_(
+            self.half_perfect_test_coverage.get_coverage_type_for_goal(
+                goal
+            ).total_summed_coverage(),
+            2,
+        )
+        eq_(
+            self.half_perfect_test_coverage.get_coverage_type_for_goal(
+                goal
+            ).is_program_line_covered(4),
+            False,
+        )
+        eq_(
+            self.half_perfect_test_coverage.get_coverage_type_for_goal(
+                goal
+            ).is_program_line_covered(8),
+            False,
+        )
+        goal = eu.COVER_CONDITIONS
+        eq_(
+            self.half_perfect_test_coverage.get_coverage_type_for_goal(
+                goal
+            ).total_summed_coverage(),
+            6,
+        )
+        eq_(
+            self.half_perfect_test_coverage.get_coverage_type_for_goal(
+                goal
+            ).is_program_line_covered(4),
+            False,
+        )
+        eq_(
+            self.half_perfect_test_coverage.get_coverage_type_for_goal(
+                goal
+            ).is_program_line_covered(8),
+            False,
+        )
+        goal = eu.COVER_LINES
+        eq_(
+            self.half_perfect_test_coverage.get_coverage_type_for_goal(
+                goal
+            ).total_summed_coverage(),
+            5,
+        )
+        eq_(
+            self.half_perfect_test_coverage.get_coverage_type_for_goal(
+                goal
+            ).is_program_line_covered(1),
+            False,
+        )
+        eq_(
+            self.half_perfect_test_coverage.get_coverage_type_for_goal(
+                goal
+            ).is_program_line_covered(2),
+            True,
+        )
+
+    def test_coverage_stragey(self):
+
+        for goal in eu.COVERAGE_GOALS.values():
+            efficient_tests = cov_str.find_efficient_tests(
+                self.test_coverage_group_one, goal
+            )
+            assert self.perfect_test_coverage in efficient_tests
+            assert self.half_perfect_test_coverage not in efficient_tests
+            assert self.half_perfect_test_coverage_complementary not in efficient_tests
+            assert self.bad_test_coverage not in efficient_tests
+
+            efficient_tests = cov_str.find_efficient_tests(
+                self.test_coverage_group_two, goal
+            )
+            assert self.half_perfect_test_coverage in efficient_tests
+            assert self.half_perfect_test_coverage_complementary in efficient_tests
+            assert self.bad_test_coverage not in efficient_tests
 
 
 def _get_test_directory():

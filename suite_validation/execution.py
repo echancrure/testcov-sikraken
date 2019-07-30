@@ -585,7 +585,7 @@ class SuiteExecutor:
             print("\n✔️  Done!", file=self._info_target, flush=True)  # print newline
             if self._efficient_tests and result_target.coverage_tests:
                 result_target.efficient_coverage_tests = covstr.find_efficient_tests(
-                    result_target.coverage_tests.copy(), self._goal
+                    result_target.coverage_tests[:], self._goal
                 )
 
 
