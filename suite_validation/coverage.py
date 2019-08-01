@@ -22,10 +22,7 @@ import os
 import logging
 import csv
 
-from typing import Dict
-from typing import Tuple
-from typing import List
-from typing import Optional
+from typing import Dict, Tuple, List, Optional
 from abc import ABCMeta, abstractmethod
 from suite_validation import execution_utils as eu
 
@@ -56,10 +53,6 @@ LCOV_COMMAND_PREFIX = [
 TRACE_FILE_CONDITION_NOT_VISITED = "-"
 
 
-def divide(x, y):
-    return float(x) / float(y)
-
-
 class CoverageCreationError(Exception):
     def __init__(self, msg):
         super().__init__()
@@ -84,8 +77,8 @@ class LcovSector(Enum):
 
 class CoverageComparable:
     """
-    A class that implements CoverageComparable must be able to compute the coverage relation between an object of the class
-    and another object of the same class. The computation of a coverage relation must return two values: The first
+    A class that implements CoverageComparable must be able to compute the coverage relation between an object of the
+    class and another object of the same class. The computation of a coverage relation must return two values: The first
     value represents the ratio of the measured unit (for instance line coverage) that the class object covers but that
     is not covered by the other object. The second value represents the ratio of the measured unit that the other object
     covers but is not covered by the class object.
@@ -115,12 +108,14 @@ class CoverageComparable:
     def is_program_line_covered(self, program_line) -> bool:
         raise NotImplementedError
 
+    @property
     @abstractmethod
     def relevant_program_lines(self):
         raise NotImplementedError
 
+    @property
     @abstractmethod
-    def total_summed_coverage(self) -> int:
+    def coverage_hit(self) -> int:
         raise NotImplementedError
 
     def covers(self, other: "CoverageComparable") -> bool:
@@ -141,28 +136,38 @@ class CoverageComparable:
 
 
 class ConditionsEntry:
-    # does not implement CoverageComparable
+    """
+    An instance of ConditionsEntry has a dictionary with indices as keys to address the conditions and counter numbers
+    as corresponding values which say how often the conditions have been hit. Moreover an instance has a program line
+    to relate to the program where the conditions appear. Note that ConditionsEntry does not implement
+    CoverageComparable.
+    An instance of ConditionsEntry is fully covered when each indices has a corresponding counter value that is greater
+    than zero.
+    """
+
     def __init__(self, program_line: int, conditions_hit_counter: Dict[int, int]):
         self.program_line = program_line
         self.conditions_hit_counter = conditions_hit_counter
 
-    def same_program_line(self, other: "ConditionsEntry") -> bool:
-        return self.program_line == other.program_line
-
     @property
     def conditions_total(self) -> int:
-        return len(self.conditions_hit_counter.keys())
+        return len(self.conditions_hit_counter)
 
     @property
     def conditions_hit(self) -> int:
-        number_conditions_taken = 0
-        for value in self.conditions_hit_counter.values():
-            if value > 0:
-                number_conditions_taken += 1
-        return number_conditions_taken
+        return len([v for v in self.conditions_hit_counter.values() if v > 0])
 
-    def set_condition_to_hit_counter(self, index: int, number_of_condition_taken: int):
-        self.conditions_hit_counter[index] = number_of_condition_taken
+    @property
+    def conditions_indices(self):
+        return self.conditions_hit_counter.keys()
+
+    @property
+    def is_program_line_covered(self) -> bool:
+        return all(c > 0 for c in self.conditions_hit_counter.values())
+
+    @property
+    def relevant_program_lines(self):
+        return [self.program_line]
 
     @staticmethod
     def merge(
@@ -170,7 +175,7 @@ class ConditionsEntry:
     ) -> "ConditionsEntry":
         assert conditions_entry_1.program_line == conditions_entry_2.program_line
         summarized_conditions_hit_counter = {}
-        for condition_index in conditions_entry_1.conditions_hit_counter.keys():
+        for condition_index in conditions_entry_1.conditions_hit_counter:
             summarized_conditions_hit_counter[condition_index] = (
                 conditions_entry_1.conditions_hit_counter[condition_index]
                 + conditions_entry_2.conditions_hit_counter[condition_index]
@@ -179,11 +184,17 @@ class ConditionsEntry:
             conditions_entry_1.program_line, summarized_conditions_hit_counter
         )
 
+    def same_program_line(self, other: "ConditionsEntry") -> bool:
+        return self.program_line == other.program_line
+
+    def set_condition_to_hit_counter(self, index: int, number_of_condition_taken: int):
+        self.conditions_hit_counter[index] = number_of_condition_taken
+
     def compute_coverage_relation(self, other: "ConditionsEntry") -> Tuple[int, int]:
         assert self.program_line == other.program_line
         conditions_only_covered_by_self = 0
         conditions_only_covered_by_other = 0
-        for key in self.conditions_hit_counter.keys():
+        for key in self.conditions_indices:
             if (
                 self.conditions_hit_counter[key]
                 <= 0
@@ -198,43 +209,26 @@ class ConditionsEntry:
                 conditions_only_covered_by_self += 1
         return conditions_only_covered_by_self, conditions_only_covered_by_other
 
-    def is_program_line_covered(self) -> bool:
-        for condition in self.conditions_hit_counter.values():
-            if condition <= 0:
-                return False
-        return True
-
     def is_coverage_for_program_line_extended(self, other: "ConditionsEntry"):
-        for key in self.conditions_hit_counter.keys():
-            if (
-                self.conditions_hit_counter[key]
-                <= 0
-                < other.conditions_hit_counter[key]
-            ):
-                return True
-        return False
-
-    def relevant_program_lines(self):
-        return [self.program_line]
-
-    def total_summed_coverage(self):
-        summed_coverage = 0
-        for value in self.conditions_hit_counter.values():
-            if value > 0:
-                summed_coverage += 1
-        return summed_coverage
+        return any(
+            hit_counter <= 0 < other.conditions_hit_counter[pl]
+            for pl, hit_counter in self.conditions_hit_counter.items()
+        )
 
 
 class ConditionsCoverage(CoverageComparable):
+    """
+    Contains a list of ConditionsEntry to represent all ConditionEntries that appear in the program.
+    Each ConditionsEntry is assigned to a certain program line. A conditions coverage satisfies full coverage
+    when each ConditionsEntry satisfies full coverage.
+    """
+
     def __init__(self, conditions_entries: List[ConditionsEntry]):
         self.conditions_entries = conditions_entries
 
     @property
     def conditions_hit(self) -> int:
-        number_of_conditions_taken = 0
-        for condition_entry in self.conditions_entries:
-            number_of_conditions_taken += condition_entry.conditions_hit
-        return number_of_conditions_taken
+        return sum(e.conditions_hit for e in self.conditions_entries)
 
     @property
     def conditions_total(self) -> int:
@@ -243,134 +237,131 @@ class ConditionsCoverage(CoverageComparable):
             number_of_conditions_found += condition_entry.conditions_total
         return number_of_conditions_found
 
+    @property
+    def relevant_program_lines(self):
+        return [entry.program_line for entry in self.conditions_entries]
+
+    @property
+    def coverage_hit(self) -> int:
+        return self.conditions_hit
+
     @staticmethod
     def merge(
-        conditions_coverage_1: "ConditionsCoverage",
-        conditions_coverage_2: "ConditionsCoverage",
+        coverage_1: "ConditionsCoverage", coverage_2: "ConditionsCoverage"
     ) -> "ConditionsCoverage":
-        summarized_conditions_entries = []
-        for entry_1 in conditions_coverage_1.conditions_entries:
-            for entry_2 in conditions_coverage_2.conditions_entries:
-                if entry_1.same_program_line(entry_2):
-                    summarized_conditions_entries.append(
-                        ConditionsEntry.merge(entry_1, entry_2)
-                    )
-        return ConditionsCoverage(summarized_conditions_entries)
+        merged = [
+            ConditionsEntry.merge(e1, e2)
+            for e1 in coverage_1.conditions_entries
+            for e2 in coverage_2.conditions_entries
+            if e1.same_program_line(e2)
+        ]
+        return ConditionsCoverage(merged)
 
     def get_conditions_entry(self, program_line) -> Optional[ConditionsEntry]:
-        for entry in self.conditions_entries:
-            if entry.program_line == program_line:
-                return entry
-        return None
+        return next(
+            iter(
+                [e for e in self.conditions_entries if e.program_line == program_line]
+            ),
+            None,
+        )
 
     def compute_coverage_relation(
         self, other: "ConditionsCoverage"
     ) -> Tuple[float, float]:
         conditions_only_covered_by_self = 0
         conditions_only_covered_by_other = 0
-        for conditions_self in self.conditions_entries:
-            for conditions_other in other.conditions_entries:
-                if conditions_self.same_program_line(conditions_other):
-                    (
-                        conditions_only_covered_by_self,
-                        conditions_only_covered_by_other,
-                    ) = map(
-                        sum,
-                        zip(
-                            (
-                                conditions_only_covered_by_self,
-                                conditions_only_covered_by_other,
-                            ),
-                            conditions_self.compute_coverage_relation(conditions_other),
-                        ),
-                    )
+        entries_per_line = (
+            (e1, e2)
+            for e1 in self.conditions_entries
+            for e2 in other.conditions_entries
+            if e1.same_program_line(e2)
+        )
+        for conditions_self, conditions_other in entries_per_line:
+            current_only_self, current_only_other = conditions_self.compute_coverage_relation(
+                conditions_other
+            )
+            conditions_only_covered_by_self += current_only_self
+            conditions_only_covered_by_other += current_only_other
         if self.conditions_total == 0:
             return 0.0, 0.0
         return (
-            divide(conditions_only_covered_by_self, self.conditions_total),
-            divide(conditions_only_covered_by_other, self.conditions_total),
+            float(conditions_only_covered_by_self) / float(self.conditions_total),
+            float(conditions_only_covered_by_other) / float(self.conditions_total),
         )
 
     def is_program_line_covered(self, program_line) -> bool:
-        if program_line not in self.relevant_program_lines():
+        if program_line not in self.relevant_program_lines:
             return False
-        condition_entry = None
-        for entry in self.conditions_entries:
-            if entry.program_line == program_line:
-                condition_entry = entry
-                break
-        if condition_entry is None:
-            return False
-        return condition_entry.is_program_line_covered()
+        return self.get_conditions_entry(program_line).is_program_line_covered
 
     def is_coverage_for_program_line_extended(
         self, other: "ConditionsCoverage", program_line
     ) -> bool:
-        condition_entry_self = self.get_conditions_entry(program_line)
-        condition_entry_other = other.get_conditions_entry(program_line)
-        return condition_entry_self.is_coverage_for_program_line_extended(
-            condition_entry_other
+        return self.get_conditions_entry(
+            program_line
+        ).is_coverage_for_program_line_extended(
+            other.get_conditions_entry(program_line)
         )
-
-    def relevant_program_lines(self):
-        return [entry.program_line for entry in self.conditions_entries]
-
-    def total_summed_coverage(self):
-        summed_coverage = 0
-        for entry in self.conditions_entries:
-            summed_coverage += entry.total_summed_coverage()
-        return summed_coverage
 
 
 class LinesCoverage(CoverageComparable):
+    """
+    Contains a dict with the program lines as keys and hit numbers as corresponding values. If each program line has
+    a hit number greater than zero the program is fully covered regarding the line coverage.
+    """
+
     def __init__(self, program_lines_hit_counter: Dict[int, int]):
         self.lines_hit_counter = program_lines_hit_counter
 
     @property
     def lines_hit(self) -> int:
         lines_taken = 0
-        for program_line in self.lines_hit_counter.keys():
+        for program_line in self.relevant_program_lines:
             if self.lines_hit_counter[program_line] > 0:
                 lines_taken += 1
         return lines_taken
 
     @property
     def lines_total(self) -> int:
-        return len(self.lines_hit_counter.keys())
+        return len(self.relevant_program_lines)
+
+    @property
+    def relevant_program_lines(self):
+        return self.lines_hit_counter.keys()
+
+    @property
+    def coverage_hit(self) -> int:
+        return self.lines_hit
 
     @staticmethod
-    def merge(line_coverage_1: "LinesCoverage", line_coverage_2: "LinesCoverage"):
-        summarized_lines_coverage = {}
-        for line in line_coverage_1.lines_hit_counter.keys():
-            summarized_lines_coverage[line] = (
-                line_coverage_1.lines_hit_counter[line]
-                + line_coverage_2.lines_hit_counter[line]
-            )
+    def merge(cov1: "LinesCoverage", cov2: "LinesCoverage"):
+        summarized_lines_coverage = {
+            l: cov1.lines_hit_counter[l] + cov2.lines_hit_counter[l]
+            for l in cov1.lines_hit_counter
+        }
         return LinesCoverage(summarized_lines_coverage)
 
     def compute_coverage_relation(self, other: "LinesCoverage") -> Tuple[float, float]:
-        assert self.lines_total == other.lines_total
-        diff = 0
-        lines_self_covers_other = 0
-        lines_other_covers_self = 0
-        for program_line in self.lines_hit_counter.keys():
+        lines_only_covered_by_self = 0
+        lines_only_covered_by_other = 0
+        for program_line in self.relevant_program_lines:
             if (
-                self.lines_hit_counter[program_line] == 0
-                and other.lines_hit_counter[program_line] > 0
+                self.lines_hit_counter[program_line]
+                <= 0
+                < other.lines_hit_counter[program_line]
             ):
-                diff += 1
-                lines_other_covers_self += 1
+                lines_only_covered_by_other += 1
             if (
-                self.lines_hit_counter[program_line] > 0
-                and other.lines_hit_counter[program_line] == 0
+                other.lines_hit_counter[program_line]
+                <= 0
+                < self.lines_hit_counter[program_line]
             ):
-                diff += 1
-                lines_self_covers_other += 1
+                lines_only_covered_by_self += 1
         if self.lines_total == 0:
             return 0.0, 0.0
         return (
-            divide(lines_self_covers_other, self.lines_total),
-            divide(lines_other_covers_self, self.lines_total),
+            float(lines_only_covered_by_self) / float(self.lines_total),
+            float(lines_only_covered_by_other) / float(self.lines_total),
         )
 
     def is_program_line_covered(self, program_line) -> bool:
@@ -383,59 +374,51 @@ class LinesCoverage(CoverageComparable):
             program_line
         ) and other.is_program_line_covered(program_line)
 
-    def relevant_program_lines(self):
-        return self.lines_hit_counter.keys()
-
-    def total_summed_coverage(self):
-        return self.lines_hit
-
 
 class BranchesCoverage(CoverageComparable):
+    """
+    Contains a dictionary with program lines as keys and two-element lists with booleans as values. For each program
+    line a corresponding list exists to state whether branch one and whether branch two are hit.
+    Note that the values can be wrong because getting branch coverage with lcov does NOT WORK so far!
+    If there will be a solution later to fix this issue it might be interesting to store how often the branches
+    have been taken and not only whether they have been taken. In consequence, this class might be refactored.
+    """
+
     def __init__(self, branches_hit_counter: Dict[int, List[bool]]):
         self.branches_hit_counter = branches_hit_counter
 
     @property
     def branches_total(self):
-        return len(self.branches_hit_counter.keys()) * 2
+        return len(self.branches_hit_counter) * 2
 
     @property
     def branches_hit(self):
-        branches_taken = 0
-        for line_with_branch in self.branches_hit_counter.keys():
-            conditions_executed = self.branches_hit_counter[line_with_branch]
-            if conditions_executed[0]:
-                branches_taken += 1
-            if conditions_executed[1]:
-                branches_taken += 1
-        return branches_taken
+        hit = 0
+        for value in self.branches_hit_counter.values():
+            if value[0]:
+                hit += 1
+            if value[1]:
+                hit += 1
+        return hit
+
+    @property
+    def relevant_program_lines(self):
+        return self.branches_hit_counter.keys()
+
+    @property
+    def coverage_hit(self):
+        return self.branches_hit
 
     @staticmethod
-    def merge(
-        branch_coverage_1: "BranchesCoverage", branch_coverage_2: "BranchesCoverage"
-    ) -> "BranchesCoverage":
+    def merge(cov1: "BranchesCoverage", cov2: "BranchesCoverage") -> "BranchesCoverage":
         summarized_branches_coverage = {}
-        for line in branch_coverage_1.branches_hit_counter.keys():
-            if line not in summarized_branches_coverage.keys():
-                summarized_branches_coverage[line] = [False, False]
-            summarized_branches_coverage[line][0] = (
-                summarized_branches_coverage[line][0]
-                or branch_coverage_1.branches_hit_counter[line][0]
-            )
-            summarized_branches_coverage[line][1] = (
-                summarized_branches_coverage[line][1]
-                or branch_coverage_1.branches_hit_counter[line][1]
-            )
-        for line in branch_coverage_2.branches_hit_counter.keys():
-            if line not in summarized_branches_coverage.keys():
-                summarized_branches_coverage[line] = [False, False]
-            summarized_branches_coverage[line][0] = (
-                summarized_branches_coverage[line][0]
-                or branch_coverage_2.branches_hit_counter[line][0]
-            )
-            summarized_branches_coverage[line][1] = (
-                summarized_branches_coverage[line][1]
-                or branch_coverage_2.branches_hit_counter[line][1]
-            )
+        for line in cov1.relevant_program_lines:
+            summarized_branches_coverage[line] = [False, False]
+            for i in (0, 1):
+                summarized_branches_coverage[line][i] = (
+                    cov1.branches_hit_counter[line][i]
+                    or cov2.branches_hit_counter[line][i]
+                )
         return BranchesCoverage(summarized_branches_coverage)
 
     def compute_coverage_relation(
@@ -443,7 +426,7 @@ class BranchesCoverage(CoverageComparable):
     ) -> Tuple[float, float]:
         number_branches_taken_only_self = 0
         number_branches_taken_only_other = 0
-        for program_line in self.relevant_program_lines():
+        for program_line in self.relevant_program_lines:
             branches_taken_self = self.branches_hit_counter[program_line]
             branches_taken_other = other.branches_hit_counter[program_line]
             if branches_taken_self[0] <= 0 < branches_taken_other[0]:
@@ -455,42 +438,31 @@ class BranchesCoverage(CoverageComparable):
             if branches_taken_other[1] <= 0 < branches_taken_self[1]:
                 number_branches_taken_only_self += 1
         return (
-            divide(number_branches_taken_only_self, self.branches_total),
-            divide(number_branches_taken_only_other, other.branches_total),
+            float(number_branches_taken_only_self) / float(self.branches_total),
+            float(number_branches_taken_only_other) / float(other.branches_total),
         )
 
     def is_program_line_covered(self, program_line):
-        if program_line not in self.relevant_program_lines():
-            return False
-        branches_taken = self.branches_hit_counter[program_line]
-        return branches_taken[0] and branches_taken[1]
+        return program_line in self.relevant_program_lines and all(
+            self.branches_hit_counter[program_line]
+        )
 
     def is_coverage_for_program_line_extended(
         self, other: "BranchesCoverage", program_line
     ) -> bool:
         branch_taken_self = self.branches_hit_counter[program_line]
         branch_taken_other = other.branches_hit_counter[program_line]
-        return (
-            not branch_taken_self[0]
-            and branch_taken_other[0]
-            or not branch_taken_self[1]
-            and branch_taken_other[1]
+        return (not branch_taken_self[0] and branch_taken_other[0]) or (
+            not branch_taken_self[1] and branch_taken_other[1]
         )
-
-    def relevant_program_lines(self):
-        return self.branches_hit_counter.keys()
-
-    def total_summed_coverage(self):
-        summed_coverage = 0
-        for branches_taken in self.branches_hit_counter.values():
-            if branches_taken[0]:
-                summed_coverage += 1
-            if branches_taken[1]:
-                summed_coverage += 1
-        return summed_coverage
 
 
 class TestCoverage:
+    """
+    Contains the line coverage, branch coverage and conditions coverage. One of these coverage kinds can be
+    extracted by using the coverage goal in the execution.
+    """
+
     def __init__(
         self,
         file_name,
@@ -564,15 +536,14 @@ class TestCoverage:
             return 1.0
         return round(float(self.conditions_hit) / float(self.conditions_total) * 100, 2)
 
-    def get_coverage_type_for_goal(self, goal) -> CoverageComparable:
+    def coverage_type(self, goal) -> CoverageComparable:
         if goal in [eu.COVER_BRANCHES, eu.COVER_ERRORS]:
             return self.branches_coverage
         if goal == eu.COVER_CONDITIONS:
             return self.conditions_coverage
         if goal == eu.COVER_LINES:
             return self.lines_coverage
-        assert False, "Unhandled coverage goal: {}".format(goal)
-        return None
+        raise AssertionError("Unhandled coverage goal: {}".format(goal))
 
     def get_coverage_for_goal(self, goal) -> float:
         if goal in [eu.COVER_BRANCHES, eu.COVER_ERRORS]:
@@ -581,8 +552,7 @@ class TestCoverage:
             return self.condition_coverage
         if goal == eu.COVER_LINES:
             return self.line_coverage
-        assert False, "Unhandled coverage goal: {}".format(goal)
-        return None
+        raise AssertionError("Unhandled coverage goal: {}".format(goal))
 
     @staticmethod
     def merge(
@@ -685,10 +655,9 @@ def _append_to_conditions_entries(
     :param number_of_condition_taken: the number how often the condition is taken
     :return:
     """
-    condition_entry = None
-    for entry in conditions_entries:
-        if entry.program_line == program_line:
-            condition_entry = entry
+    condition_entry = next(
+        iter([e for e in conditions_entries if e.program_line == program_line]), None
+    )
     if condition_entry is None:
         condition_entry = ConditionsEntry(program_line, {})
         conditions_entries.append(condition_entry)

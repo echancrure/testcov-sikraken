@@ -500,7 +500,10 @@ class SuiteExecutor:
 
     @staticmethod
     def _compute_coverage(
-        result: eu.TestResult, test_vector: eu.TestVector, program_file, executor
+        result: eu.TestResult,
+        test_vector: eu.TestVector,
+        program_file: str,
+        executor: CoverageMeasuringExecutionRunner,
     ) -> cov.TestCoverage:
         coverage_test = executor.compute_test_coverage_from_gcda_file(program_file)
         coverage_test.set_result(result)
@@ -511,9 +514,9 @@ class SuiteExecutor:
         self,
         result_target: eu.SuiteExecutionResult,
         next_result: eu.TestResult,
-        program_file,
+        program_file: str,
         tv: eu.TestVector,
-        executor,
+        executor: CoverageMeasuringExecutionRunner,
     ):
         try:
 
@@ -522,7 +525,7 @@ class SuiteExecutor:
             )
 
             if self._compute_individual_test_coverages:
-                # We always delete the gcda file so merging the new coverage with the old one is necessary
+                # Since we delete the gcda file merging the new coverage with the old one is necessary
                 result_target.coverage_tests.append(current_coverage)
                 if result_target.coverage_total:
                     result_target.coverage_total = cov.TestCoverage.merge(

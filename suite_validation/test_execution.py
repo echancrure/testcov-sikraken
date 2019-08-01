@@ -541,10 +541,10 @@ class TestCoverageChecker:
     def test_basic_test_coverage_computations(self):
 
         for goal in eu.COVERAGE_GOALS.values():
-            first_extends_second, second_extends_first = self.perfect_test_coverage.get_coverage_type_for_goal(
+            first_extends_second, second_extends_first = self.perfect_test_coverage.coverage_type(
                 goal
             ).compute_coverage_relation(
-                self.bad_test_coverage.get_coverage_type_for_goal(goal)
+                self.bad_test_coverage.coverage_type(goal)
             )
             eq_(first_extends_second, 1.0)
             eq_(second_extends_first, 0.0)
@@ -553,21 +553,19 @@ class TestCoverageChecker:
             self.bad_test_coverage, self.perfect_test_coverage
         )
         for goal in eu.COVERAGE_GOALS.values():
-            first_extends_second, second_extends_first = total_test_coverage.get_coverage_type_for_goal(
+            first_extends_second, second_extends_first = total_test_coverage.coverage_type(
                 goal
             ).compute_coverage_relation(
-                self.perfect_test_coverage.get_coverage_type_for_goal(goal)
+                self.perfect_test_coverage.coverage_type(goal)
             )
             eq_(first_extends_second, 0.0)
             eq_(second_extends_first, 0.0)
 
         for goal in eu.COVERAGE_GOALS.values():
-            first_extends_second, second_extends_first = self.half_perfect_test_coverage.get_coverage_type_for_goal(
+            first_extends_second, second_extends_first = self.half_perfect_test_coverage.coverage_type(
                 goal
             ).compute_coverage_relation(
-                self.half_perfect_test_coverage_complementary.get_coverage_type_for_goal(
-                    goal
-                )
+                self.half_perfect_test_coverage_complementary.coverage_type(goal)
             )
             eq_(first_extends_second, 0.5)
             eq_(second_extends_first, 0.5)
@@ -575,88 +573,52 @@ class TestCoverageChecker:
         for test_coverage in self.test_coverage_group_one:
             eq_(test_coverage.lines_total, 10)
             goal = eu.COVER_BRANCHES
-            eq_(
-                len(
-                    test_coverage.get_coverage_type_for_goal(
-                        goal
-                    ).relevant_program_lines()
-                ),
-                2,
-            )
+            eq_(len(test_coverage.coverage_type(goal).relevant_program_lines), 2)
             goal = eu.COVER_CONDITIONS
-            eq_(
-                len(
-                    test_coverage.get_coverage_type_for_goal(
-                        goal
-                    ).relevant_program_lines()
-                ),
-                2,
-            )
+            eq_(len(test_coverage.coverage_type(goal).relevant_program_lines), 2)
             goal = eu.COVER_LINES
-            eq_(
-                len(
-                    test_coverage.get_coverage_type_for_goal(
-                        goal
-                    ).relevant_program_lines()
-                ),
-                10,
-            )
+            eq_(len(test_coverage.coverage_type(goal).relevant_program_lines), 10)
 
         goal = eu.COVER_BRANCHES
+        eq_(self.half_perfect_test_coverage.coverage_type(goal).coverage_hit, 2)
         eq_(
-            self.half_perfect_test_coverage.get_coverage_type_for_goal(
-                goal
-            ).total_summed_coverage(),
-            2,
-        )
-        eq_(
-            self.half_perfect_test_coverage.get_coverage_type_for_goal(
-                goal
-            ).is_program_line_covered(4),
+            self.half_perfect_test_coverage.coverage_type(goal).is_program_line_covered(
+                4
+            ),
             False,
         )
         eq_(
-            self.half_perfect_test_coverage.get_coverage_type_for_goal(
-                goal
-            ).is_program_line_covered(8),
+            self.half_perfect_test_coverage.coverage_type(goal).is_program_line_covered(
+                8
+            ),
             False,
         )
         goal = eu.COVER_CONDITIONS
+        eq_(self.half_perfect_test_coverage.coverage_type(goal).coverage_hit, 6)
         eq_(
-            self.half_perfect_test_coverage.get_coverage_type_for_goal(
-                goal
-            ).total_summed_coverage(),
-            6,
-        )
-        eq_(
-            self.half_perfect_test_coverage.get_coverage_type_for_goal(
-                goal
-            ).is_program_line_covered(4),
+            self.half_perfect_test_coverage.coverage_type(goal).is_program_line_covered(
+                4
+            ),
             False,
         )
         eq_(
-            self.half_perfect_test_coverage.get_coverage_type_for_goal(
-                goal
-            ).is_program_line_covered(8),
+            self.half_perfect_test_coverage.coverage_type(goal).is_program_line_covered(
+                8
+            ),
             False,
         )
         goal = eu.COVER_LINES
+        eq_(self.half_perfect_test_coverage.coverage_type(goal).coverage_hit, 5)
         eq_(
-            self.half_perfect_test_coverage.get_coverage_type_for_goal(
-                goal
-            ).total_summed_coverage(),
-            5,
-        )
-        eq_(
-            self.half_perfect_test_coverage.get_coverage_type_for_goal(
-                goal
-            ).is_program_line_covered(1),
+            self.half_perfect_test_coverage.coverage_type(goal).is_program_line_covered(
+                1
+            ),
             False,
         )
         eq_(
-            self.half_perfect_test_coverage.get_coverage_type_for_goal(
-                goal
-            ).is_program_line_covered(2),
+            self.half_perfect_test_coverage.coverage_type(goal).is_program_line_covered(
+                2
+            ),
             True,
         )
 
