@@ -100,12 +100,12 @@ class CoverageComparable:
 
     @abstractmethod
     def is_coverage_for_program_line_extended(
-        self, other: "CoverageComparable", program_line
+        self, other: "CoverageComparable", pl
     ) -> bool:
         raise NotImplementedError
 
     @abstractmethod
-    def is_program_line_covered(self, program_line) -> bool:
+    def is_program_line_covered(self, pl) -> bool:
         raise NotImplementedError
 
     @property
@@ -171,18 +171,16 @@ class ConditionsEntry:
 
     @staticmethod
     def merge(
-        conditions_entry_1: "ConditionsEntry", conditions_entry_2: "ConditionsEntry"
+        entry1: "ConditionsEntry", entry2: "ConditionsEntry"
     ) -> "ConditionsEntry":
-        assert conditions_entry_1.program_line == conditions_entry_2.program_line
+        assert entry1.program_line == entry2.program_line
         summarized_conditions_hit_counter = {}
-        for condition_index in conditions_entry_1.conditions_hit_counter:
+        for condition_index in entry1.conditions_hit_counter:
             summarized_conditions_hit_counter[condition_index] = (
-                conditions_entry_1.conditions_hit_counter[condition_index]
-                + conditions_entry_2.conditions_hit_counter[condition_index]
+                entry1.conditions_hit_counter[condition_index]
+                + entry2.conditions_hit_counter[condition_index]
             )
-        return ConditionsEntry(
-            conditions_entry_1.program_line, summarized_conditions_hit_counter
-        )
+        return ConditionsEntry(entry1.program_line, summarized_conditions_hit_counter)
 
     def same_program_line(self, other: "ConditionsEntry") -> bool:
         return self.program_line == other.program_line
@@ -247,12 +245,12 @@ class ConditionsCoverage(CoverageComparable):
 
     @staticmethod
     def merge(
-        coverage_1: "ConditionsCoverage", coverage_2: "ConditionsCoverage"
+        cov1: "ConditionsCoverage", cov2: "ConditionsCoverage"
     ) -> "ConditionsCoverage":
         merged = [
             ConditionsEntry.merge(e1, e2)
-            for e1 in coverage_1.conditions_entries
-            for e2 in coverage_2.conditions_entries
+            for e1 in cov1.conditions_entries
+            for e2 in cov2.conditions_entries
             if e1.same_program_line(e2)
         ]
         return ConditionsCoverage(merged)
@@ -289,18 +287,16 @@ class ConditionsCoverage(CoverageComparable):
             float(conditions_only_covered_by_other) / float(self.conditions_total),
         )
 
-    def is_program_line_covered(self, program_line) -> bool:
-        if program_line not in self.relevant_program_lines:
+    def is_program_line_covered(self, pl) -> bool:
+        if pl not in self.relevant_program_lines:
             return False
-        return self.get_conditions_entry(program_line).is_program_line_covered
+        return self.get_conditions_entry(pl).is_program_line_covered
 
     def is_coverage_for_program_line_extended(
-        self, other: "ConditionsCoverage", program_line
+        self, other: "ConditionsCoverage", pl
     ) -> bool:
-        return self.get_conditions_entry(
-            program_line
-        ).is_coverage_for_program_line_extended(
-            other.get_conditions_entry(program_line)
+        return self.get_conditions_entry(pl).is_coverage_for_program_line_extended(
+            other.get_conditions_entry(pl)
         )
 
 
@@ -364,15 +360,13 @@ class LinesCoverage(CoverageComparable):
             float(lines_only_covered_by_other) / float(self.lines_total),
         )
 
-    def is_program_line_covered(self, program_line) -> bool:
-        return self.lines_hit_counter[program_line] > 0
+    def is_program_line_covered(self, pl) -> bool:
+        return self.lines_hit_counter[pl] > 0
 
-    def is_coverage_for_program_line_extended(
-        self, other: "LinesCoverage", program_line
-    ) -> bool:
-        return not self.is_program_line_covered(
-            program_line
-        ) and other.is_program_line_covered(program_line)
+    def is_coverage_for_program_line_extended(self, other: "LinesCoverage", pl) -> bool:
+        return not self.is_program_line_covered(pl) and other.is_program_line_covered(
+            pl
+        )
 
 
 class BranchesCoverage(CoverageComparable):
@@ -442,16 +436,14 @@ class BranchesCoverage(CoverageComparable):
             float(number_branches_taken_only_other) / float(other.branches_total),
         )
 
-    def is_program_line_covered(self, program_line):
-        return program_line in self.relevant_program_lines and all(
-            self.branches_hit_counter[program_line]
-        )
+    def is_program_line_covered(self, pl):
+        return pl in self.relevant_program_lines and all(self.branches_hit_counter[pl])
 
     def is_coverage_for_program_line_extended(
-        self, other: "BranchesCoverage", program_line
+        self, other: "BranchesCoverage", pl
     ) -> bool:
-        branch_taken_self = self.branches_hit_counter[program_line]
-        branch_taken_other = other.branches_hit_counter[program_line]
+        branch_taken_self = self.branches_hit_counter[pl]
+        branch_taken_other = other.branches_hit_counter[pl]
         return (not branch_taken_self[0] and branch_taken_other[0]) or (
             not branch_taken_self[1] and branch_taken_other[1]
         )
@@ -555,21 +547,19 @@ class TestCoverage:
         raise AssertionError("Unhandled coverage goal: {}".format(goal))
 
     @staticmethod
-    def merge(
-        test_coverage_1: "TestCoverage", test_coverage_2: "TestCoverage"
-    ) -> "TestCoverage":
-        assert test_coverage_1.filename == test_coverage_2.filename
+    def merge(cov1: "TestCoverage", cov2: "TestCoverage") -> "TestCoverage":
+        assert cov1.filename == cov2.filename
         summarized_lines_coverage = LinesCoverage.merge(
-            test_coverage_1.lines_coverage, test_coverage_2.lines_coverage
+            cov1.lines_coverage, cov2.lines_coverage
         )
         summarized_branches_coverage = BranchesCoverage.merge(
-            test_coverage_1.branches_coverage, test_coverage_2.branches_coverage
+            cov1.branches_coverage, cov2.branches_coverage
         )
         summarized_conditions_coverage = ConditionsCoverage.merge(
-            test_coverage_1.conditions_coverage, test_coverage_2.conditions_coverage
+            cov1.conditions_coverage, cov2.conditions_coverage
         )
         return TestCoverage(
-            test_coverage_1.filename,
+            cov1.filename,
             summarized_lines_coverage,
             summarized_branches_coverage,
             summarized_conditions_coverage,
