@@ -28,7 +28,7 @@ from suite_validation import execution_utils as eu
 
 # Constants for csv output
 FILE_NAME_INDIVIDUAL_TEST_COVERAGES = "individual-test-coverages.csv"
-FILE_NAME_EFFICIENT_TEST_COVERAGES = "efficient-test-coverages.csv"
+FILE_NAME_REDUCED_TEST_COVERAGES = "reduced-test-coverages.csv"
 LINES_COVERED = "Line Coverage"
 BRANCHES_COVERED = "Branch Coverage"
 CONDITIONS_COVERED = "Condition Coverage"

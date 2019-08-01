@@ -153,20 +153,11 @@ def get_parser():
     )
 
     parser.add_argument(
-        "--no-create-reduced-suite",
+        "--no-reduce",
         dest="reduce_tests",
         action="store_false",
         default=True,
         help="don't create a reduced test suite",
-        required=False,
-    )
-
-    parser.add_argument(
-        "--no-efficient-test-suite",
-        dest="efficient_tests",
-        action="store_false",
-        default=True,
-        help="don't create an efficient test suite",
         required=False,
     )
 
@@ -358,7 +349,6 @@ def main():
             args.timelimit_per_run,
             compute_sequence=args.print_seq_file is not None,
             reduce_tests=args.reduce_tests,
-            efficient_tests=args.efficient_tests,
             overwrite_files=args.overwrite,
             harness_file_target=harness_file,
             compile_target=executable,
@@ -417,12 +407,12 @@ def main():
                 exec_results.coverage_tests,
                 cov.FILE_NAME_INDIVIDUAL_TEST_COVERAGES,
             )
-        if exec_results.efficient_coverage_tests:
+        if exec_results.reduced_coverage_tests:
             cov.write_test_coverages_to_dir(
                 args.output_dir,
                 args.overwrite,
-                exec_results.efficient_coverage_tests,
-                cov.FILE_NAME_EFFICIENT_TEST_COVERAGES,
+                exec_results.reduced_coverage_tests,
+                cov.FILE_NAME_REDUCED_TEST_COVERAGES,
             )
 
         if args.write_plots:

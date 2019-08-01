@@ -19,11 +19,11 @@ def compute_test_coverage_with_highest_extension(
     return optimal_test_coverage
 
 
-def find_efficient_tests(
+def find_reduced_test_suite(
     individual_coverages: List[cov.TestCoverage], goal
 ) -> List[cov.TestCoverage]:
     """
-    Finds a list of efficient individual tests by computing a total test coverage that is as effective as
+    Finds a list of reduced individual tests by computing a total test coverage that is as effective as
     the total test coverage from the param individual_coverages.
     :param individual_coverages: a list of individual test coverages
     :param goal: the coverage goal
@@ -35,7 +35,7 @@ def find_efficient_tests(
         individual_coverages, key=lambda tc: tc.coverage_type(goal).coverage_hit
     )
     individual_coverages.remove(total_coverage)
-    efficient_test_coverages = [total_coverage]
+    reduced_test_coverages = [total_coverage]
     # Make a deep copy because total_coverage will be overwritten. Otherwise this would affect the orginal test coverage either.
     total_coverage = copy.deepcopy(total_coverage)
     program_lines = total_coverage.coverage_type(goal).relevant_program_lines
@@ -56,7 +56,7 @@ def find_efficient_tests(
             optimal_next_coverage = compute_test_coverage_with_highest_extension(
                 total_coverage, next_coverages, goal
             )
-            efficient_test_coverages.append(optimal_next_coverage)
+            reduced_test_coverages.append(optimal_next_coverage)
             individual_coverages.remove(optimal_next_coverage)
             total_coverage = cov.TestCoverage.merge(
                 total_coverage, optimal_next_coverage
@@ -69,4 +69,4 @@ def find_efficient_tests(
             ]
             for covered_test_coverage in covered_coverages:
                 individual_coverages.remove(covered_test_coverage)
-    return efficient_test_coverages
+    return reduced_test_coverages

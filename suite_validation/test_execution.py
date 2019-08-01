@@ -625,20 +625,20 @@ class TestCoverageChecker:
     def test_coverage_stragey(self):
 
         for goal in eu.COVERAGE_GOALS.values():
-            efficient_tests = cov_str.find_efficient_tests(
+            reduced_tests = cov_str.find_reduced_test_suite(
                 self.test_coverage_group_one, goal
             )
-            assert self.perfect_test_coverage in efficient_tests
-            assert self.half_perfect_test_coverage not in efficient_tests
-            assert self.half_perfect_test_coverage_complementary not in efficient_tests
-            assert self.bad_test_coverage not in efficient_tests
+            assert self.perfect_test_coverage in reduced_tests
+            assert self.half_perfect_test_coverage not in reduced_tests
+            assert self.half_perfect_test_coverage_complementary not in reduced_tests
+            assert self.bad_test_coverage not in reduced_tests
 
-            efficient_tests = cov_str.find_efficient_tests(
+            reduced_tests = cov_str.find_reduced_test_suite(
                 self.test_coverage_group_two, goal
             )
-            assert self.half_perfect_test_coverage in efficient_tests
-            assert self.half_perfect_test_coverage_complementary in efficient_tests
-            assert self.bad_test_coverage not in efficient_tests
+            assert self.half_perfect_test_coverage in reduced_tests
+            assert self.half_perfect_test_coverage_complementary in reduced_tests
+            assert self.bad_test_coverage not in reduced_tests
 
 
 def _get_test_directory():
