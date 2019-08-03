@@ -40,6 +40,7 @@ TEST_FILE_WITH_ERR = os.path.join(TEST_DIRECTORY, "test_false.c")
 TEST_FILE_WITH_NO_TERMINATION = os.path.join(TEST_DIRECTORY, "test_no-termination.c")
 TEST_FILE_WITH_STRINGS = os.path.join(TEST_DIRECTORY, "test_string.c")
 TEST_FILE_COVERAGE = os.path.join(TEST_DIRECTORY, "test_coverages.c")
+TEST_FILE_SIMPLE_IF = os.path.join(TEST_DIRECTORY, "test_simple-if.c")
 
 TEST_HARNESS = os.path.join(TEST_DIRECTORY, "test_harness.c")
 
@@ -49,6 +50,7 @@ SUITE_VALID_NESTED_ZIP = os.path.join(SUITE_DIR, "suite-valid-nested.zip")
 SUITE_VALID_STRINGS = os.path.join(SUITE_DIR, "suite-string.zip")
 SUITE_INVALID_ZIP = os.path.join(SUITE_DIR, "suite-metadata-missing.zip")
 SUITE_COVERAGE = os.path.join(SUITE_DIR, "suite-coverages.zip")
+SUITE_SIMPLE_IF = os.path.join(SUITE_DIR, "suite-simple-if.zip")
 
 MACHINE_MODELS = (eu.MACHINE_MODEL_32, eu.MACHINE_MODEL_64)
 
@@ -174,7 +176,7 @@ class TestExecutionRunner(TempDirExecutor):
         runner = self.get_runner(machine_model, timelimit=None)
         _, out_file = tempfile.mkstemp()
 
-        runner.compile(TEST_FILE_WITHOUT_ERR, "foobar-harness.c", out_file)
+        runner.compile(TEST_FILE_WITHOUT_ERR, "harness.c", out_file)
 
     def test_invalid_program_compile_throws_error(self):
         for machine_model in MACHINE_MODELS:
@@ -185,7 +187,7 @@ class TestExecutionRunner(TempDirExecutor):
         runner = self.get_runner(machine_model, timelimit=None)
         _, out_file = tempfile.mkstemp()
 
-        runner.compile("foobar-program.c", TEST_HARNESS, out_file)
+        runner.compile("program.c", TEST_HARNESS, out_file)
 
     def test_execution_run_result_unknown(self):
         simple_vector = eu.TestVector("dummy", "dummy.xml")
@@ -294,7 +296,8 @@ class TestSuiteExecutor(TempDirExecutor):
 
     def __init__(self):
         super().__init__()
-        self.program_file = TEST_FILE_WITH_ERR
+        self.program_file_with_err = TEST_FILE_WITH_ERR
+        self.program_file_simple_if = TEST_FILE_SIMPLE_IF
 
     @staticmethod
     def get_runner(
@@ -302,6 +305,7 @@ class TestSuiteExecutor(TempDirExecutor):
         timelimit=None,
         compute_sequence=True,
         compute_individuals=True,
+        reduce_tests=True,
     ):
         harness_file = _get_harness_file_target()
         compile_output_file = _get_compile_target()
@@ -313,6 +317,7 @@ class TestSuiteExecutor(TempDirExecutor):
             compute_sequence=compute_sequence,
             isolate_tests=False,
             compute_individuals=compute_individuals,
+            reduce_tests=reduce_tests,
         )
 
     def test_run_suite_valid(self):
@@ -326,7 +331,9 @@ class TestSuiteExecutor(TempDirExecutor):
     def _check_run_suite_valid(self, machine_model, suite_location):
         runner = self.get_runner()
 
-        result_obj = runner.run(self.program_file, suite_location, machine_model)
+        result_obj = runner.run(
+            self.program_file_with_err, suite_location, machine_model
+        )
         results = result_obj.results
         lines = result_obj.coverage_total.line_coverage
         conds_ex = result_obj.coverage_total.condition_coverage
@@ -358,7 +365,7 @@ class TestSuiteExecutor(TempDirExecutor):
     ):
         runner = self.get_runner()
 
-        runner.run(self.program_file, suite_location, machine_model)
+        runner.run(self.program_file_with_err, suite_location, machine_model)
 
     def test_run_suite_with_non_terminating_program(self):
         for machine_model in MACHINE_MODELS:
@@ -423,14 +430,18 @@ class TestSuiteExecutor(TempDirExecutor):
     def _check_coverage_results_equal(
         self, runner1, runner2, suite_location, machine_model
     ):
-        result_obj = runner1.run(self.program_file, suite_location, machine_model)
+        result_obj = runner1.run(
+            self.program_file_with_err, suite_location, machine_model
+        )
         lines1, conditions1, branches1 = (
             result_obj.coverage_total.line_coverage,
             result_obj.coverage_total.condition_coverage,
             result_obj.coverage_total.branch_coverage,
         )
 
-        result_obj = runner2.run(self.program_file, suite_location, machine_model)
+        result_obj = runner2.run(
+            self.program_file_with_err, suite_location, machine_model
+        )
         lines2, conditions2, branches2 = (
             result_obj.coverage_total.line_coverage,
             result_obj.coverage_total.condition_coverage,
@@ -466,6 +477,57 @@ class TestSuiteExecutor(TempDirExecutor):
         eq_(test_coverage.lines_total, 16)
         eq_(test_coverage.branches_total, 8)
         eq_(test_coverage.conditions_total, 12)
+
+    def test_reduction_correct(self):
+        for machine_model in MACHINE_MODELS:
+            for goal in eu.COVERAGE_GOALS.values():
+                runner = self.get_runner(goal)
+                yield self._check_test_suite_reduction_correct, runner, machine_model, goal
+
+    @staticmethod
+    def _check_test_suite_reduction_correct(runner, machine_model, goal):
+        # the program has only one if statement (x > 0) and is fed by two different test vectors: x:= -2, x:= 2
+        result_obj: eu.SuiteExecutionResult = runner.run(
+            TEST_FILE_SIMPLE_IF, SUITE_SIMPLE_IF, machine_model
+        )
+        if goal == eu.COVER_LINES:
+            assert len(result_obj.reduced_coverage_tests) < len(
+                result_obj.coverage_tests
+            )
+            # only test with x = 2 included because this test executes the line in the if body and
+            # gives 100% line coverage
+            eq_(len(result_obj.reduced_coverage_tests), 1)
+            total_tc_from_reduced = None
+            for tc in result_obj.reduced_coverage_tests:
+                assert tc in result_obj.coverage_tests
+                if total_tc_from_reduced is None:
+                    total_tc_from_reduced = tc
+                else:
+                    total_tc_from_reduced = cov.TestCoverage.merge(
+                        total_tc_from_reduced, tc
+                    )
+            eq_(total_tc_from_reduced.line_coverage, 100)
+            eq_(total_tc_from_reduced.branch_coverage, 50)
+            eq_(total_tc_from_reduced.condition_coverage, 50)
+        if goal in [eu.COVER_BRANCHES, eu.COVER_ERRORS, eu.COVER_CONDITIONS]:
+            # test with x = 2 and x := -2 included because each test will give 50% branch coverage and 50%
+            # condition coverage and merging this together a branch/condition coverage of 100% is obtained.
+            assert len(result_obj.reduced_coverage_tests) == len(
+                result_obj.coverage_tests
+            )
+            eq_(len(result_obj.reduced_coverage_tests), 2)
+            total_tc_from_reduced = None
+            for tc in result_obj.reduced_coverage_tests:
+                assert tc in result_obj.coverage_tests
+                if total_tc_from_reduced is None:
+                    total_tc_from_reduced = tc
+                else:
+                    total_tc_from_reduced = cov.TestCoverage.merge(
+                        total_tc_from_reduced, tc
+                    )
+            eq_(total_tc_from_reduced.line_coverage, 100)
+            eq_(total_tc_from_reduced.branch_coverage, 100)
+            eq_(total_tc_from_reduced.condition_coverage, 100)
 
 
 class TestCoverageChecker:
@@ -652,7 +714,7 @@ def _get_test_directory():
 
 
 def _get_harness_file_target():
-    return "foobar-harness.c"
+    return "harness.c"
 
 
 def _get_compile_target():
