@@ -526,6 +526,8 @@ class TestCoverageChecker:
         ),
     )
 
+    none_test_coverage = cov.TestCoverage("dummy_file", None, None, None)
+
     test_coverage_group_one = [
         bad_test_coverage,
         perfect_test_coverage,
@@ -621,6 +623,10 @@ class TestCoverageChecker:
             ),
             True,
         )
+
+        eq_(self.none_test_coverage.line_coverage, 0)
+        eq_(self.none_test_coverage.condition_coverage, 0)
+        eq_(self.none_test_coverage.branch_coverage, 0)
 
     def test_coverage_stragey(self):
 

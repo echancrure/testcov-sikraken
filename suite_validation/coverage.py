@@ -376,6 +376,12 @@ class BranchesCoverage(CoverageComparable):
     Note that the values can be wrong because getting branch coverage with lcov does NOT WORK so far!
     If there will be a solution later to fix this issue it might be interesting to store how often the branches
     have been taken and not only whether they have been taken. In consequence, this class might be refactored.
+
+    Two-element list 'value' at a certain program line:
+    # value[0] == False and value[1] == False: This coverage is not possible
+    # value[0] == False and value[1] == True: Only "if" branch executed
+    # value[0] == True and value[1] == False: only "else" branch executed
+    # value[0] == True and value[1] == True: "if" branch and "else" branch executed
     """
 
     def __init__(self, branches_hit_counter: Dict[int, List[bool]]):
@@ -389,6 +395,7 @@ class BranchesCoverage(CoverageComparable):
     def branches_hit(self):
         hit = 0
         for value in self.branches_hit_counter.values():
+            # hit is increased with two when both branches are executed
             if value[0]:
                 hit += 1
             if value[1]:
@@ -458,9 +465,9 @@ class TestCoverage:
     def __init__(
         self,
         file_name,
-        lines_coverage: LinesCoverage = None,
-        branches_coverage: BranchesCoverage = None,
-        conditions_coverage: ConditionsCoverage = None,
+        lines_coverage: Optional[LinesCoverage] = None,
+        branches_coverage: Optional[BranchesCoverage] = None,
+        conditions_coverage: Optional[ConditionsCoverage] = None,
     ):
         self.filename = file_name
         self.lines_coverage = lines_coverage
@@ -477,26 +484,38 @@ class TestCoverage:
 
     @property
     def lines_hit(self):
+        if self.lines_coverage is None:
+            return 0
         return self.lines_coverage.lines_hit
 
     @property
     def lines_total(self):
+        if self.lines_coverage is None:
+            return 0
         return self.lines_coverage.lines_total
 
     @property
     def branches_hit(self):
+        if self.branches_coverage is None:
+            return 0
         return self.branches_coverage.branches_hit
 
     @property
     def branches_total(self):
+        if self.branches_coverage is None:
+            return 0
         return self.branches_coverage.branches_total
 
     @property
     def conditions_hit(self):
+        if self.conditions_coverage is None:
+            return 0
         return self.conditions_coverage.conditions_hit
 
     @property
     def conditions_total(self):
+        if self.conditions_coverage is None:
+            return 0
         return self.conditions_coverage.conditions_total
 
     @property
@@ -528,7 +547,7 @@ class TestCoverage:
             return 1.0
         return round(float(self.conditions_hit) / float(self.conditions_total) * 100, 2)
 
-    def coverage_type(self, goal) -> CoverageComparable:
+    def coverage_type(self, goal) -> Optional[CoverageComparable]:
         if goal in [eu.COVER_BRANCHES, eu.COVER_ERRORS]:
             return self.branches_coverage
         if goal == eu.COVER_CONDITIONS:
