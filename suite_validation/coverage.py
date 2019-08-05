@@ -460,27 +460,26 @@ class TestCoverage:
     """
     Contains the line coverage, branch coverage and conditions coverage. One of these coverage kinds can be
     extracted by using the coverage goal in the execution.
+    The dictionary test_vector_results stores for each test vector the test result.
     """
 
     def __init__(
         self,
-        file_name,
+        file_name: str,
+        test_vector_results: Dict[eu.TestVector, eu.TestResult],
         lines_coverage: Optional[LinesCoverage] = None,
         branches_coverage: Optional[BranchesCoverage] = None,
         conditions_coverage: Optional[ConditionsCoverage] = None,
     ):
         self.filename = file_name
+        self.test_vector_results = test_vector_results
         self.lines_coverage = lines_coverage
         self.branches_coverage = branches_coverage
         self.conditions_coverage = conditions_coverage
-        self.test_vector = ""
-        self.result = ""
 
-    def set_test_vector(self, test_vector):
-        self.test_vector = test_vector
-
-    def set_result(self, result):
-        self.result = result
+    @property
+    def test_vectors(self):
+        return [*self.test_vector_results]
 
     @property
     def lines_hit(self):
@@ -565,9 +564,25 @@ class TestCoverage:
             return self.line_coverage
         raise AssertionError("Unhandled coverage goal: {}".format(goal))
 
+    def test_vectors_as_string(self):
+        # Normally this method is called when the test coverage for an individual test is printed. If so this method
+        # returns the origin of the only test vector.
+        out = ""
+        separator = " | "
+        i = 0
+        while i < len(self.test_vectors) - 1:
+            out += self.test_vectors[i].origin
+            out += separator
+        out += self.test_vectors[i].origin
+        return out
+
     @staticmethod
     def merge(cov1: "TestCoverage", cov2: "TestCoverage") -> "TestCoverage":
         assert cov1.filename == cov2.filename
+        summarized_test_vector_results = {
+            **cov2.test_vector_results,
+            **cov1.test_vector_results,
+        }
         summarized_lines_coverage = LinesCoverage.merge(
             cov1.lines_coverage, cov2.lines_coverage
         )
@@ -579,6 +594,7 @@ class TestCoverage:
         )
         return TestCoverage(
             cov1.filename,
+            summarized_test_vector_results,
             summarized_lines_coverage,
             summarized_branches_coverage,
             summarized_conditions_coverage,
@@ -675,7 +691,9 @@ def _append_to_conditions_entries(
     )
 
 
-def get_test_coverage_from_trace_file(program_name, trace_file) -> TestCoverage:
+def get_test_coverage_from_trace_file(
+    program_name, trace_file, test_vector_with_result
+) -> TestCoverage:
     lines_hit_counter_dic = {}
     lines_hit = 0
     lines_found = 0
@@ -757,7 +775,11 @@ def get_test_coverage_from_trace_file(program_name, trace_file) -> TestCoverage:
     branches_coverage = BranchesCoverage(branches_hit_counter)
 
     return TestCoverage(
-        trace_file, lines_coverage, branches_coverage, conditions_coverage
+        trace_file,
+        test_vector_with_result,
+        lines_coverage,
+        branches_coverage,
+        conditions_coverage,
     )
 
 
@@ -780,7 +802,7 @@ def _write_csv_rows_from_test_coverages(writer, test_coverages):
     for test_coverage in test_coverages:
         writer.writerow(
             [
-                test_coverage.test_vector.origin,
+                test_coverage.test_vectors_as_string(),
                 test_coverage.line_coverage,
                 test_coverage.branch_coverage,
                 test_coverage.condition_coverage,
@@ -788,7 +810,9 @@ def _write_csv_rows_from_test_coverages(writer, test_coverages):
         )
 
 
-def create_trace_file_and_get_test_coverage(program_name, data_file, output_tracefile):
+def create_trace_file_and_get_test_coverage(
+    program_name, data_file, output_tracefile, test_vector_with_result
+):
     if os.path.exists(data_file):
         cmd = LCOV_COMMAND_PREFIX + [
             "-c",
@@ -801,7 +825,7 @@ def create_trace_file_and_get_test_coverage(program_name, data_file, output_trac
         eu.execute(cmd, quiet=True)
         if os.path.exists(output_tracefile):
             test_coverage = get_test_coverage_from_trace_file(
-                program_name, output_tracefile
+                program_name, output_tracefile, test_vector_with_result
             )
             return test_coverage
     raise CoverageCreationError("Trace file '%s' not created." % output_tracefile)

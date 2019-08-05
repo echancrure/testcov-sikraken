@@ -54,6 +54,11 @@ SUITE_SIMPLE_IF = os.path.join(SUITE_DIR, "suite-simple-if.zip")
 
 MACHINE_MODELS = (eu.MACHINE_MODEL_32, eu.MACHINE_MODEL_64)
 
+DUMMY_FILE = "DUMMY_FILE"
+DUMMY_TEST_VECTOR_RESULT = {
+    eu.TestVector("dummy_tv", "dummy.xml"): eu.TestResult.UNKNOWN
+}
+
 
 class TempDirExecutor:
     def __init__(self):
@@ -275,8 +280,10 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
 
         old_line_cov, old_branch_cov = 0, 0
         for tv in vectors:
-            runner.run(test_file, tv)
-            coverage = runner.compute_test_coverage_from_gcda_file(test_file)
+            result = runner.run(test_file, tv)
+            coverage = runner.compute_test_coverage_from_gcda_file(
+                test_file, {tv: result}
+            )
 
             assert coverage.line_coverage > 0, "Line coverage at 0"
             assert coverage.branch_coverage > 0, "Branch coverage at 0"
@@ -533,7 +540,8 @@ class TestSuiteExecutor(TempDirExecutor):
 class TestCoverageChecker:
 
     bad_test_coverage = cov.TestCoverage(
-        "dummy_file",
+        DUMMY_FILE,
+        DUMMY_TEST_VECTOR_RESULT,
         cov.LinesCoverage(
             {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0}
         ),
@@ -547,7 +555,8 @@ class TestCoverageChecker:
     )
 
     perfect_test_coverage = cov.TestCoverage(
-        "dummy_file",
+        DUMMY_FILE,
+        DUMMY_TEST_VECTOR_RESULT,
         cov.LinesCoverage(
             {1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1}
         ),
@@ -561,7 +570,8 @@ class TestCoverageChecker:
     )
 
     half_perfect_test_coverage = cov.TestCoverage(
-        "dummy_file",
+        DUMMY_FILE,
+        DUMMY_TEST_VECTOR_RESULT,
         cov.LinesCoverage(
             {1: 0, 2: 1, 3: 0, 4: 1, 5: 0, 6: 1, 7: 0, 8: 1, 9: 0, 10: 1}
         ),
@@ -575,7 +585,8 @@ class TestCoverageChecker:
     )
 
     half_perfect_test_coverage_complementary = cov.TestCoverage(
-        "dummy_file",
+        DUMMY_FILE,
+        DUMMY_TEST_VECTOR_RESULT,
         cov.LinesCoverage(
             {1: 1, 2: 0, 3: 1, 4: 0, 5: 1, 6: 0, 7: 1, 8: 0, 9: 1, 10: 0}
         ),
@@ -588,7 +599,9 @@ class TestCoverageChecker:
         ),
     )
 
-    none_test_coverage = cov.TestCoverage("dummy_file", None, None, None)
+    none_test_coverage = cov.TestCoverage(
+        DUMMY_FILE, DUMMY_TEST_VECTOR_RESULT, None, None, None
+    )
 
     test_coverage_group_one = [
         bad_test_coverage,

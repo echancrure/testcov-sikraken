@@ -294,20 +294,22 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
             logging.info("Aborted test run is not considered for coverage")
         return result
 
-    def compute_test_coverage_from_gcda_file(self, program_file) -> cov.TestCoverage:
+    def compute_test_coverage_from_gcda_file(
+        self, program_file, test_vector_with_result
+    ) -> cov.TestCoverage:
         program_name = os.path.basename(program_file)
         if self.harness_file:
             assert self.harness_file.endswith(".c")
             data_file = self.harness_file[:-1] + "gcda"
             data_file = os.path.basename(data_file)  # data file is in cwd
             return cov.create_trace_file_and_get_test_coverage(
-                program_name, data_file, LCOV_TRACE_FILE
+                program_name, data_file, LCOV_TRACE_FILE, test_vector_with_result
             )
 
         logging.info(
             "Coverage requested without any execution. Returning empty test coverage."
         )
-        return cov.TestCoverage(program_name)
+        return cov.TestCoverage(program_name, test_vector_with_result)
 
 
 class IsolatingRunner(CoverageMeasuringExecutionRunner):
@@ -503,9 +505,9 @@ class SuiteExecutor:
         program_file: str,
         executor: CoverageMeasuringExecutionRunner,
     ) -> cov.TestCoverage:
-        coverage_test = executor.compute_test_coverage_from_gcda_file(program_file)
-        coverage_test.set_result(result)
-        coverage_test.set_test_vector(test_vector)
+        coverage_test = executor.compute_test_coverage_from_gcda_file(
+            program_file, {test_vector: result}
+        )
         return coverage_test
 
     def _compute_coverages(
@@ -575,6 +577,9 @@ class SuiteExecutor:
                 result_target.reduced_coverage_tests = covstr.find_reduced_test_suite(
                     result_target.coverage_tests[:], self._goal
                 )
+                if not self._check_for_error:
+                    for tc in result_target.reduced_coverage_tests:
+                        result_target.successful_tests.extend(tc.test_vectors)
 
 
 def _remove_lcov_trace_file():
