@@ -54,7 +54,9 @@ def _write_individual_coverages_plot(exec_results, coverage_goal, output_file):
     ax = _prepare_axis_for_plot(coverage_goal)
 
     # ax.set_xticks(range(len(coverages)), [c.filename for c in coverages])
-    test_names = [os.path.basename(c.test_vector.origin) for c in coverages]
+    test_names = []
+    for cov in coverages:
+        test_names.extend(cov.test_vectors)
     coverages_selected = [select_cov(c) for c in coverages]
 
     def autolabel(rects):
