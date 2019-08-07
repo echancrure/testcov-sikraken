@@ -21,7 +21,6 @@ import argparse
 import logging
 import os
 import re
-import shutil
 import zipfile
 from suite_validation import execution
 from suite_validation import execution_utils as eu
@@ -154,7 +153,7 @@ def get_parser():
     )
 
     parser.add_argument(
-        "--no-create-reduced-suite",
+        "--no-reduce",
         dest="reduce_tests",
         action="store_false",
         default=True,
@@ -321,7 +320,7 @@ def _print_suite_execution_results(exec_results):
             )
         )
 
-    if any(r == execution.COVERS for r in exec_results.results):
+    if any(r == eu.TestResult.COVERS for r in exec_results.results):
         verdict = "TRUE"
     else:
         verdict = "UNKNOWN"
@@ -403,8 +402,19 @@ def main():
 
         if exec_results.coverage_tests:
             cov.write_test_coverages_to_dir(
-                args.output_dir, args.overwrite, exec_results
+                args.output_dir,
+                args.overwrite,
+                exec_results.coverage_tests,
+                cov.FILE_NAME_INDIVIDUAL_TEST_COVERAGES,
             )
+        if exec_results.reduced_coverage_tests:
+            cov.write_test_coverages_to_dir(
+                args.output_dir,
+                args.overwrite,
+                exec_results.reduced_coverage_tests,
+                cov.FILE_NAME_REDUCED_TEST_COVERAGES,
+            )
+
         if args.write_plots:
             try:
                 from suite_validation import plotting
