@@ -127,14 +127,6 @@ def get_parser():
     )
 
     parser.add_argument(
-        "--no-overwrite",
-        dest="overwrite",
-        action="store_false",
-        default=True,
-        help="don't overwrite existing files (e.g., the harness or executable)",
-    )
-
-    parser.add_argument(
         "--no-sequence-file",
         dest="print_seq_file",
         action="store_const",
@@ -194,21 +186,17 @@ def parse():
 
 
 def _write_tests_to_suite(
-    program_file, origin_suite, tests, overwrite, coverage_goal, output_suite
+    program_file, origin_suite, tests, coverage_goal, output_suite
 ):
     """
     Writes the given tests from the given test suite to a new suite.
 
     :param str origin_suite: Path to the zip-file that contains the original test suite
     :param List[utils.TestVector] tests: Test vector to create files for.
-    :param bool overwrite: Whether to overwrite existing files.
     :param str output_dir: Directory to write to.
     """
-    if os.path.exists(output_suite) and overwrite:
-        logging.debug(
-            "File %s already exists and 'overwrite' option set - removing it.",
-            output_suite,
-        )
+    if os.path.exists(output_suite):
+        logging.debug("File %s already exists - removing it.", output_suite)
         os.remove(output_suite)
 
     output_metadata = _create_metadata(origin_suite, program_file, coverage_goal)
@@ -229,25 +217,21 @@ def _create_metadata(origin_suite: str, program_file: str, coverage_goal: str) -
     )
 
 
-def _write_harness(program_file, test_vector, overwrite, output_dir):
+def _write_harness(program_file, test_vector, output_dir):
     """
     Writes, for the given test, an executable harness to the output folder.
 
     :param str program_file: Path to the program file.
     :param eu.TestVector test_vector: test vector to create harness for.
-    :param bool overwrite: Whether to overwrite existing files.
     :param str output_dir: Output directory to write into.
     """
 
     test_c_file = os.path.join(output_dir, SUCCESSFUL_HARNESS_NAME)
     harness_content = execution.HarnessCreator().convert(program_file, test_vector)
-    if not overwrite and os.path.exists(test_c_file):
-        logging.info("Not overwriting %s", test_c_file)
-    else:
-        with open(program_file) as progr_inp:
-            harness_content = progr_inp.read() + harness_content
-        with open(test_c_file, "w+") as outp:
-            outp.write(harness_content)
+    with open(program_file) as progr_inp:
+        harness_content = progr_inp.read() + harness_content
+    with open(test_c_file, "w+") as outp:
+        outp.write(harness_content)
     logging.info("Successful test data written to %s", SUCCESSFUL_TESTSUITE_FOLDER)
 
 
@@ -349,7 +333,6 @@ def main():
             args.timelimit_per_run,
             compute_sequence=args.print_seq_file is not None,
             reduce_tests=args.reduce_tests,
-            overwrite_files=args.overwrite,
             harness_file_target=harness_file,
             compile_target=executable,
             compute_individuals=compute_individuals,
@@ -376,7 +359,6 @@ def main():
                 args.file,
                 args.test_suite,
                 exec_results.successful_tests,
-                args.overwrite,
                 args.goal,
                 os.path.join(args.output_dir, REDUCED_TESTSUITE_NAME),
             )
@@ -384,44 +366,31 @@ def main():
                 # If at least one test covered an error,
                 # make the first one into an executable harness
                 _write_harness(
-                    args.file,
-                    exec_results.successful_tests[0],
-                    args.overwrite,
-                    args.output_dir,
+                    args.file, exec_results.successful_tests[0], args.output_dir
                 )
 
         if exec_results.coverage_sequence and args.print_seq_file:
             seq_file = os.path.join(args.output_dir, args.print_seq_file)
-            if not args.overwrite and os.path.exists(seq_file):
-                logging.info("Not overwriting %s", seq_file)
-            else:
-                with open(seq_file, "w") as outp:
-                    outp.writelines(
-                        [str(c) + "\n" for c in exec_results.coverage_sequence]
-                    )
+            with open(seq_file, "w") as outp:
+                outp.writelines([str(c) + "\n" for c in exec_results.coverage_sequence])
 
         if exec_results.coverage_tests:
             cov.write_test_coverages_to_dir(
                 args.output_dir,
-                args.overwrite,
                 exec_results.coverage_tests,
                 cov.FILE_NAME_INDIVIDUAL_TEST_COVERAGES,
             )
         if exec_results.reduced_coverage_tests:
             cov.write_test_coverages_to_dir(
                 args.output_dir,
-                args.overwrite,
                 exec_results.reduced_coverage_tests,
                 cov.FILE_NAME_REDUCED_TEST_COVERAGES,
             )
-
         if args.write_plots:
             try:
                 from suite_validation import plotting
 
-                plotting.create_plots(
-                    exec_results, args.goal, args.output_dir, args.overwrite
-                )
+                plotting.create_plots(exec_results, args.goal, args.output_dir)
             except ImportError as e:
                 logging.warning("Not plotting coverage statistics: %s", e.msg)
 

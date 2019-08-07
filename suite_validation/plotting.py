@@ -132,15 +132,13 @@ def _write_coverage_sequence_plot(exec_results, coverage_goal, output_file):
     plt.clf()
 
 
-def create_plots(exec_results, coverage_goal: str, output_dir: str, overwrite: bool):
+def create_plots(exec_results, coverage_goal: str, output_dir: str):
     if exec_results.coverage_tests:
         individual_cov_file = os.path.join(output_dir, "individual-test-coverages.svg")
-        if overwrite or not os.path.exists(individual_cov_file):
-            _write_individual_coverages_plot(
-                exec_results, coverage_goal, individual_cov_file
-            )
+        _write_individual_coverages_plot(
+            exec_results, coverage_goal, individual_cov_file
+        )
 
     if exec_results.coverage_sequence:
         cov_seq_file = os.path.join(output_dir, "coverage-sequence.svg")
-        if overwrite or not os.path.exists(cov_seq_file):
-            _write_coverage_sequence_plot(exec_results, coverage_goal, cov_seq_file)
+        _write_coverage_sequence_plot(exec_results, coverage_goal, cov_seq_file)

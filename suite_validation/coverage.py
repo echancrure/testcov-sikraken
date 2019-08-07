@@ -785,16 +785,11 @@ def get_test_coverage_from_trace_file(
 
 def write_test_coverages_to_dir(output_dir, overwrite, test_coverages, file_name):
     output_file = os.path.join(output_dir, file_name)
-    write_header = False
-    if not os.path.exists(output_file) or overwrite:
-        write_header = True
-    mode = "w" if overwrite else "a"
-    with open(output_file, mode=mode) as individual_test_cov_file:
+    with open(output_file, mode='w') as individual_test_cov_file:
         writer = csv.writer(
             individual_test_cov_file, delimiter=DELIMITER_TEST_COVERAGES
         )
-        if write_header:
-            writer.writerow(HEADER)
+        writer.writerow(HEADER)
         _write_csv_rows_from_test_coverages(writer, test_coverages)
 
 

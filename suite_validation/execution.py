@@ -143,7 +143,6 @@ class ExecutionRunner:
         timelimit_per_run,
         harness_file_target="harness.c",
         compile_target="a.out",
-        overwrite_files=True,
     ):
         """Create new ExecutionRunner.
 
@@ -158,7 +157,6 @@ class ExecutionRunner:
         self.harness_file = None
         self._harness_file_target = harness_file_target
         self.timelimit = timelimit_per_run
-        self._overwrite = overwrite_files
 
     def _get_compile_cmd(
         self, program_file, harness_file, output_file, c_version="gnu11"
@@ -180,10 +178,6 @@ class ExecutionRunner:
         return cmd
 
     def compile(self, program_file, harness_file, output_file):
-        if not self._overwrite and os.path.exists(output_file):
-            logging.info("Not overwriting %s", output_file)
-            return output_file
-
         logging.debug(
             "Compiling %s and %s into %s", program_file, harness_file, output_file
         )
@@ -209,13 +203,10 @@ class ExecutionRunner:
 
     def _create_executable_harness(self, program_file):
         harness_file = self._harness_file_target
-        if not self._overwrite and os.path.exists(harness_file):
-            logging.info("Not overwriting %s", harness_file)
-        else:
-            harness_content = self.harness_generator.convert(program_file)
+        harness_content = self.harness_generator.convert(program_file)
 
-            with open(harness_file, "w+") as outp:
-                outp.write(harness_content)
+        with open(harness_file, "w+") as outp:
+            outp.write(harness_content)
         self.harness_file = (
             harness_file
         )  # set this only after successfully writing the harness
@@ -278,11 +269,10 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
     def compile(self, program_file, harness_file, output_file):
         harness_name = ".".join(harness_file.split("/")[-1].split(".")[:-1])
         gcov_files = [harness_name + suffix for suffix in (".gcda", ".gcno")]
-        if self._overwrite:
-            for f in gcov_files:
-                if os.path.exists(f):
-                    logging.info("Removing existing file %s", f)
-                    os.remove(f)
+        for f in gcov_files:
+            if os.path.exists(f):
+                logging.info("Removing existing file %s", f)
+                os.remove(f)
 
         return_value = super().compile(program_file, harness_file, output_file)
 
@@ -319,7 +309,6 @@ class IsolatingRunner(CoverageMeasuringExecutionRunner):
         timelimit_per_run,
         harness_file_target="harness.c",
         compile_target="a.out",
-        overwrite_files=True,
         memlimit=None,
         cores=None,
         use_runexec=True,
@@ -329,7 +318,6 @@ class IsolatingRunner(CoverageMeasuringExecutionRunner):
             timelimit_per_run if not use_runexec else None,
             harness_file_target,
             compile_target,
-            overwrite_files,
         )
         self._memlimit = memlimit
         self._timelimit = timelimit_per_run
@@ -375,7 +363,6 @@ class SuiteExecutor:
         compile_target="a.out",
         compute_sequence=False,
         reduce_tests=True,
-        overwrite_files=True,
         isolate_tests=True,
         compute_individuals=True,
         memlimit=None,
@@ -391,7 +378,6 @@ class SuiteExecutor:
         self._compile_target = compile_target
         self._compute_sequence = compute_sequence
         self._reduce_tests = reduce_tests
-        self._overwrite_files = overwrite_files
         self._isolate_tests = isolate_tests
         self._compute_individual_test_coverages = compute_individuals
         self._memlimit = memlimit
@@ -432,7 +418,6 @@ class SuiteExecutor:
                 self._timelimit,
                 self._harness_file_target,
                 self._compile_target,
-                self._overwrite_files,
                 self._memlimit,
                 self._cpu_cores,
                 self._use_runexec,
@@ -443,7 +428,6 @@ class SuiteExecutor:
                 self._timelimit,
                 self._harness_file_target,
                 self._compile_target,
-                self._overwrite_files,
             )
 
         metadata = mu.get_metadata(test_suite)
@@ -462,9 +446,8 @@ class SuiteExecutor:
         # this method call raises an ExecutionError if the given test suite is invalid
         test_vectors = self._get_described_vectors(test_suite)
 
-        if self._overwrite_files:
-            # old gcda, gcno or gcov files might exist
-            _remove_coverages_files_in_working_directory()
+        # old gcda, gcno or gcov files might exist
+        _remove_coverages_files_in_working_directory()
 
         self._execute_tests(program_file, test_vectors, executor, result_target)
 
