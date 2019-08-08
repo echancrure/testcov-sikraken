@@ -783,9 +783,9 @@ def get_test_coverage_from_trace_file(
     )
 
 
-def write_test_coverages_to_dir(output_dir, overwrite, test_coverages, file_name):
+def write_test_coverages_to_dir(output_dir, test_coverages, file_name):
     output_file = os.path.join(output_dir, file_name)
-    with open(output_file, mode='w') as individual_test_cov_file:
+    with open(output_file, mode="w") as individual_test_cov_file:
         writer = csv.writer(
             individual_test_cov_file, delimiter=DELIMITER_TEST_COVERAGES
         )
