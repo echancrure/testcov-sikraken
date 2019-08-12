@@ -362,7 +362,9 @@ class SuiteExecutor:
         harness_file_target="harness.c",
         compile_target="a.out",
         compute_sequence=False,
-        reduce_tests=True,
+        reduce_tests=covstr.ReductionContext.build(
+            covstr.ReductionStrategy.NAIVE.value
+        ),
         isolate_tests=True,
         compute_individuals=True,
         memlimit=None,
@@ -556,8 +558,8 @@ class SuiteExecutor:
                 print(".", file=self._info_target, end="", flush=True)
         finally:
             print("\n✔️  Done!", file=self._info_target, flush=True)  # print newline
-            if self._reduce_tests and result_target.coverage_tests:
-                result_target.reduced_coverage_tests = covstr.find_reduced_test_suite(
+            if result_target.coverage_tests:
+                result_target.reduced_coverage_tests = self._reduce_tests.execute(
                     result_target.coverage_tests[:], self._goal
                 )
                 if not self._check_for_error:
