@@ -148,8 +148,7 @@ def get_parser():
     parser.add_argument(
         "--reduction",
         dest="reduce_tests",
-        action="store_const",
-        const=None,
+        action="store",
         default=rs.ReductionStrategy.NAIVE.value,
         help="apply a reduction strategy to create a reduced test suite",
         required=False,
