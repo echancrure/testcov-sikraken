@@ -25,7 +25,7 @@ import zipfile
 from suite_validation import execution
 from suite_validation import execution_utils as eu
 from suite_validation import coverage as cov
-from suite_validation import coverage_strategy as covstr
+from suite_validation import reduction_strategy as rs
 from suite_validation import metadata_utils
 
 __VERSION__ = "v1.1-dev"
@@ -150,7 +150,7 @@ def get_parser():
         dest="reduce_tests",
         action="store_const",
         const=None,
-        default=covstr.ReductionStrategy.NAIVE.value,
+        default=rs.ReductionStrategy.NAIVE.value,
         help="apply a reduction strategy to create a reduced test suite",
         required=False,
     )
@@ -329,7 +329,7 @@ def main():
     harness_file = os.path.join(args.output_dir, "harness.c")
     executable = os.path.join(args.output_dir, "a.out")
     compute_individuals = args.individual_test_cov
-    reduce_tests = covstr.ReductionContext.build(args.reduce_tests)
+    reduce_tests = rs.ReductionContext.build(args.reduce_tests)
     try:
         executor = execution.SuiteExecutor(
             args.goal,

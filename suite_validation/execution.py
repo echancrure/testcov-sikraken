@@ -28,7 +28,7 @@ from lxml import etree
 from suite_validation import execution_utils as eu
 from suite_validation import coverage as cov
 from suite_validation import metadata_utils as mu
-from suite_validation import coverage_strategy as covstr
+from suite_validation import reduction_strategy as rs
 
 HARNESS_FILE_NAME = "harness.c"
 HARNESS_GCDA_FILE = "harness.gcda"
@@ -362,9 +362,7 @@ class SuiteExecutor:
         harness_file_target="harness.c",
         compile_target="a.out",
         compute_sequence=False,
-        reduce_tests=covstr.ReductionContext.build(
-            covstr.ReductionStrategy.NAIVE.value
-        ),
+        reduce_tests=rs.ReductionContext.build(rs.ReductionStrategy.NAIVE.value),
         isolate_tests=True,
         compute_individuals=True,
         memlimit=None,
