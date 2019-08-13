@@ -1,6 +1,8 @@
 from typing import List
 import copy
 from enum import Enum
+from enum import auto
+from abc import ABCMeta, abstractmethod
 from suite_validation import coverage as cov
 
 
@@ -10,54 +12,63 @@ class ReductionStrategyError(Exception):
         self.msg = msg
 
 
-class ReductionStrategy(Enum):
-    NONE = "NONE"
-    NAIVE = "NAIVE"
-    DIFF = "DIFF"
+class ReductionOption(Enum):
+    NONE = auto()
+    NAIVE = auto()
+    DIFF = auto()
 
 
-class ReductionContext:
+class ReductionStrategy:
     """
-    Has a reduction strategy to create a reduced test suite.
+    A class that implements ReductionStrategy needs to overwrite "execute" which returns a reduced list of test coverages
+    by providing a list of individual test coverages and a certain coverage goal. The returned reduced list is a subset
+    of the given list of individual test coverages.
     """
 
-    def __init__(self, strategy):
-        self.strategy = strategy
-
-    def execute(self, individual_coverages: List[cov.TestCoverage], goal):
-        return self.strategy(individual_coverages, goal)
+    __metaclass__ = ABCMeta
 
     @staticmethod
-    def build(strategy: str) -> "ReductionContext":
-        if strategy == ReductionStrategy.NONE.value:
-            return ReductionContext(NoReduction())
-        if strategy == ReductionStrategy.NAIVE.value:
-            return ReductionContext(NaiveReduction())
-        if strategy == ReductionStrategy.DIFF.value:
-            return ReductionContext(FurthestDiffReduction())
-        raise ReductionStrategyError(
-            "Reduction strategy {} is unknown".format(strategy)
-        )
+    @abstractmethod
+    def execute(
+        individual_coverages: List[cov.TestCoverage], goal
+    ) -> List[cov.TestCoverage]:
+        raise NotImplementedError
 
 
-class NoReduction:
-    def __call__(
+def build(strategy: str) -> ReductionStrategy:
+    if strategy == ReductionOption.NONE.name:
+        return NoReductionStrategy()
+    if strategy == ReductionOption.NAIVE.name:
+        return NaiveReductionStrategy()
+    if strategy == ReductionOption.DIFF.name:
+        return FurthestDiffReductionStrategy()
+    raise ReductionStrategyError("Reduction strategy {} is unknown".format(strategy))
+
+
+class NoReductionStrategy(ReductionStrategy):
+    def execute(
         self, individual_coverages: List[cov.TestCoverage], goal
     ) -> List[cov.TestCoverage]:
+        """
+        If reduction is switched off, an empty list is returned.
+        :param individual_coverages: a list of individual test coverages
+        :param goal: the coverage goal
+        :return: an empty list of test coverages
+        """
         return []
 
 
-class NaiveReduction:
-    def __call__(
+class NaiveReductionStrategy(ReductionStrategy):
+    def execute(
         self, individual_coverages: List[cov.TestCoverage], goal
     ) -> List[cov.TestCoverage]:
         """
         Finds a list of reduced individual test coverages. Processes the list in sequence. An
         individual test coverage is added to the reduced coverage list when it extends the total coverage
         from the current reduced coverage list.
-        :param individual_coverages:
-        :param goal:
-        :return:
+        :param individual_coverages: a list of individual test coverages
+        :param goal: the coverage goal
+        :return: a list of reduced individual test coverages
         """
         # copy the list but not the contained objects
         individual_coverages = individual_coverages[:]
@@ -75,8 +86,8 @@ class NaiveReduction:
         return reduced_coverages
 
 
-class FurthestDiffReduction:
-    def __call__(
+class FurthestDiffReductionStrategy(ReductionStrategy):
+    def execute(
         self, individual_coverages: List[cov.TestCoverage], goal
     ) -> List[cov.TestCoverage]:
         """
@@ -84,7 +95,7 @@ class FurthestDiffReduction:
             the total test coverage from the param individual_coverages.
             :param individual_coverages: a list of individual test coverages
             :param goal: the coverage goal
-            :return: a set of individual test coverages that is a subset of the param individual_coverages
+            :return: a list of reduced individual test coverages
         """
         individual_coverages = individual_coverages[:]
         # From the whole individual test set get the most optimal one and let total_coverage be assigned with the result

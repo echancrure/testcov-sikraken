@@ -362,7 +362,7 @@ class SuiteExecutor:
         harness_file_target="harness.c",
         compile_target="a.out",
         compute_sequence=False,
-        reduce_tests=rs.ReductionContext.build(rs.ReductionStrategy.NAIVE.value),
+        reduce_tests=rs.build(rs.ReductionOption.NAIVE.name),
         isolate_tests=True,
         compute_individuals=True,
         memlimit=None,

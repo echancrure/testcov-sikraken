@@ -149,8 +149,12 @@ def get_parser():
         "--reduction",
         dest="reduce_tests",
         action="store",
-        default=rs.ReductionStrategy.NAIVE.value,
-        help="apply a reduction strategy to create a reduced test suite",
+        default=rs.ReductionOption.NAIVE.name,
+        help="apply reduction strategy to create a reduced test suite. Possible options: {}, {}, {}".format(
+            rs.ReductionOption.NONE.name,
+            rs.ReductionOption.NAIVE.name,
+            rs.ReductionOption.DIFF.name,
+        ),
         required=False,
     )
 
@@ -328,7 +332,7 @@ def main():
     harness_file = os.path.join(args.output_dir, "harness.c")
     executable = os.path.join(args.output_dir, "a.out")
     compute_individuals = args.individual_test_cov
-    reduce_tests = rs.ReductionContext.build(args.reduce_tests)
+    reduce_tests = rs.build(args.reduce_tests)
     try:
         executor = execution.SuiteExecutor(
             args.goal,

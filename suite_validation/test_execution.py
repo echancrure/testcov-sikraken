@@ -313,7 +313,7 @@ class TestSuiteExecutor(TempDirExecutor):
         timelimit=None,
         compute_sequence=True,
         compute_individuals=True,
-        reduce_tests=rs.ReductionContext.build(rs.ReductionStrategy.NONE.value),
+        reduce_tests=rs.build(rs.ReductionOption.NONE.name),
     ):
         harness_file = _get_harness_file_target()
         compile_output_file = _get_compile_target()
@@ -487,13 +487,11 @@ class TestSuiteExecutor(TempDirExecutor):
         eq_(test_coverage.conditions_total, 12)
 
     def test_reduction_correct(self):
-        strategies = [rs.ReductionStrategy.NAIVE.value, rs.ReductionStrategy.DIFF.value]
+        strategies = [rs.ReductionOption.NAIVE.name, rs.ReductionOption.DIFF.name]
         for machine_model in MACHINE_MODELS:
             for goal in eu.COVERAGE_GOALS.values():
                 for strategy in strategies:
-                    runner = self.get_runner(
-                        goal, reduce_tests=rs.ReductionContext.build(strategy)
-                    )
+                    runner = self.get_runner(goal, reduce_tests=rs.build(strategy))
                     yield self._check_reduction_correct_suite_simple_if, runner, machine_model, goal
                     yield self._check_reduction_correct_suite_simple_if_inverted, runner, machine_model, goal, strategy
 
@@ -553,7 +551,7 @@ class TestSuiteExecutor(TempDirExecutor):
             TEST_FILE_SIMPLE_IF, SUITE_SIMPLE_IF_SWAPPED, machine_model
         )
         if goal == eu.COVER_LINES:
-            if strategy == rs.ReductionStrategy.DIFF:
+            if strategy == rs.ReductionOption.DIFF:
                 assert len(result_obj.reduced_coverage_tests) < len(
                     result_obj.coverage_tests
                 )
@@ -572,7 +570,7 @@ class TestSuiteExecutor(TempDirExecutor):
                 eq_(total_tc_from_reduced.line_coverage, 100)
                 eq_(total_tc_from_reduced.branch_coverage, 50)
                 eq_(total_tc_from_reduced.condition_coverage, 50)
-            if strategy == rs.ReductionStrategy.NAIVE:
+            if strategy == rs.ReductionOption.NAIVE:
                 assert len(result_obj.reduced_coverage_tests) == len(
                     result_obj.coverage_tests
                 )
@@ -784,7 +782,7 @@ class TestCoverageChecker:
     def test_coverage_stragey(self):
 
         for goal in eu.COVERAGE_GOALS.values():
-            context = rs.ReductionContext.build(rs.ReductionStrategy.DIFF.value)
+            context = rs.build(rs.ReductionOption.DIFF.name)
             reduced_tests = context.execute(self.test_coverage_group_one, goal)
             assert self.perfect_test_coverage in reduced_tests
             assert self.half_perfect_test_coverage not in reduced_tests
@@ -796,7 +794,7 @@ class TestCoverageChecker:
             assert self.half_perfect_test_coverage_complementary in reduced_tests
             assert self.bad_test_coverage not in reduced_tests
 
-            context = rs.ReductionContext.build(rs.ReductionStrategy.NAIVE.value)
+            context = rs.build(rs.ReductionOption.NAIVE.name)
             # for naive reduction the test coverage positions in the list is crucial
             reduced_tests = context.execute(self.test_coverage_group_one, goal)
             assert self.bad_test_coverage in reduced_tests
@@ -804,7 +802,7 @@ class TestCoverageChecker:
             assert self.half_perfect_test_coverage not in reduced_tests
             assert self.half_perfect_test_coverage_complementary not in reduced_tests
 
-            context = rs.ReductionContext.build(rs.ReductionStrategy.NONE.value)
+            context = rs.build(rs.ReductionOption.NONE.name)
             reduced_tests = context.execute(self.test_coverage_group_one, goal)
             assert not reduced_tests
 
