@@ -362,7 +362,7 @@ class SuiteExecutor:
         harness_file_target="harness.c",
         compile_target="a.out",
         compute_sequence=False,
-        reduce_tests=rs.build(rs.ReductionOption.NAIVE.name),
+        reduce_tests=rs.NAIVE_REDUCTION,
         isolate_tests=True,
         compute_individuals=True,
         memlimit=None,
@@ -557,8 +557,8 @@ class SuiteExecutor:
         finally:
             print("\n✔️  Done!", file=self._info_target, flush=True)  # print newline
             if result_target.coverage_tests:
-                result_target.reduced_coverage_tests = self._reduce_tests.execute(
-                    result_target.coverage_tests[:], self._goal
+                result_target.reduced_coverage_tests = rs.execute(
+                    self._reduce_tests, result_target.coverage_tests[:], self._goal
                 )
                 if not self._check_for_error:
                     for tc in result_target.reduced_coverage_tests:
