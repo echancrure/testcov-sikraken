@@ -28,7 +28,7 @@ from lxml import etree
 from suite_validation import execution_utils as eu
 from suite_validation import coverage as cov
 from suite_validation import metadata_utils as mu
-from suite_validation import coverage_strategy as covstr
+from suite_validation import reduction_strategy as rs
 
 HARNESS_FILE_NAME = "harness.c"
 HARNESS_GCDA_FILE = "harness.gcda"
@@ -362,7 +362,7 @@ class SuiteExecutor:
         harness_file_target="harness.c",
         compile_target="a.out",
         compute_sequence=False,
-        reduce_tests=True,
+        reduce_tests=rs.NAIVE_REDUCTION,
         isolate_tests=True,
         compute_individuals=True,
         memlimit=None,
@@ -556,9 +556,9 @@ class SuiteExecutor:
                 print(".", file=self._info_target, end="", flush=True)
         finally:
             print("\n✔️  Done!", file=self._info_target, flush=True)  # print newline
-            if self._reduce_tests and result_target.coverage_tests:
-                result_target.reduced_coverage_tests = covstr.find_reduced_test_suite(
-                    result_target.coverage_tests[:], self._goal
+            if result_target.coverage_tests:
+                result_target.reduced_coverage_tests = rs.execute(
+                    self._reduce_tests, result_target.coverage_tests[:], self._goal
                 )
                 if not self._check_for_error:
                     for tc in result_target.reduced_coverage_tests:
