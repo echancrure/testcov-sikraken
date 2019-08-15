@@ -151,7 +151,7 @@ def get_parser():
         action="store",
         default=rs.NAIVE_REDUCTION,
         help="apply reduction strategy to create a reduced test suite. Possible options: {}, {}, {}".format(
-            rs.NO_REDUCTION, rs.NAIVE_REDUCTION, rs.FURTHEST_DIFF_REDUCTION
+            *rs.REDUCTION_STRATEGIES.keys()
         ),
         required=False,
     )
