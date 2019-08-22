@@ -22,6 +22,7 @@ The following requirements are automatically installed by `pipenv` or `setup.py`
 but can also be installed manually (e.g., through `pip`):
 * lxml >= 4.0
 * BenchExec >= 1.20
+* pycparser >= 2.19
 
 Optional, for plotting (if not available, run `testsuite-validator` with argument `--no-plots`):
 * matplotlib >= 3.1.0
