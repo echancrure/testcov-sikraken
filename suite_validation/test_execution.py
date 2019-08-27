@@ -579,7 +579,7 @@ class TestSuiteExecutor(TempDirExecutor):
         result_obj: eu.SuiteExecutionResult = runner.run(
             TEST_FILE_SIMPLE_IF, SUITE_SIMPLE_IF, machine_model
         )
-        if goal in [eu.COVER_LINES, eu.COVER_ERRORS]:
+        if goal in [eu.COVER_LINES]:
             assert len(result_obj.reduced_coverage_tests) < len(
                 result_obj.coverage_tests
             ), (
@@ -587,7 +587,8 @@ class TestSuiteExecutor(TempDirExecutor):
                 % (result_obj.reduced_coverage_tests, result_obj.coverage_tests)
             )
             # only test with x = 2 included because this test executes the line in the if body and
-            # gives 100% line coverage. In the naive reduction approach this test is added first.
+            # gives 100% line coverage. The DIFF approach find this "better" test. The naive reduction approach
+            # applies this test first.
             eq_(len(result_obj.reduced_coverage_tests), 1)
             total_tc_from_reduced = None
             for tc in result_obj.reduced_coverage_tests:
@@ -599,7 +600,7 @@ class TestSuiteExecutor(TempDirExecutor):
                         total_tc_from_reduced, tc
                     )
             eq_(total_tc_from_reduced.hits_percent, 100)
-        if goal in [eu.COVER_BRANCHES, eu.COVER_CONDITIONS]:
+        if goal in [eu.COVER_BRANCHES, eu.COVER_CONDITIONS, eu.COVER_ERRORS]:
             # test with x = 2 and x := -2 included because each test will give 50% branch coverage and 50%
             # condition coverage and merging this together a branch/condition coverage of 100% is obtained.
             assert len(result_obj.reduced_coverage_tests) == len(
@@ -630,7 +631,7 @@ class TestSuiteExecutor(TempDirExecutor):
         result_obj: eu.SuiteExecutionResult = runner.run(
             TEST_FILE_SIMPLE_IF, SUITE_SIMPLE_IF_SWAPPED, machine_model
         )
-        if goal in [eu.COVER_LINES, eu.COVER_ERRORS]:
+        if goal in [eu.COVER_LINES]:
             if strategy == rs.FURTHEST_DIFF_REDUCTION:
                 assert len(result_obj.reduced_coverage_tests) < len(
                     result_obj.coverage_tests
@@ -639,7 +640,7 @@ class TestSuiteExecutor(TempDirExecutor):
                     % (result_obj.reduced_coverage_tests, result_obj.coverage_tests)
                 )
                 # only test with x = 2 included because this test executes the line in the if body and
-                # gives 100% line coverage
+                # gives 100% line coverage. The DIFF approach finds this "better" test.
                 eq_(len(result_obj.reduced_coverage_tests), 1)
                 total_tc_from_reduced = None
                 for tc in result_obj.reduced_coverage_tests:
@@ -658,7 +659,7 @@ class TestSuiteExecutor(TempDirExecutor):
                     "Inconsistent sequences: %s and %s"
                     % (result_obj.reduced_coverage_tests, result_obj.coverage_tests)
                 )
-                # Both test vectors included because the naive approach works sequentally when looking
+                # Both test vectors included because the naive approach works sequentially when looking
                 # at the test coverages.
                 # This means that the "worse" test coverage with smaller line coverage is added because it comes first
                 # in the sequence. Then the "better" test coverage is also added since it increases the line coverage.
@@ -673,7 +674,7 @@ class TestSuiteExecutor(TempDirExecutor):
                             total_tc_from_reduced, tc
                         )
                 eq_(total_tc_from_reduced.hits_percent, 100)
-        if goal in [eu.COVER_BRANCHES, eu.COVER_CONDITIONS]:
+        if goal in [eu.COVER_BRANCHES, eu.COVER_CONDITIONS, eu.COVER_ERRORS]:
             # In naive and furthest diff strategy tests with x = 2 and x := -2 are included
             # because each test will give 50% branch coverage and 50% condition coverage
             # and merging this together a branch/condition coverage of 100% is obtained.
@@ -711,9 +712,7 @@ class TestCoverageChecker:
                 {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0}
             )
         ),
-        eu.COVER_BRANCHES: _get_cov(
-            cov.BranchesCoverage({4: [False, False], 8: [False, False]})
-        ),
+        eu.COVER_BRANCHES: _get_cov(cov.BranchesCoverage({4: 0, 5: 0, 8: 0, 9: 0})),
         eu.COVER_CONDITIONS: _get_cov(
             cov.ConditionsCoverage(
                 [
@@ -730,9 +729,7 @@ class TestCoverageChecker:
                 {1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1}
             )
         ),
-        eu.COVER_BRANCHES: _get_cov(
-            cov.BranchesCoverage({4: [True, True], 8: [True, True]})
-        ),
+        eu.COVER_BRANCHES: _get_cov(cov.BranchesCoverage({4: 1, 5: 1, 8: 1, 9: 1})),
         eu.COVER_CONDITIONS: _get_cov(
             cov.ConditionsCoverage(
                 [
@@ -749,9 +746,7 @@ class TestCoverageChecker:
                 {1: 0, 2: 1, 3: 0, 4: 1, 5: 0, 6: 1, 7: 0, 8: 1, 9: 0, 10: 1}
             )
         ),
-        eu.COVER_BRANCHES: _get_cov(
-            cov.BranchesCoverage({4: [True, False], 8: [True, False]})
-        ),
+        eu.COVER_BRANCHES: _get_cov(cov.BranchesCoverage({4: 1, 5: 0, 8: 1, 9: 0})),
         eu.COVER_CONDITIONS: _get_cov(
             cov.ConditionsCoverage(
                 [
@@ -768,9 +763,7 @@ class TestCoverageChecker:
                 {1: 1, 2: 0, 3: 1, 4: 0, 5: 1, 6: 0, 7: 1, 8: 0, 9: 1, 10: 0}
             )
         ),
-        eu.COVER_BRANCHES: _get_cov(
-            cov.BranchesCoverage({4: [False, True], 8: [False, True]})
-        ),
+        eu.COVER_BRANCHES: _get_cov(cov.BranchesCoverage({4: 0, 5: 1, 8: 0, 9: 1})),
         eu.COVER_CONDITIONS: _get_cov(
             cov.ConditionsCoverage(
                 [
@@ -795,7 +788,7 @@ class TestCoverageChecker:
 
     def test_basic_test_coverage_computations(self):
         for goal in eu.COVERAGE_GOALS.values():
-            if goal == eu.COVER_ERRORS:
+            if goal is eu.COVER_ERRORS:
                 continue
             yield self._check_basic_test_coverage_computations, goal
 
@@ -843,15 +836,15 @@ class TestCoverageChecker:
         for test_coverages in self.test_coverage_group_one:
             goal = eu.COVER_BRANCHES
             eq_(test_coverages[goal].count_total, 4)
-            eq_(len(test_coverages[goal].coverage.relevant_program_lines), 2)
+            eq_(len(test_coverages[goal].coverage.relevant_program_lines), 4)
 
         eq_(self.half_perfect_test_coverages[goal].hits, 2)
         eq_(
-            self.half_perfect_test_coverages[goal].coverage.is_program_line_covered(4),
+            self.half_perfect_test_coverages[goal].coverage.is_program_line_covered(5),
             False,
         )
         eq_(
-            self.half_perfect_test_coverages[goal].coverage.is_program_line_covered(8),
+            self.half_perfect_test_coverages[goal].coverage.is_program_line_covered(9),
             False,
         )
 

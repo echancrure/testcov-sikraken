@@ -23,12 +23,14 @@ import os
 import sys
 import zipfile
 
+from typing import List, Optional
 from lxml import etree
 
 from suite_validation import execution_utils as eu
 from suite_validation import coverage as cov
 from suite_validation import metadata_utils as mu
 from suite_validation import reduction_strategy as rs
+from suite_validation import transformer as tr
 
 HARNESS_FILE_NAME = "harness.c"
 HARNESS_GCDA_FILE = "harness.gcda"
@@ -287,7 +289,11 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
         return result
 
     def compute_test_coverage_from_gcda_file(
-        self, program_file, test_vector_with_result, coverage_goal
+        self,
+        program_file,
+        test_vector_with_result,
+        coverage_goal,
+        branch_label_line_numbers=None,
     ) -> cov.TestCoverage:
         program_name = os.path.basename(program_file)
         if self.harness_file:
@@ -300,6 +306,7 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
                 LCOV_TRACE_FILE,
                 test_vector_with_result,
                 coverage_goal,
+                branch_label_line_numbers,
             )
 
         logging.info(
@@ -493,9 +500,10 @@ class SuiteExecutor:
         test_vector: eu.TestVector,
         program_file: str,
         executor: CoverageMeasuringExecutionRunner,
+        branch_label_line_numbers: Optional[List[int]] = None,
     ) -> cov.TestCoverage:
         coverage_test = executor.compute_test_coverage_from_gcda_file(
-            program_file, {test_vector: result}, self._goal
+            program_file, {test_vector: result}, self._goal, branch_label_line_numbers
         )
         return coverage_test
 
@@ -506,11 +514,12 @@ class SuiteExecutor:
         program_file: str,
         tv: eu.TestVector,
         executor: CoverageMeasuringExecutionRunner,
+        branch_label_line_numbers: Optional[List[int]],
     ):
         try:
 
             current_coverage = self._compute_coverage(
-                next_result, tv, program_file, executor
+                next_result, tv, program_file, executor, branch_label_line_numbers
             )
 
             if self._compute_individual_test_coverages:
@@ -546,11 +555,24 @@ class SuiteExecutor:
 
         try:
             print("⏳ Executing tests.", file=self._info_target, end="", flush=True)
+
+            branch_label_line_numbers = None
+
+            if self._goal in [eu.COVER_BRANCHES, eu.COVER_ERRORS]:
+                program_file, branch_label_line_numbers = tr.instrument_program(
+                    program_file
+                )
+
             for tv in test_vectors:
                 next_result = executor.run(program_file, tv)
 
                 self._compute_coverages(
-                    result_target, next_result, program_file, tv, executor
+                    result_target,
+                    next_result,
+                    program_file,
+                    tv,
+                    executor,
+                    branch_label_line_numbers,
                 )
 
                 if next_result == eu.TestResult.COVERS and self._check_for_error:
