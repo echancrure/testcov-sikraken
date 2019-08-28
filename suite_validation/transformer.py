@@ -26,12 +26,14 @@ from contextlib import contextmanager
 import itertools
 import logging
 import re
+import os
 from typing import List, Dict, Tuple, Set, Iterable, Optional
 import pycparser
 from pycparser import c_generator
 
 from suite_validation import label_adding as la
 
+INSTRUMENTED_PREFIX = "instrumented_"
 
 class ParseError(Exception):
     def __init__(self, msg=None, cause=None):
@@ -93,12 +95,14 @@ def instrument_program(program: str) -> Tuple[str, List[int]]:
 
     branch_label_line_numbers = collect_branch_label_line_numbers(c_code)
 
-    rewrite = program[:-2] + "-rewritten.c"
-    with open(rewrite, "w") as outp:
+    output_prog = os.path.join(
+        os.getcwd(), INSTRUMENTED_PREFIX + os.path.basename(program)
+    )
+    with open(output_prog, "w") as outp:
         outp.write(c_code)
-        logging.debug("Wrote rewritten C program to %s", rewrite)
+        logging.debug("Wrote transformed C program to %s", output_prog)
 
-    return rewrite, branch_label_line_numbers
+    return output_prog, branch_label_line_numbers
 
 
 def collect_branch_label_line_numbers(c_code: str) -> List[int]:
