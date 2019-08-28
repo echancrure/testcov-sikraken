@@ -98,6 +98,10 @@ class CoverageComparable:
     def is_program_line_covered(self, pl) -> bool:
         raise NotImplementedError
 
+    @abstractmethod
+    def merge(self, other: "CoverageComparable") -> "CoverageComparable":
+        raise NotImplementedError
+
     @property
     @abstractmethod
     def relevant_program_lines(self):
@@ -163,18 +167,15 @@ class ConditionsEntry:
     def relevant_program_lines(self):
         return [self.program_line]
 
-    @staticmethod
-    def merge(
-        entry1: "ConditionsEntry", entry2: "ConditionsEntry"
-    ) -> "ConditionsEntry":
-        assert entry1.program_line == entry2.program_line
+    def merge(self: "ConditionsEntry", other: "ConditionsEntry") -> "ConditionsEntry":
+        assert self.program_line == other.program_line
         summarized_conditions_hit_counter = {}
-        for condition_index in entry1.conditions_hit_counter:
+        for condition_index in self.conditions_hit_counter:
             summarized_conditions_hit_counter[condition_index] = (
-                entry1.conditions_hit_counter[condition_index]
-                + entry2.conditions_hit_counter[condition_index]
+                self.conditions_hit_counter[condition_index]
+                + other.conditions_hit_counter[condition_index]
             )
-        return ConditionsEntry(entry1.program_line, summarized_conditions_hit_counter)
+        return ConditionsEntry(self.program_line, summarized_conditions_hit_counter)
 
     def same_program_line(self, other: "ConditionsEntry") -> bool:
         return self.program_line == other.program_line
@@ -665,6 +666,7 @@ def get_test_coverage_from_trace_file(
     elif coverage_goal is eu.COVER_BRANCHES:
         if branch_label_line_numbers is None:
             coverage = None
+            branches_hit_counter_dic = None
         else:
             # Branch coverage is the goal. However, the line numbers with branch labels can be empty
             # when there exist no branches in the program
