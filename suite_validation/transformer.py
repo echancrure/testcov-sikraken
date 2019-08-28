@@ -35,6 +35,7 @@ from suite_validation import label_adding as la
 
 INSTRUMENTED_PREFIX = "instrumented_"
 
+
 class ParseError(Exception):
     def __init__(self, msg=None, cause=None):
         super().__init__(msg, cause)
