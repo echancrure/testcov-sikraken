@@ -72,6 +72,8 @@ class CoverageComparable:
     value represents the ratio of the measured unit (for instance line coverage) that the class object covers but that
     is not covered by the other object. The second value represents the ratio of the measured unit that the other object
     covers but is not covered by the class object.
+    Moreover, an instance of a class that implements CoverageComparable must be mergable with another instance of the
+    same class.
     """
 
     __metaclass__ = ABCMeta
@@ -136,7 +138,7 @@ class CoverageComparable:
 class ConditionsEntry:
     """
     An instance of ConditionsEntry has a dictionary with indices as keys to address the conditions and counter numbers
-    as corresponding values which say how often the conditions have been hit. Moreover an instance has a program line
+    as corresponding values which say how often the conditions have been hit. Moreover, an instance has a program line
     to relate to the program where the conditions appear. Note that ConditionsEntry does not implement
     CoverageComparable.
     An instance of ConditionsEntry is fully covered when each indices has a corresponding counter value that is greater
@@ -359,17 +361,9 @@ class LinesCoverage(CoverageComparable):
 
 class BranchesCoverage(CoverageComparable):
     """
-    Contains a dictionary with program lines as keys and two-element lists with booleans as values. For each program
-    line a corresponding list exists to state whether branch one and whether branch two are hit.
-    Note that the values can be wrong because getting branch coverage with lcov does NOT WORK so far!
-    If there will be a solution later to fix this issue it might be interesting to store how often the branches
-    have been taken and not only whether they have been taken. In consequence, this class might be refactored.
-
-    Two-element list 'value' at a certain program line:
-    # value[0] == False and value[1] == False: This coverage is not possible
-    # value[0] == False and value[1] == True: Only "if" branch executed
-    # value[0] == True and value[1] == False: only "else" branch executed
-    # value[0] == True and value[1] == True: "if" branch and "else" branch executed
+    Contains a dictionary with line numbers as keys which correspond to the appearance of inserted branch labels in the
+    rewritten C program. As values the hit numbers of these branch label line numbers are stored.
+    Full coverage is satisfied when each line number is hit at least once.
     """
 
     def __init__(self, branches_hit_counter: Dict[int, int]):
