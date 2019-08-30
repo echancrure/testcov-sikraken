@@ -703,6 +703,41 @@ class TestSuiteExecutor(TempDirExecutor):
 def _get_cov(coverage):
     return cov.TestCoverage(DUMMY_FILE, DUMMY_TEST_VECTOR_RESULT, coverage)
 
+    def test_branch_coverage_instrumented_programs(self):
+        for machine_model in MACHINE_MODELS:
+            runner = self.get_runner(eu.COVER_BRANCHES)
+            yield self.check_coverage_instrumented_program, runner, machine_model
+
+    @staticmethod
+    def check_coverage_instrumented_program(runner, machine_model):
+        result_obj: eu.SuiteExecutionResult = runner.run(
+            TEST_FILE_SIMPLE_IF, SUITE_SIMPLE_IF, machine_model
+        )
+        coverage: cov.TestCoverage = result_obj.coverage_total
+        eq_(coverage.branch_coverage, 100)
+        eq_(coverage.branches_total, 2)
+        eq_(coverage.branches_hit, 2)
+        eq_(coverage.line_coverage, 100)
+        eq_(coverage.lines_hit, 7)
+        eq_(coverage.lines_total, 7)
+        eq_(coverage.condition_coverage, 100)
+        eq_(coverage.conditions_hit, 2)
+        eq_(coverage.conditions_total, 2)
+
+        result_obj: eu.SuiteExecutionResult = runner.run(
+            TEST_FILE_WITH_ERR, SUITE_VALID_ZIP, machine_model
+        )
+        coverage = result_obj.coverage_total
+        eq_(coverage.branch_coverage, 100)
+        eq_(coverage.branches_total, 2)
+        eq_(coverage.branches_hit, 2)
+        eq_(coverage.line_coverage, 100)
+        eq_(coverage.lines_hit, 9)
+        eq_(coverage.lines_total, 9)
+        eq_(coverage.condition_coverage, 66.67)
+        eq_(coverage.conditions_hit, 4)
+        eq_(coverage.conditions_total, 6)
+
 
 class TestCoverageChecker:
 
