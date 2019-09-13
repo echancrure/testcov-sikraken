@@ -143,7 +143,7 @@ class ExecutionRunner:
         timelimit_per_run,
         harness_file_target="harness.c",
         compile_target="a.out",
-        compiler="clang",
+        compiler="gcc",
     ):
         """Create new ExecutionRunner.
 

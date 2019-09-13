@@ -796,11 +796,7 @@ def _write_csv_rows_from_test_coverages(writer, test_coverages):
 
 
 def create_trace_file_and_get_test_coverage(
-    program_name,
-    data_file,
-    output_tracefile,
-    test_vector_with_result,
-    gcov_tool=LLVM_GCOV_BINARY,
+    program_name, data_file, output_tracefile, test_vector_with_result, gcov_tool="gcov"
 ):
     if os.path.exists(data_file):
         cmd = [
