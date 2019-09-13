@@ -38,17 +38,7 @@ DELIMITER_TEST_COVERAGES = "\t"
 
 MODULE_DIRECTORY = os.path.join(os.path.dirname(__file__), os.path.pardir)
 
-LCOV_WITH_BRANCH_COVERAGE = "lcov_branch_coverage=1"
-LCOV_NO_RECURSION = "--no-recursion"
-LCOV_USED_GCOV_TOOL = os.path.join(MODULE_DIRECTORY, "bin/llvm-gcov")
-
-LCOV_COMMAND_PREFIX = [
-    "lcov",
-    "--gcov-tool",
-    LCOV_USED_GCOV_TOOL,
-    "--rc",
-    LCOV_WITH_BRANCH_COVERAGE,
-]
+LLVM_GCOV_BINARY = os.path.join(MODULE_DIRECTORY, "bin/llvm-gcov")
 
 TRACE_FILE_CONDITION_NOT_VISITED = "-"
 
@@ -806,14 +796,23 @@ def _write_csv_rows_from_test_coverages(writer, test_coverages):
 
 
 def create_trace_file_and_get_test_coverage(
-    program_name, data_file, output_tracefile, test_vector_with_result
+    program_name,
+    data_file,
+    output_tracefile,
+    test_vector_with_result,
+    gcov_tool=LLVM_GCOV_BINARY,
 ):
     if os.path.exists(data_file):
-        cmd = LCOV_COMMAND_PREFIX + [
+        cmd = [
+            "lcov",
+            "--gcov-tool",
+            gcov_tool,
+            "--rc",
+            "lcov_branch_coverage=1",
             "-c",
             "-d",
             ".",
-            LCOV_NO_RECURSION,
+            "--no-recursion",
             "-o",
             output_tracefile,
         ]

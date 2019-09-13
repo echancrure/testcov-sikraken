@@ -143,6 +143,7 @@ class ExecutionRunner:
         timelimit_per_run,
         harness_file_target="harness.c",
         compile_target="a.out",
+        compiler="clang",
     ):
         """Create new ExecutionRunner.
 
@@ -157,12 +158,13 @@ class ExecutionRunner:
         self.harness_file = None
         self._harness_file_target = harness_file_target
         self.timelimit = timelimit_per_run
+        self._compiler = compiler
 
     def _get_compile_cmd(
         self, program_file, harness_file, output_file, c_version="gnu11"
     ):
         mm_arg = "-m64" if self.machine_model == eu.MACHINE_MODEL_64 else "-m32"
-        cmd = ["clang"]
+        cmd = [self._compiler]
         cmd += [
             "-std={}".format(c_version),
             mm_arg,
