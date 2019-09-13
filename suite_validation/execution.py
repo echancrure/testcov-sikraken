@@ -287,7 +287,7 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
         return result
 
     def compute_test_coverage_from_gcda_file(
-        self, program_file, test_vector_with_result
+        self, program_file, test_vector_with_result, coverage_goal
     ) -> cov.TestCoverage:
         program_name = os.path.basename(program_file)
         if self.harness_file:
@@ -295,7 +295,11 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
             data_file = self.harness_file[:-1] + "gcda"
             data_file = os.path.basename(data_file)  # data file is in cwd
             return cov.create_trace_file_and_get_test_coverage(
-                program_name, data_file, LCOV_TRACE_FILE, test_vector_with_result
+                program_name,
+                data_file,
+                LCOV_TRACE_FILE,
+                test_vector_with_result,
+                coverage_goal,
             )
 
         logging.info(
@@ -483,15 +487,15 @@ class SuiteExecutor:
                     else:
                         logging.debug("File %s is no valid testcase", xml_file)
 
-    @staticmethod
     def _compute_coverage(
+        self,
         result: eu.TestResult,
         test_vector: eu.TestVector,
         program_file: str,
         executor: CoverageMeasuringExecutionRunner,
     ) -> cov.TestCoverage:
         coverage_test = executor.compute_test_coverage_from_gcda_file(
-            program_file, {test_vector: result}
+            program_file, {test_vector: result}, self._goal
         )
         return coverage_test
 
@@ -526,9 +530,7 @@ class SuiteExecutor:
                 result_target.coverage_total = current_coverage
 
             if self._compute_sequence:
-                new_coverage = float(
-                    result_target.coverage_total.get_coverage_for_goal(self._goal)
-                )
+                new_coverage = float(result_target.coverage_total.hits_percent)
 
                 result_target.coverage_sequence.append(new_coverage)
         except cov.CoverageCreationError as e:
@@ -560,7 +562,7 @@ class SuiteExecutor:
             print("\n✔️  Done!", file=self._info_target, flush=True)  # print newline
             if result_target.coverage_tests:
                 result_target.reduced_coverage_tests = rs.execute(
-                    self._reduce_tests, result_target.coverage_tests[:], self._goal
+                    self._reduce_tests, result_target.coverage_tests[:]
                 )
                 if not self._check_for_error:
                     for tc in result_target.reduced_coverage_tests:

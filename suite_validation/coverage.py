@@ -105,7 +105,11 @@ class CoverageComparable:
 
     @property
     @abstractmethod
-    def coverage_hit(self) -> int:
+    def hits(self) -> int:
+        raise NotImplementedError
+
+    @abstractmethod
+    def merge(self, cov: "CoverageComparable") -> "CoverageComparable":
         raise NotImplementedError
 
     def covers(self, other: "CoverageComparable") -> bool:
@@ -215,11 +219,11 @@ class ConditionsCoverage(CoverageComparable):
         self.conditions_entries = conditions_entries
 
     @property
-    def conditions_hit(self) -> int:
+    def hits(self) -> int:
         return sum(e.conditions_hit for e in self.conditions_entries)
 
     @property
-    def conditions_total(self) -> int:
+    def count_total(self) -> int:
         number_of_conditions_found = 0
         for condition_entry in self.conditions_entries:
             number_of_conditions_found += condition_entry.conditions_total
@@ -229,18 +233,11 @@ class ConditionsCoverage(CoverageComparable):
     def relevant_program_lines(self):
         return [entry.program_line for entry in self.conditions_entries]
 
-    @property
-    def coverage_hit(self) -> int:
-        return self.conditions_hit
-
-    @staticmethod
-    def merge(
-        cov1: "ConditionsCoverage", cov2: "ConditionsCoverage"
-    ) -> "ConditionsCoverage":
+    def merge(self, cov: "ConditionsCoverage") -> "ConditionsCoverage":
         merged = [
             ConditionsEntry.merge(e1, e2)
-            for e1 in cov1.conditions_entries
-            for e2 in cov2.conditions_entries
+            for e1 in self.conditions_entries
+            for e2 in cov.conditions_entries
             if e1.same_program_line(e2)
         ]
         return ConditionsCoverage(merged)
@@ -270,24 +267,29 @@ class ConditionsCoverage(CoverageComparable):
             )
             conditions_only_covered_by_self += current_only_self
             conditions_only_covered_by_other += current_only_other
-        if self.conditions_total == 0:
+        if self.count_total == 0:
             return 0.0, 0.0
         return (
-            float(conditions_only_covered_by_self) / float(self.conditions_total),
-            float(conditions_only_covered_by_other) / float(self.conditions_total),
+            float(conditions_only_covered_by_self) / float(self.count_total),
+            float(conditions_only_covered_by_other) / float(self.count_total),
         )
 
     def is_program_line_covered(self, pl) -> bool:
         if pl not in self.relevant_program_lines:
             return False
-        return self.get_conditions_entry(pl).is_program_line_covered
+        e = self.get_conditions_entry(pl)
+        if not e:
+            return False
+        return e.is_program_line_covered
 
     def is_coverage_for_program_line_extended(
         self, other: "ConditionsCoverage", pl
     ) -> bool:
-        return self.get_conditions_entry(pl).is_coverage_for_program_line_extended(
-            other.get_conditions_entry(pl)
-        )
+        this_entry = self.get_conditions_entry(pl)
+        other_entry = other.get_conditions_entry(pl)
+        if not this_entry or not other_entry:
+            return False
+        return this_entry.is_coverage_for_program_line_extended(other_entry)
 
 
 class LinesCoverage(CoverageComparable):
@@ -300,7 +302,7 @@ class LinesCoverage(CoverageComparable):
         self.lines_hit_counter = program_lines_hit_counter
 
     @property
-    def lines_hit(self) -> int:
+    def hits(self) -> int:
         lines_taken = 0
         for program_line in self.relevant_program_lines:
             if self.lines_hit_counter[program_line] > 0:
@@ -308,22 +310,17 @@ class LinesCoverage(CoverageComparable):
         return lines_taken
 
     @property
-    def lines_total(self) -> int:
+    def count_total(self) -> int:
         return len(self.relevant_program_lines)
 
     @property
     def relevant_program_lines(self):
         return self.lines_hit_counter.keys()
 
-    @property
-    def coverage_hit(self) -> int:
-        return self.lines_hit
-
-    @staticmethod
-    def merge(cov1: "LinesCoverage", cov2: "LinesCoverage"):
+    def merge(self, cov: "LinesCoverage"):
         summarized_lines_coverage = {
-            l: cov1.lines_hit_counter[l] + cov2.lines_hit_counter[l]
-            for l in cov1.lines_hit_counter
+            l: self.lines_hit_counter[l] + cov.lines_hit_counter[l]
+            for l in self.lines_hit_counter
         }
         return LinesCoverage(summarized_lines_coverage)
 
@@ -343,11 +340,11 @@ class LinesCoverage(CoverageComparable):
                 < self.lines_hit_counter[program_line]
             ):
                 lines_only_covered_by_self += 1
-        if self.lines_total == 0:
+        if self.count_total == 0:
             return 0.0, 0.0
         return (
-            float(lines_only_covered_by_self) / float(self.lines_total),
-            float(lines_only_covered_by_other) / float(self.lines_total),
+            float(lines_only_covered_by_self) / float(self.count_total),
+            float(lines_only_covered_by_other) / float(self.count_total),
         )
 
     def is_program_line_covered(self, pl) -> bool:
@@ -378,11 +375,11 @@ class BranchesCoverage(CoverageComparable):
         self.branches_hit_counter = branches_hit_counter
 
     @property
-    def branches_total(self):
+    def count_total(self):
         return len(self.branches_hit_counter) * 2
 
     @property
-    def branches_hit(self):
+    def hits(self):
         hit = 0
         for value in self.branches_hit_counter.values():
             # hit is increased with two when both branches are executed
@@ -396,19 +393,14 @@ class BranchesCoverage(CoverageComparable):
     def relevant_program_lines(self):
         return self.branches_hit_counter.keys()
 
-    @property
-    def coverage_hit(self):
-        return self.branches_hit
-
-    @staticmethod
-    def merge(cov1: "BranchesCoverage", cov2: "BranchesCoverage") -> "BranchesCoverage":
+    def merge(self, cov: "BranchesCoverage") -> "BranchesCoverage":
         summarized_branches_coverage = {}
-        for line in cov1.relevant_program_lines:
+        for line in self.relevant_program_lines:
             summarized_branches_coverage[line] = [False, False]
             for i in (0, 1):
                 summarized_branches_coverage[line][i] = (
-                    cov1.branches_hit_counter[line][i]
-                    or cov2.branches_hit_counter[line][i]
+                    self.branches_hit_counter[line][i]
+                    or cov.branches_hit_counter[line][i]
                 )
         return BranchesCoverage(summarized_branches_coverage)
 
@@ -429,8 +421,8 @@ class BranchesCoverage(CoverageComparable):
             if branches_taken_other[1] <= 0 < branches_taken_self[1]:
                 number_branches_taken_only_self += 1
         return (
-            float(number_branches_taken_only_self) / float(self.branches_total),
-            float(number_branches_taken_only_other) / float(other.branches_total),
+            float(number_branches_taken_only_self) / float(self.count_total),
+            float(number_branches_taken_only_other) / float(other.count_total),
         )
 
     def is_program_line_covered(self, pl):
@@ -457,102 +449,30 @@ class TestCoverage:
         self,
         file_name: str,
         test_vector_results: Dict[eu.TestVector, eu.TestResult],
-        lines_coverage: Optional[LinesCoverage] = None,
-        branches_coverage: Optional[BranchesCoverage] = None,
-        conditions_coverage: Optional[ConditionsCoverage] = None,
+        coverage: Optional[CoverageComparable] = None,
     ):
         self.filename = file_name
         self.test_vector_results = test_vector_results
-        self.lines_coverage = lines_coverage
-        self.branches_coverage = branches_coverage
-        self.conditions_coverage = conditions_coverage
+        self.coverage = coverage
 
     @property
     def test_vectors(self):
         return [*self.test_vector_results]
 
     @property
-    def lines_hit(self):
-        if self.lines_coverage is None:
-            return 0
-        return self.lines_coverage.lines_hit
+    def hits(self):
+        assert self.coverage
+        return self.coverage.hits
 
     @property
-    def lines_total(self):
-        if self.lines_coverage is None:
-            return 0
-        return self.lines_coverage.lines_total
+    def count_total(self):
+        return self.coverage.count_total
 
     @property
-    def branches_hit(self):
-        if self.branches_coverage is None:
-            return 0
-        return self.branches_coverage.branches_hit
-
-    @property
-    def branches_total(self):
-        if self.branches_coverage is None:
-            return 0
-        return self.branches_coverage.branches_total
-
-    @property
-    def conditions_hit(self):
-        if self.conditions_coverage is None:
-            return 0
-        return self.conditions_coverage.conditions_hit
-
-    @property
-    def conditions_total(self):
-        if self.conditions_coverage is None:
-            return 0
-        return self.conditions_coverage.conditions_total
-
-    @property
-    def line_coverage(self):
-        if self.lines_coverage is None:
-            return 0
-        if self.lines_total == 0:
+    def hits_percent(self):
+        if self.count_total == 0:
             return 1.0
-        return round(float(self.lines_hit) / float(self.lines_total) * 100, 2)
-
-    @property
-    def branch_coverage(self):
-        if self.branches_coverage is None:
-            return 0
-        if self.branches_coverage.branches_total == 0:
-            return 1.0
-        return round(
-            float(self.branches_coverage.branches_hit)
-            / float(self.branches_coverage.branches_total)
-            * 100,
-            2,
-        )
-
-    @property
-    def condition_coverage(self):
-        if self.conditions_coverage is None:
-            return 0
-        if self.conditions_total == 0:
-            return 1.0
-        return round(float(self.conditions_hit) / float(self.conditions_total) * 100, 2)
-
-    def coverage_type(self, goal) -> Optional[CoverageComparable]:
-        if goal in [eu.COVER_BRANCHES, eu.COVER_ERRORS]:
-            return self.branches_coverage
-        if goal == eu.COVER_CONDITIONS:
-            return self.conditions_coverage
-        if goal == eu.COVER_LINES:
-            return self.lines_coverage
-        raise AssertionError("Unhandled coverage goal: {}".format(goal))
-
-    def get_coverage_for_goal(self, goal) -> float:
-        if goal in [eu.COVER_BRANCHES, eu.COVER_ERRORS]:
-            return self.branch_coverage
-        if goal == eu.COVER_CONDITIONS:
-            return self.condition_coverage
-        if goal == eu.COVER_LINES:
-            return self.line_coverage
-        raise AssertionError("Unhandled coverage goal: {}".format(goal))
+        return round(float(self.hits) / float(self.count_total) * 100, 2)
 
     def test_vectors_as_string(self):
         # Normally this method is called when the test coverage for an individual test is printed. If so this method
@@ -569,25 +489,22 @@ class TestCoverage:
     @staticmethod
     def merge(cov1: "TestCoverage", cov2: "TestCoverage") -> "TestCoverage":
         assert cov1.filename == cov2.filename
+        assert type(cov1.coverage) is type(cov2.coverage)
         summarized_test_vector_results = {
             **cov2.test_vector_results,
             **cov1.test_vector_results,
         }
-        summarized_lines_coverage = LinesCoverage.merge(
-            cov1.lines_coverage, cov2.lines_coverage
-        )
-        summarized_branches_coverage = BranchesCoverage.merge(
-            cov1.branches_coverage, cov2.branches_coverage
-        )
-        summarized_conditions_coverage = ConditionsCoverage.merge(
-            cov1.conditions_coverage, cov2.conditions_coverage
-        )
+        covs = [c for c in (cov1.coverage, cov2.coverage) if c]
+        if not covs:
+            summarized_coverage = None
+        elif len(covs) == 1:
+            summarized_coverage = covs[0]
+        else:
+            assert len(covs) == 2, "Unexpected number of coverages"
+            summarized_coverage = covs[0].merge(covs[1])
+
         return TestCoverage(
-            cov1.filename,
-            summarized_test_vector_results,
-            summarized_lines_coverage,
-            summarized_branches_coverage,
-            summarized_conditions_coverage,
+            cov1.filename, summarized_test_vector_results, summarized_coverage
         )
 
 
@@ -682,7 +599,7 @@ def _append_to_conditions_entries(
 
 
 def get_test_coverage_from_trace_file(
-    program_name, trace_file, test_vector_with_result
+    program_name, trace_file, test_vector_with_result, coverage_goal
 ) -> TestCoverage:
     lines_hit_counter_dic = {}
     lines_hit = 0
@@ -754,23 +671,21 @@ def get_test_coverage_from_trace_file(
             "File '%s' does not exist. Returning empty test coverage", trace_file
         )
 
-    lines_coverage = LinesCoverage(lines_hit_counter_dic)
-    assert lines_hit == lines_coverage.lines_hit
-    assert lines_found == lines_coverage.lines_total
+    coverage: CoverageComparable
+    if coverage_goal in [eu.COVER_LINES, eu.COVER_ERRORS]:
+        coverage = LinesCoverage(lines_hit_counter_dic)
+        assert lines_hit == coverage.hits
+        assert lines_found == coverage.count_total
+    elif coverage_goal is eu.COVER_BRANCHES:
+        coverage = BranchesCoverage(branches_hit_counter)
+    elif coverage_goal is eu.COVER_CONDITIONS:
+        coverage = ConditionsCoverage(conditions_entries)
+        assert conditions_found == coverage.count_total
+        assert conditions_taken == coverage.hits
+    else:
+        raise AssertionError("Unhandled coverage goal " + coverage_goal)
 
-    conditions_coverage = ConditionsCoverage(conditions_entries)
-    assert conditions_found == conditions_coverage.conditions_total
-    assert conditions_taken == conditions_coverage.conditions_hit
-
-    branches_coverage = BranchesCoverage(branches_hit_counter)
-
-    return TestCoverage(
-        trace_file,
-        test_vector_with_result,
-        lines_coverage,
-        branches_coverage,
-        conditions_coverage,
-    )
+    return TestCoverage(trace_file, test_vector_with_result, coverage)
 
 
 def write_test_coverages_to_dir(output_dir, test_coverages, file_name):
@@ -796,26 +711,26 @@ def _write_csv_rows_from_test_coverages(writer, test_coverages):
 
 
 def create_trace_file_and_get_test_coverage(
-    program_name, data_file, output_tracefile, test_vector_with_result, gcov_tool="gcov"
+    program_name,
+    data_file,
+    output_tracefile,
+    test_vector_with_result,
+    coverage_goal,
+    gcov_tool="gcov",
 ):
     if os.path.exists(data_file):
-        cmd = [
-            "lcov",
-            "--gcov-tool",
-            gcov_tool,
-            "--rc",
-            "lcov_branch_coverage=1",
-            "-c",
-            "-d",
-            ".",
-            "--no-recursion",
-            "-o",
-            output_tracefile,
-        ]
+        cmd = ["lcov", "--gcov-tool", gcov_tool]
+        if coverage_goal in [eu.COVER_CONDITIONS, eu.COVER_BRANCHES]:
+            # add coverage information about with branch conditions were taken/evaluated.
+            # we don't use this option when computing line coverage
+            # because lcov produces wrong line coverage with old versions of gcov (<= 8)
+            # if this option is used
+            cmd += ["--rc", "lcov_branch_coverage=1"]
+        cmd += ["-c", "-d", ".", "--no-recursion", "-o", output_tracefile]
         eu.execute(cmd, quiet=True)
         if os.path.exists(output_tracefile):
             test_coverage = get_test_coverage_from_trace_file(
-                program_name, output_tracefile, test_vector_with_result
+                program_name, output_tracefile, test_vector_with_result, coverage_goal
             )
             return test_coverage
     raise CoverageCreationError("Trace file '%s' not created." % output_tracefile)
