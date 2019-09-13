@@ -110,7 +110,7 @@ def collect_branch_label_line_numbers(c_code: str) -> List[int]:
     line_numbers = []
     line_number = 1
     for line in c_code.splitlines():
-        if la.GOTO_LABEL_PREFIX in line:
+        if la.LABEL_PREFIX in line:
             line_numbers.append(line_number)
         line_number += 1
     return line_numbers

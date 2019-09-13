@@ -699,10 +699,6 @@ class TestSuiteExecutor(TempDirExecutor):
             if goal is eu.COVER_CONDITIONS:
                 eq_(total_tc_from_reduced.hits_percent, 100)
 
-
-def _get_cov(coverage):
-    return cov.TestCoverage(DUMMY_FILE, DUMMY_TEST_VECTOR_RESULT, coverage)
-
     def test_branch_coverage_instrumented_programs(self):
         for machine_model in MACHINE_MODELS:
             runner = self.get_runner(eu.COVER_BRANCHES)
@@ -737,6 +733,10 @@ def _get_cov(coverage):
         eq_(coverage.condition_coverage, 66.67)
         eq_(coverage.conditions_hit, 4)
         eq_(coverage.conditions_total, 6)
+
+
+def _get_cov(coverage):
+    return cov.TestCoverage(DUMMY_FILE, DUMMY_TEST_VECTOR_RESULT, coverage)
 
 
 class TestCoverageChecker:

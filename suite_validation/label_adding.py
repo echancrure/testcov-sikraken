@@ -25,7 +25,6 @@ from typing import Optional, Iterable
 import pycparser
 
 LABEL_PREFIX = "BRANCH_"
-GOTO_LABEL_PREFIX = "goto " + LABEL_PREFIX
 
 
 class LabelAdder(pycparser.c_ast.NodeVisitor):
@@ -52,9 +51,6 @@ class LabelAdder(pycparser.c_ast.NodeVisitor):
                 node.block_items = list()
             label = self._get_label()
             node.block_items.insert(0, label)
-            goto = pycparser.c_ast.Goto(label.name)
-            self.added.add(goto)
-            node.block_items.insert(0, goto)
             return node
 
         return self._add_label_at_start(

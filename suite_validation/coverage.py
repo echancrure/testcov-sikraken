@@ -100,10 +100,6 @@ class CoverageComparable:
     def is_program_line_covered(self, pl) -> bool:
         raise NotImplementedError
 
-    @abstractmethod
-    def merge(self, other: "CoverageComparable") -> "CoverageComparable":
-        raise NotImplementedError
-
     @property
     @abstractmethod
     def relevant_program_lines(self):
