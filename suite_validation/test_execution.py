@@ -479,10 +479,10 @@ class TestSuiteExecutor(TempDirExecutor):
         result_obj = runner.run(TEST_FILE_COVERAGE, SUITE_COVERAGE, machine_model)
         test_coverage = result_obj.coverage_total
 
-        eq_(test_coverage.line_coverage, 68.75)
+        eq_(test_coverage.line_coverage, 75.0)
         eq_(test_coverage.branch_coverage, 50)
         eq_(test_coverage.condition_coverage, 33.33)
-        eq_(test_coverage.lines_total, 16)
+        eq_(test_coverage.lines_total, 12)
         eq_(test_coverage.branches_total, 8)
         eq_(test_coverage.conditions_total, 12)
 
