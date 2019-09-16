@@ -458,15 +458,20 @@ class TestCoverage:
 
     @property
     def hits(self):
-        assert self.coverage
+        if not self.coverage:
+            return 0
         return self.coverage.hits
 
     @property
     def count_total(self):
+        if not self.coverage:
+            return 0
         return self.coverage.count_total
 
     @property
     def hits_percent(self):
+        if not self.coverage:
+            return 0
         if self.count_total == 0:
             return 1.0
         return round(float(self.hits) / float(self.count_total) * 100, 2)
@@ -474,6 +479,8 @@ class TestCoverage:
     def test_vectors_as_string(self):
         # Normally this method is called when the test coverage for an individual test is printed. If so this method
         # returns the origin of the only test vector.
+        if not self.test_vectors:
+            return ""
         out = ""
         separator = " | "
         i = 0
@@ -682,7 +689,7 @@ def get_test_coverage_from_trace_file(
     else:
         raise AssertionError("Unhandled coverage goal " + coverage_goal)
 
-    return TestCoverage(trace_file, test_vector_with_result, coverage)
+    return TestCoverage(program_name, test_vector_with_result, coverage)
 
 
 def write_test_coverages_to_dir(output_dir, test_coverages, file_name):

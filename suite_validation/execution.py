@@ -289,7 +289,7 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
     def compute_test_coverage_from_gcda_file(
         self, program_file, test_vector_with_result, coverage_goal
     ) -> cov.TestCoverage:
-        program_name = os.path.basename(program_file)
+        program_name = _get_program_name(program_file)
         if self.harness_file:
             assert self.harness_file.endswith(".c")
             data_file = self.harness_file[:-1] + "gcda"
@@ -536,6 +536,18 @@ class SuiteExecutor:
             logging.info(
                 "Coverage couldn't be created for test %s: %s", tv.origin, e.msg
             )
+            # Make sure that every test gets a coverage
+            if self._compute_individual_test_coverages:
+                result_target.coverage_tests.append(
+                    cov.TestCoverage(_get_program_name(program_file), {tv: next_result})
+                )
+            if self._compute_sequence:
+                if result_target.coverage_sequence:
+                    result_target.coverage_sequence.append(
+                        result_target.coverage_sequence[-1]
+                    )
+                else:
+                    result_target.coverage_sequence = [0]
 
     def _execute_tests(self, program_file, test_vectors, executor, result_target):
         """Executes all test vectors on the given program using the given executor
@@ -621,3 +633,7 @@ def convert_to_vector_if_testcase(test_xml_file, xml_lines):
         logging.debug("Input: %s", input_tag.text)
         vector.add(input_tag.text.strip())
     return vector
+
+
+def _get_program_name(program_file: str) -> str:
+    return os.path.basename(program_file)

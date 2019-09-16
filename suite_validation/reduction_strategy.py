@@ -44,7 +44,9 @@ def naive_reduction(
     # make a deep copy because coverage gets overwritten
     total_tc = copy.deepcopy(total_tc)
     for tc in individual_coverages:
-        assert tc.coverage and total_tc.coverage
+        if not tc.coverage:
+            continue
+        assert total_tc.coverage
         if total_tc.coverage.is_coverage_extended(tc.coverage):
             reduced_coverages.append(tc)
             total_tc = cov.TestCoverage.merge(total_tc, tc)

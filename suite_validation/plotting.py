@@ -53,10 +53,8 @@ def _prepare_axis_for_plot(coverage_goal: str, total_coverage: float, test_count
 
 def _write_coverages_plot(exec_results, coverage_goal, output_file):
     coverages = exec_results.coverage_tests
-    coverage = exec_results.coverage_total
     test_count = len(exec_results.tests)
-
-    total_coverage = coverage.hits_percent
+    total_coverage = exec_results.coverage_total.hits_percent
 
     xlim = len(exec_results.results) + 1
     ax = _prepare_axis_for_plot(coverage_goal, total_coverage, test_count)

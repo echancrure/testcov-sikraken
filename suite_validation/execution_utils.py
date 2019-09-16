@@ -18,6 +18,7 @@
 import logging
 import subprocess
 from enum import Enum
+from typing import List
 
 ERROR_STRING = "Error found."
 
@@ -142,10 +143,10 @@ class SuiteExecutionResult:
     """Results of a full test suite execution."""
 
     def __init__(self):
-        self.results = list()
+        self.results: List[ExecutionResult] = list()
         self.coverage_total = None
         self.successful_tests = list()
-        self.coverage_sequence = list()
+        self.coverage_sequence: List[float] = list()
         self.coverage_tests = list()
         self.reduced_coverage_tests = list()
         self.tests = list()
