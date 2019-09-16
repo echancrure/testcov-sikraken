@@ -23,7 +23,11 @@ from matplotlib.ticker import MaxNLocator
 from suite_validation import execution_utils as eu
 
 
-def _prepare_axis_for_plot(coverage_goal: str):
+AXIS_PADDING = 0
+BAR_WIDTH = 0.3
+
+
+def _prepare_axis_for_plot(coverage_goal: str, total_coverage: float, test_count: int):
     if coverage_goal in [eu.COVER_BRANCHES, eu.COVER_ERRORS]:
         ylabel = "Branch Coverage (%)"
     elif coverage_goal == eu.COVER_CONDITIONS:
@@ -33,105 +37,107 @@ def _prepare_axis_for_plot(coverage_goal: str):
 
     ax = plt.figure().gca()
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-    ax.set_ylim(bottom=0, top=100)
+    ax.set_xlabel("# Test Executed")
+    ax.set_ylim(bottom=AXIS_PADDING, top=110)
+    ax.set_xlim(left=AXIS_PADDING, right=test_count)
+    ax.set_yticks(
+        [n for n in range(0, 100, 20) if n < total_coverage] + [total_coverage] + [100]
+    )
+    ax.spines["left"].set_bounds(0, total_coverage)
+    ax.spines["bottom"].set_bounds(0, test_count + 0.5)
+    ax.spines["right"].set_visible(False)
+    ax.spines["top"].set_visible(False)
     ax.set_ylabel(ylabel)
     return ax
 
 
-def _write_individual_coverages_plot(exec_results, coverage_goal, output_file):
+def _write_coverages_plot(exec_results, coverage_goal, output_file):
     coverages = exec_results.coverage_tests
     coverage = exec_results.coverage_total
+    test_count = len(exec_results.tests)
 
-    total_coverage = coverage.count_total
+    total_coverage = coverage.hits_percent
 
-    ax = _prepare_axis_for_plot(coverage_goal)
+    xlim = len(exec_results.results) + 1
+    ax = _prepare_axis_for_plot(coverage_goal, total_coverage, test_count)
 
-    # ax.set_xticks(range(len(coverages)), [c.filename for c in coverages])
-    test_names = []
-    for cov in coverages:
-        test_names.extend(cov.test_vectors)
-    coverages_selected = [c.hits_percent for c in coverages]
+    if coverages:
+        coverages_selected = [
+            c.hits_percent if c.hits_percent else 0 for c in coverages
+        ]
 
-    def autolabel(rects):
-        """
-        Attach a text label above each bar displaying its height
-        """
-        for rect in rects:
-            height = rect.get_height()
-            if height < max(coverages_selected):
-                ax.text(
-                    rect.get_x() + rect.get_width() / 2.0,
-                    height + 0.1,
-                    "%.2f" % float(height),
-                    ha="center",
-                    va="bottom",
-                )
+        ax.bar(
+            range(1, len(coverages_selected) + 1),
+            coverages_selected,
+            color="blue",
+            alpha=0.7,
+            width=BAR_WIDTH,
+            bottom=0,
+        )
 
-    bars = ax.bar(
-        range(len(coverages_selected)), coverages_selected, color="blue", alpha=0.7
-    )
-    autolabel(bars)
+        ax.set_xlim(0, xlim)
+        xtick_step_size = int(xlim / 10) + 1
+        ax.set_xticks(range(0, xlim, xtick_step_size))
 
-    ax.set_xticks(range(len(coverages_selected)))
-    ax.set_xticklabels(test_names, rotation=90)
-    ax.axhline(total_coverage, dashes=(1, 1), alpha=0.7)
-    ax.text(
-        0,
-        total_coverage + 2,
-        "Accumulated coverage of all tests: {}%".format(total_coverage),
-    )
+    if test_count > 1:
+        if exec_results.coverage_sequence:
+            assert (
+                total_coverage == exec_results.coverage_sequence[-1]
+            ), "Final coverage of coverage sequence not same as total coverage reported"
+            assert len(exec_results.coverage_sequence) == len(
+                exec_results.results
+            ), "List lengths don't match: {} vs. {}".format(
+                exec_results.coverage_sequence, exec_results.results
+            )
+
+            ax.step(
+                [n - BAR_WIDTH / 2.0 for n in range(1, xlim)],
+                exec_results.coverage_sequence,
+                where="post",
+                alpha=0.7,
+            )
+            # ax.plot([n - BAR_WIDTH / 2.0 for n in range(1, xlim)], exec_results.coverage_sequence, "C0o", alpha=0.7)
+
+            # Text labels at individual steps.
+            # Don't show a coverage marker if the coverage didn't increase,
+            # and fit at most 10 markers on the plot.
+            # last_cov = 0
+            # steps = int(len(exec_results.coverage_sequence) / 10)
+            # last_idx = -steps - 1
+            # for idx, cov in enumerate(exec_results.coverage_sequence, 1):
+            #    if (
+            #        last_idx + steps <= idx
+            #        and exec_results.coverage_sequence[-1] > cov > last_cov
+            #        # and (not coverages_selected or cov != coverages_selected[idx-1])
+            #    ):
+            #        ax.text(idx, cov + 1.5, "%.2f" % float(cov), ha="center", va="bottom")
+            #        last_idx = idx
+            #    last_cov = cov
+
+            ax.text(
+                len(exec_results.coverage_sequence) - (BAR_WIDTH / 3.0),
+                total_coverage,
+                "Accumulated coverage",
+                ha="left",
+                va="top",
+                bbox=dict(facecolor="white", edgecolor=None, linewidth=0, alpha=0.5),
+            )
+        else:
+            ax.axhline(total_coverage, dashes=(1, 1), alpha=0.7)
+            ax.text(
+                1,
+                total_coverage + 2,
+                "Accumulated coverage",
+                ha="left",
+                va="bottom",
+                bbox=dict(facecolor="white", edgecolor=None, linewidth=0, alpha=0.5),
+            )
+
     plt.tight_layout()
     plt.savefig(output_file)
     plt.clf()
 
 
-def _write_coverage_sequence_plot(exec_results, coverage_goal, output_file):
-    ax = _prepare_axis_for_plot(coverage_goal)
-    ax.set_xlabel("First n Tests executed")
-    ax.step(
-        range(0, 1 + len(exec_results.coverage_sequence)),
-        [0] + exec_results.coverage_sequence,
-        where="post",
-    )
-    ax.plot(
-        range(1, 1 + len(exec_results.coverage_sequence)),
-        exec_results.coverage_sequence,
-        "C0o",
-        alpha=0.7,
-    )
-
-    # Don't show a coverage marker if the coverage didn't increase,
-    # and fit at most 10 markers on the plot.
-    last_cov = 0
-    steps = int(len(exec_results.coverage_sequence) / 10)
-    last_idx = -steps - 1
-    for idx, cov in enumerate(exec_results.coverage_sequence, 1):
-        if (
-            last_idx + steps <= idx
-            and exec_results.coverage_sequence[-1] > cov > last_cov
-        ):
-            ax.text(idx, cov + 1.5, "%.2f" % float(cov), ha="center", va="bottom")
-            last_idx = idx
-        last_cov = cov
-
-    total_coverage = exec_results.coverage_sequence[-1]
-    ax.axhline(total_coverage, dashes=(1, 1))
-    ax.text(
-        0,
-        total_coverage + 2,
-        "Accumulated coverage of all tests: {}%".format(total_coverage),
-    )
-    plt.savefig(output_file)
-    plt.clf()
-
-
 def create_plots(exec_results, coverage_goal: str, output_dir: str):
-    if exec_results.coverage_tests:
-        individual_cov_file = os.path.join(output_dir, "individual-test-coverages.svg")
-        _write_individual_coverages_plot(
-            exec_results, coverage_goal, individual_cov_file
-        )
-
-    if exec_results.coverage_sequence:
-        cov_seq_file = os.path.join(output_dir, "coverage-sequence.svg")
-        _write_coverage_sequence_plot(exec_results, coverage_goal, cov_seq_file)
+    cov_file = os.path.join(output_dir, "coverage.svg")
+    _write_coverages_plot(exec_results, coverage_goal, cov_file)

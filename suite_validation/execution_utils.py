@@ -148,6 +148,7 @@ class SuiteExecutionResult:
         self.coverage_sequence = list()
         self.coverage_tests = list()
         self.reduced_coverage_tests = list()
+        self.tests = list()
 
 
 class ExecutionResult:

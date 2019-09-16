@@ -508,7 +508,6 @@ class SuiteExecutor:
         executor: CoverageMeasuringExecutionRunner,
     ):
         try:
-
             current_coverage = self._compute_coverage(
                 next_result, tv, program_file, executor
             )
@@ -538,8 +537,6 @@ class SuiteExecutor:
                 "Coverage couldn't be created for test %s: %s", tv.origin, e.msg
             )
 
-        result_target.results.append(next_result)
-
     def _execute_tests(self, program_file, test_vectors, executor, result_target):
         """Executes all test vectors on the given program using the given executor
         and puts the results into result_target."""
@@ -547,7 +544,9 @@ class SuiteExecutor:
         try:
             print("⏳ Executing tests.", file=self._info_target, end="", flush=True)
             for tv in test_vectors:
+                result_target.tests.append(tv)
                 next_result = executor.run(program_file, tv)
+                result_target.results.append(next_result)
 
                 self._compute_coverages(
                     result_target, next_result, program_file, tv, executor
