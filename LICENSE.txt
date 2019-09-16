@@ -1,4 +1,4 @@
- *  test-suite-validator is a test-suite executor, validator and coverage measurement tool.
+ *  testcov is a test-suite executor, validator and coverage measurement tool.
  *
  *  Copyright (C) 2018  Dirk Beyer
  *  All rights reserved.

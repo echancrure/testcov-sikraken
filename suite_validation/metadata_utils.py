@@ -1,5 +1,5 @@
-# testsuite-validator is tool for validation and execution of test suites.
-# This file is part of testsuite-validator.
+# testcov is tool for validation and execution of test suites.
+# This file is part of testcov.
 #
 # Copyright (C) 2019  Dirk Beyer
 # All rights reserved.

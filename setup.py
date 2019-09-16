@@ -8,13 +8,13 @@ with open('suite_validation/__init__.py') as inp:
                         re.M).group(1)
 
 setup(
-    name='testsuite-validator',
+    name='testcov',
     version=VERSION,
     author='Dirk Beyer',
-    description='A container-based test-suite executor',
-    url='https://gitlab.com/sosy-lab/software/testsuite-validator',
+    description='A container-based test-suite executor with coverage measurement',
+    url='https://gitlab.com/sosy-lab/software/test-suite-validator',
     packages=['suite_validation'],
-    scripts=['bin/testsuite-validator'],
+    scripts=['bin/testcov'],
     install_requires=[
         'lxml>=4.0.0',
         'benchexec>=1.20',

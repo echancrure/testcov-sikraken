@@ -1,5 +1,5 @@
-# testsuite-validator is tool for validation and execution of test suites.
-# This file is part of testsuite-validator.
+# testcov is tool for validation and execution of test suites.
+# This file is part of testcov.
 #
 # Copyright (C) 2018  Dirk Beyer
 # All rights reserved.
@@ -15,7 +15,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Main module of testsuite-validator."""
+"""Main module of testcov."""
 
 import argparse
 import logging
@@ -30,7 +30,7 @@ from suite_validation import metadata_utils
 
 __VERSION__ = "v1.1-dev"
 
-__NAME__ = "testsuite-validator"
+__NAME__ = "testcov"
 
 SUCCESSFUL_TESTSUITE_FOLDER = "test-suite"
 SUCCESSFUL_TEST_NAME = "covering-test.xml"

@@ -1,6 +1,6 @@
-# Testsuite Validator
+# TestCov
 
-The tool `bin/testsuite-validator` creates a C harness
+The tool `bin/testcov` creates a C harness
 that reads test values from standard input,
 compiles the original program file against this harness
 and uses it to execute a test suite specified in the test-format.
@@ -10,7 +10,7 @@ and whether a test covered a call to `__VERIFIER_error()`.
 If the latter is the case, it also creates a directory `test-suite`
 that contains a covering test and a corresponding executable harness.
 
-Run `bin/testsuite-validator --help` to get additional information
+Run `bin/testcov --help` to get additional information
 about its usage.
 
 ## Requirements
@@ -27,7 +27,7 @@ but can also be installed manually (e.g., through `pip`):
 Older versions of GCC can be used, but may mistakenly mark the last else-branch of a program
 as covered, even it if wasn't. We thus recommend to use gcc version 8.0 or later.
 
-Optional, for plotting (if not available, run `testsuite-validator` with argument `--no-plots`):
+Optional, for plotting (if not available, run `testcov` with argument `--no-plots`):
 * matplotlib >= 3.1.0
 
 For development, we use the [`black`](https://github.com/python/black) formatter,
