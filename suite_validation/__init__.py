@@ -292,19 +292,7 @@ def _print_suite_execution_results(exec_results):
         print("Coverage: No information available")
     else:
         print(
-            "Lines covered: {}% (of {})".format(
-                coverage.line_coverage, coverage.lines_total
-            )
-        )
-        print(
-            "Branches covered: {}% (of {})".format(
-                coverage.branch_coverage, coverage.branches_total
-            )
-        )
-        print(
-            "Conditions covered: {}% (of {})".format(
-                coverage.condition_coverage, coverage.conditions_total
-            )
+            "Coverage: {}% (of {})".format(coverage.hits_percent, coverage.count_total)
         )
 
     if any(r == eu.TestResult.COVERS for r in exec_results.results):

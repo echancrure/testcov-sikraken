@@ -29,11 +29,8 @@ from suite_validation import execution_utils as eu
 # Constants for csv output
 FILE_NAME_INDIVIDUAL_TEST_COVERAGES = "individual-test-coverages.csv"
 FILE_NAME_REDUCED_TEST_COVERAGES = "reduced-test-coverages.csv"
-LINES_COVERED = "Line Coverage"
-BRANCHES_COVERED = "Branch Coverage"
-CONDITIONS_COVERED = "Condition Coverage"
 TEST = "Test"
-HEADER = [TEST, LINES_COVERED, BRANCHES_COVERED, CONDITIONS_COVERED]
+HEADER = [TEST, "Coverage"]
 DELIMITER_TEST_COVERAGES = "\t"
 
 MODULE_DIRECTORY = os.path.join(os.path.dirname(__file__), os.path.pardir)
@@ -700,14 +697,12 @@ def write_test_coverages_to_dir(output_dir, test_coverages, file_name):
 
 def _write_csv_rows_from_test_coverages(writer, test_coverages):
     for test_coverage in test_coverages:
-        writer.writerow(
-            [
-                test_coverage.test_vectors_as_string(),
-                test_coverage.line_coverage,
-                test_coverage.branch_coverage,
-                test_coverage.condition_coverage,
-            ]
-        )
+        if test_coverage is not None:
+            writer.writerow(
+                [test_coverage.test_vectors_as_string(), test_coverage.hits_percent]
+            )
+        else:
+            writer.writerow([""] * 2)
 
 
 def create_trace_file_and_get_test_coverage(

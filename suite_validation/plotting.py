@@ -41,15 +41,8 @@ def _prepare_axis_for_plot(coverage_goal: str):
 def _write_individual_coverages_plot(exec_results, coverage_goal, output_file):
     coverages = exec_results.coverage_tests
     coverage = exec_results.coverage_total
-    if coverage_goal in [eu.COVER_BRANCHES, eu.COVER_ERRORS]:
-        select_cov = lambda cov: cov.branch_coverage
-        total_coverage = float(coverage.branch_coverage)
-    elif coverage_goal == eu.COVER_CONDITIONS:
-        select_cov = lambda cov: cov.branch_conditions_executed
-        total_coverage = float(coverage.branch_conditions_executed)
-    elif coverage_goal == eu.COVER_LINES:
-        select_cov = lambda cov: cov.line_coverage
-        total_coverage = float(coverage.line_coverage)
+
+    total_coverage = coverage.count_total
 
     ax = _prepare_axis_for_plot(coverage_goal)
 
@@ -57,7 +50,7 @@ def _write_individual_coverages_plot(exec_results, coverage_goal, output_file):
     test_names = []
     for cov in coverages:
         test_names.extend(cov.test_vectors)
-    coverages_selected = [select_cov(c) for c in coverages]
+    coverages_selected = [c.hits_percent for c in coverages]
 
     def autolabel(rects):
         """
