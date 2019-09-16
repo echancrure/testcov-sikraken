@@ -6,11 +6,11 @@
 # docker build -t registry.gitlab.com/sosy-lab/software/test-suite-validator/test:python-3.6 - < test/Dockerfile.python-3.6
 # docker push registry.gitlab.com/sosy-lab/software/test-suite-validator/test
 
-FROM python:3.6
+FROM ubuntu:18.04
 
-RUN apt update && apt install -y gcc-multilib g++-multilib lcov clang llvm
+RUN apt update && apt install -y gcc-multilib g++-multilib lcov clang llvm python3.6 python3-pip
 
-RUN pip install -U pip && pip install \
+RUN python3.6 -m pip install -U pip && python3.6 -m pip install \
   coverage \
   lxml \
   nose \

@@ -17,11 +17,15 @@ about its usage.
 
 * Python >= 3.6
 * clang and llvm >= 3.9
+* gcc >= 8.0
 
 The following requirements are automatically installed by `pipenv` or `setup.py` upon installation,
 but can also be installed manually (e.g., through `pip`):
 * lxml >= 4.0
 * BenchExec >= 1.20
+
+Older versions of GCC can be used, but may mistakenly mark the last else-branch of a program
+as covered, even it if wasn't. We thus recommend to use gcc version 8.0 or later.
 
 Optional, for plotting (if not available, run `testsuite-validator` with argument `--no-plots`):
 * matplotlib >= 3.1.0
