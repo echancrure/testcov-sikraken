@@ -89,8 +89,9 @@ def _write_coverages_plot(exec_results, coverage_goal, output_file):
             )
 
             ax.step(
-                [n - BAR_WIDTH / 2.0 for n in range(1, xlim)],
-                exec_results.coverage_sequence,
+                [n - BAR_WIDTH / 2.0 for n in range(1, xlim)]
+                + [xlim - 1 + BAR_WIDTH / 2.0],
+                exec_results.coverage_sequence + [exec_results.coverage_sequence[-1]],
                 where="post",
                 alpha=0.7,
             )
@@ -113,12 +114,13 @@ def _write_coverages_plot(exec_results, coverage_goal, output_file):
             #    last_cov = cov
 
             ax.text(
-                len(exec_results.coverage_sequence) - (BAR_WIDTH / 3.0),
-                total_coverage,
+                len(exec_results.coverage_sequence) + BAR_WIDTH / 2.0,
+                total_coverage + 1,
                 "Accumulated coverage",
                 ha="left",
-                va="top",
-                bbox=dict(facecolor="white", edgecolor=None, linewidth=0, alpha=0.5),
+                va="bottom",
+                bbox=dict(facecolor="white", edgecolor=None, linewidth=0, alpha=0),
+                fontsize=10,
             )
         else:
             ax.axhline(total_coverage, dashes=(1, 1), alpha=0.7)
@@ -128,7 +130,8 @@ def _write_coverages_plot(exec_results, coverage_goal, output_file):
                 "Accumulated coverage",
                 ha="left",
                 va="bottom",
-                bbox=dict(facecolor="white", edgecolor=None, linewidth=0, alpha=0.5),
+                bbox=dict(facecolor="white", edgecolor=None, linewidth=0, alpha=0),
+                fontsize=10,
             )
 
     plt.tight_layout()
