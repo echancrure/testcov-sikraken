@@ -71,6 +71,7 @@ def _write_coverages_plot(exec_results, coverage_goal, output_file):
             alpha=0.7,
             width=BAR_WIDTH,
             bottom=0,
+            label="Individual coverage",
         )
 
         ax.set_xlim(0, xlim)
@@ -96,6 +97,7 @@ def _write_coverages_plot(exec_results, coverage_goal, output_file):
                 color="violet",
                 alpha=1,
                 linewidth=2,
+                label="Accumulated coverage",
             )
             # ax.plot([n - BAR_WIDTH / 2.0 for n in range(1, xlim)], exec_results.coverage_sequence, "C0o", alpha=0.7)
 
@@ -115,15 +117,7 @@ def _write_coverages_plot(exec_results, coverage_goal, output_file):
             #        last_idx = idx
             #    last_cov = cov
 
-            ax.text(
-                len(exec_results.coverage_sequence) + BAR_WIDTH / 2.0,
-                total_coverage + 1,
-                "Accumulated coverage",
-                ha="left",
-                va="bottom",
-                bbox=dict(facecolor="white", edgecolor=None, linewidth=0, alpha=0),
-                fontsize=10,
-            )
+            ax.legend()
         else:
             ax.axhline(total_coverage, dashes=(1, 1), alpha=0.7)
             ax.text(
