@@ -22,6 +22,7 @@ about its usage.
 The following requirements are automatically installed by `pipenv` or `setup.py` upon installation,
 but can also be installed manually (e.g., through `pip`):
 * lxml >= 4.0
+* numpy >= 1.15
 * BenchExec >= 1.20
 
 Older versions of GCC can be used, but may mistakenly mark the last else-branch of a program

@@ -7,6 +7,7 @@ name = "pypi"
 lxml = ">=4.0.0"
 benchexec = ">=1.20"
 matplotlib = ">=3.1.0"
+numpy = "*"
 
 [dev-packages]
 black = "*"
