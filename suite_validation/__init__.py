@@ -366,18 +366,13 @@ def main():
             with open(seq_file, "w") as outp:
                 outp.writelines([str(c) + "\n" for c in exec_results.coverage_sequence])
 
-        if exec_results.coverage_tests:
-            cov.write_test_coverages_to_dir(
-                args.output_dir,
-                exec_results.coverage_tests,
-                cov.FILE_NAME_INDIVIDUAL_TEST_COVERAGES,
-            )
-        if exec_results.reduced_coverage_tests:
-            cov.write_test_coverages_to_dir(
-                args.output_dir,
-                exec_results.reduced_coverage_tests,
-                cov.FILE_NAME_REDUCED_TEST_COVERAGES,
-            )
+        cov.write_test_coverages_to_dir(
+            args.output_dir,
+            cov.FILE_NAME_COVERAGE_CSV,
+            exec_results.coverage_tests,
+            exec_results.coverage_sequence,
+            exec_results.reduced_coverage_tests,
+        )
         if args.write_plots:
             try:
                 from suite_validation import plotting
