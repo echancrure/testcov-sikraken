@@ -93,7 +93,9 @@ def _write_coverages_plot(exec_results, coverage_goal, output_file):
                 + [xlim - 1 + BAR_WIDTH / 2.0],
                 exec_results.coverage_sequence + [exec_results.coverage_sequence[-1]],
                 where="post",
-                alpha=0.7,
+                color="violet",
+                alpha=1,
+                linewidth=2,
             )
             # ax.plot([n - BAR_WIDTH / 2.0 for n in range(1, xlim)], exec_results.coverage_sequence, "C0o", alpha=0.7)
 
