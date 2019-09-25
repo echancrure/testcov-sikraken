@@ -98,14 +98,32 @@ class HarnessCreator:
     @staticmethod
     def _get_declarations(program_file):
         to_declare = set(l[0] for l in eu.EXTERNAL_DECLARATIONS)
+        preprocessed = True
         with open(program_file) as inp:
             for line in inp.readlines():
-                for name, _ in eu.EXTERNAL_DECLARATIONS:
+                # This loop may produce strange results if an include-statement
+                # comes after the declaration of one of the required declarations;
+                # it is common to put include-statements at the top of C programs,
+                # though.
+                if line.startswith("#include"):
+                    preprocessed = False
+                    break
+                for name, _, _ in eu.EXTERNAL_DECLARATIONS:
                     if name in to_declare and re.search(
                         r"\s+" + name + r"([^a-zA-Z]+|$)", line
                     ):
                         to_declare.remove(name)
-        return "\n".join(l[1] for l in eu.EXTERNAL_DECLARATIONS if l[0] in to_declare)
+        if preprocessed:
+            return "\n".join(
+                l[1] for l in eu.EXTERNAL_DECLARATIONS if l[0] in to_declare
+            )
+        to_declare = set(l[2] for l in eu.EXTERNAL_DECLARATIONS)
+        with open(program_file) as inp:
+            for line in inp.readlines():
+                for _, _, decl in eu.EXTERNAL_DECLARATIONS:
+                    if line.startswith(decl):
+                        to_declare.remove(decl)
+        return "\n".join(to_declare)
 
     @staticmethod
     def _get_harness_skeleton():

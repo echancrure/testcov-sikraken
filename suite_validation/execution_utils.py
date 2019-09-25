@@ -38,58 +38,68 @@ MACHINE_MODEL_32 = "-m32"
 MACHINE_MODEL_64 = "-m64"
 
 EXTERNAL_DECLARATIONS = [
-    ("_IO_FILE", "struct _IO_FILE;"),
-    ("FILE", "typedef struct _IO_FILE FILE;"),
-    ("stdin", "extern struct _IO_FILE *stdin;"),
-    ("stderr", "extern struct _IO_FILE *stderr;"),
-    ("size_t", "typedef long unsigned int size_t;"),
+    ("_IO_FILE", "struct _IO_FILE;", "#include<stdio.h>;"),
+    ("FILE", "typedef struct _IO_FILE FILE;", "#include<stdio.h>;"),
+    ("stdin", "extern struct _IO_FILE *stdin;", "#include<stdio.h>;"),
+    ("stderr", "extern struct _IO_FILE *stderr;", "#include<stdio.h>;"),
+    ("size_t", "typedef long unsigned int size_t;", "#include<stddef.h>;"),
     (
         "abort",
         "extern void abort (void) __attribute__ ((__nothrow__ , __leaf__))"
         + " __attribute__ ((__noreturn__));",
+        "#include<stdlib.h>;",
     ),
     (
         "exit",
         "extern void exit (int __status) __attribute__ ((__nothrow__ , __leaf__))"
         + " __attribute__ ((__noreturn__));",
+        "#include<stdlib.h>;",
     ),
     (
         "fgets",
         "extern char *fgets (char *__restrict __s, int __n, FILE *__restrict __stream);",
+        "#include<stdio.h>;",
     ),
     (
         "sscanf",
         "extern int sscanf (const char *__restrict __s, const char *__restrict __format, ...)"
         + " __attribute__ ((__nothrow__ , __leaf__));",
+        "#include<stdio.h>;",
     ),
     (
         "strlen",
         " extern size_t strlen (const char *__s __attribute__ ((__nothrow__ , __leaf__))"
         + " __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1))));",
+        "#include<string.h>;",
     ),
     (
         "fprintf",
         "extern int fprintf (FILE *__restrict __stream, const char *__restrict __format, ...);",
+        "#include<stdio.h>;",
     ),
     (
         "malloc",
         " extern void *malloc (size_t __size __attribute__ ((__nothrow__ , __leaf__))"
         + " __attribute__ ((__malloc__)));",
+        "#include<stdlib.h>;",
     ),
     (
         "memcpy",
         " extern void *memcpy (void *__restrict __dest, const void *__restrict __src, size_t __n)"
         + " __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__nonnull__ (1, 2)));",
+        "#include<stdlib.h>;",
     ),
     (
         "strcpy",
         " extern char *strcpy (char *__restrict __dest, const char *__restrict __src)"
         + " __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__nonnull__ (1, 2)));",
+        "#include<string.h>;",
     ),
     (
         "strcat",
         " extern char *strcat (char *__restrict __dest, const char *__restrict __src)"
         + " __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__nonnull__ (1, 2)));",
+        "#include<string.h>;",
     ),
 ]
 
