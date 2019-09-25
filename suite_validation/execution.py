@@ -589,7 +589,7 @@ class SuiteExecutor:
                 print(".", file=self._info_target, end="", flush=True)
         finally:
             print("\n✔️  Done!", file=self._info_target, flush=True)  # print newline
-            if result_target.coverage_tests:
+            if result_target.coverage_tests and result_target.coverage_total:
                 result_target.reduced_coverage_tests = rs.execute(
                     self._reduce_tests, result_target.coverage_tests[:]
                 )
