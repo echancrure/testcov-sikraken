@@ -38,7 +38,7 @@ def naive_reduction(
     """
     # copy the list but not the contained objects
     individual_coverages = individual_coverages[:]
-    total_tc = individual_coverages[0]
+    total_tc = next(cov for cov in individual_coverages if cov.coverage)
     individual_coverages.remove(total_tc)
     reduced_coverages = [total_tc]
     # make a deep copy because coverage gets overwritten

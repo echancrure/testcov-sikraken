@@ -373,7 +373,7 @@ def main():
             exec_results.coverage_sequence,
             exec_results.reduced_coverage_tests,
         )
-        if args.write_plots:
+        if args.write_plots and exec_results.coverage_total:
             try:
                 from suite_validation import plotting
 
