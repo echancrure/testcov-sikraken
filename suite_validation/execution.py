@@ -334,7 +334,7 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
         program_name = _get_program_name(program_file)
         if self.harness_file and os.path.exists(self._get_data_file()):
             data_file = self._get_data_file()
-            return cov.create_trace_file_and_get_test_coverage(
+            return cov.compute_test_coverage(
                 program_name,
                 data_file,
                 LCOV_TRACE_FILE,
@@ -433,7 +433,7 @@ class SuiteExecutor:
         self._cpu_cores = cores
         self._use_runexec = use_runexec
         assert (
-            not self._use_runexec or self._use_isolation
+            not self._use_runexec or self._isolate_tests
         ), "Conflicting arguments: Can't use runexec without isolating runs"
 
         self._info_target = sys.stderr if info_output else None
