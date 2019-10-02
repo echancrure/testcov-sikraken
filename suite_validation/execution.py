@@ -407,6 +407,9 @@ class SuiteExecutor:
         self._memlimit = memlimit
         self._cpu_cores = cores
         self._use_runexec = use_runexec
+        assert (
+            not self._use_runexec or self._use_isolation
+        ), "Conflicting arguments: Can't use runexec without isolating runs"
 
         self._info_target = sys.stderr if info_output else None
 

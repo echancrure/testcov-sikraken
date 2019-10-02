@@ -173,6 +173,14 @@ def get_parser():
         help="Don't use runexec, but only containerexec. Necessary if no access to cgroups is possible. No resource limits will be considered.",
     )
 
+    parser.add_argument(
+        "--no-isolation",
+        dest="use_isolation",
+        action="store_false",
+        default=True,
+        help="Don't run tests in isolation. No resource limits will be considered and file modifications are possible.",
+    )
+
     parser.add_argument("file", action="store", help="program file")
 
     return parser
@@ -184,6 +192,7 @@ def parse():
 
     args.goal = parse_coverage_goal_file(args.goal_file)
     args.check_for_error = args.goal == eu.COVER_ERRORS
+    args.use_runexec = args.use_runexec and args.use_isolation
 
     return args
 
@@ -331,6 +340,7 @@ def main():
             memlimit=args.memlimit,
             cores=args.cpu_cores,
             use_runexec=args.use_runexec,
+            isolate_tests=args.use_isolation,
             info_output=True,
         )
 
