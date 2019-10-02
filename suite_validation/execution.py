@@ -247,14 +247,14 @@ class ExecutionRunner:
             )
             if eu.found_err(run_result):
                 logging.debug("Error found for test %s", test_vector)
-                return eu.TestResult.COVERS
+                return eu.COVERS
             if run_result.got_aborted:
                 logging.info("Aborted execution for test %s", test_vector)
-                return eu.TestResult.ABORTED
+                return eu.ABORTED
             if run_result.returncode != 0:
                 logging.debug("Non-0 return code for test %s", test_vector)
-            return eu.TestResult.UNKNOWN
-        return eu.TestResult.ERROR
+            return eu.UNKNOWN
+        return eu.ERROR
 
     def _get_execute_cmd(self, executable):
         # pylint: disable=no-self-use
@@ -276,6 +276,29 @@ class ExecutionRunner:
 
 
 class CoverageMeasuringExecutionRunner(ExecutionRunner):
+    def __init__(
+        self,
+        machine_model,
+        timelimit_per_run,
+        goal,
+        harness_file_target="harness.c",
+        compile_target="a.out",
+        compiler="gcc",
+    ):
+        super().__init__(
+            machine_model,
+            timelimit_per_run,
+            harness_file_target,
+            compile_target,
+            compiler,
+        )
+        self._goal = goal
+        self._data_file = self._get_data_file()
+
+    @staticmethod
+    def _get_data_file():
+        return "harness.gcda"
+
     def _get_compile_cmd(
         self, program_file, harness_file, output_file, c_version="gnu11"
     ):
@@ -300,30 +323,30 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
 
     def run(self, program_file, test_vector: eu.TestVector) -> eu.TestResult:
         result = super().run(program_file, test_vector)
-        if result == eu.TestResult.ABORTED:
-            logging.info("Aborted test run is not considered for coverage")
+        result.coverage = self._compute_test_coverage_from_gcda_file(
+            program_file, test_vector, result, self._goal
+        )
         return result
 
-    def compute_test_coverage_from_gcda_file(
-        self, program_file, test_vector_with_result, coverage_goal
+    def _compute_test_coverage_from_gcda_file(
+        self, program_file, test_vector, next_result, coverage_goal
     ) -> cov.TestCoverage:
         program_name = _get_program_name(program_file)
-        if self.harness_file:
-            assert self.harness_file.endswith(".c")
-            data_file = self.harness_file[:-1] + "gcda"
-            data_file = os.path.basename(data_file)  # data file is in cwd
+        if self.harness_file and os.path.exists(self._get_data_file()):
+            data_file = self._get_data_file()
             return cov.create_trace_file_and_get_test_coverage(
                 program_name,
                 data_file,
                 LCOV_TRACE_FILE,
-                test_vector_with_result,
+                test_vector,
+                next_result,
                 coverage_goal,
             )
 
         logging.info(
-            "Coverage requested without any execution. Returning empty test coverage."
+            "Coverage requested without any valid execution. Returning empty test coverage."
         )
-        return cov.TestCoverage(program_name, test_vector_with_result)
+        return None
 
 
 class IsolatingRunner(CoverageMeasuringExecutionRunner):
@@ -331,6 +354,7 @@ class IsolatingRunner(CoverageMeasuringExecutionRunner):
         self,
         machine_model,
         timelimit_per_run,
+        goal,
         harness_file_target="harness.c",
         compile_target="a.out",
         memlimit=None,
@@ -340,6 +364,7 @@ class IsolatingRunner(CoverageMeasuringExecutionRunner):
         super().__init__(
             machine_model,
             timelimit_per_run if not use_runexec else None,
+            goal,
             harness_file_target,
             compile_target,
         )
@@ -443,6 +468,7 @@ class SuiteExecutor:
             executor = IsolatingRunner(
                 machine_model,
                 self._timelimit,
+                self._goal,
                 self._harness_file_target,
                 self._compile_target,
                 self._memlimit,
@@ -453,6 +479,7 @@ class SuiteExecutor:
             executor = CoverageMeasuringExecutionRunner(
                 machine_model,
                 self._timelimit,
+                self._goal,
                 self._harness_file_target,
                 self._compile_target,
             )
@@ -508,30 +535,15 @@ class SuiteExecutor:
                     else:
                         logging.debug("File %s is no valid testcase", xml_file)
 
-    def _compute_coverage(
-        self,
-        result: eu.TestResult,
-        test_vector: eu.TestVector,
-        program_file: str,
-        executor: CoverageMeasuringExecutionRunner,
-    ) -> cov.TestCoverage:
-        coverage_test = executor.compute_test_coverage_from_gcda_file(
-            program_file, {test_vector: result}, self._goal
-        )
-        return coverage_test
-
-    def _compute_coverages(
+    def _record_coverage(
         self,
         result_target: eu.SuiteExecutionResult,
         next_result: eu.TestResult,
         program_file: str,
         tv: eu.TestVector,
-        executor: CoverageMeasuringExecutionRunner,
     ):
-        try:
-            current_coverage = self._compute_coverage(
-                next_result, tv, program_file, executor
-            )
+        if next_result.coverage:
+            current_coverage = next_result.coverage
 
             if self._compute_individual_test_coverages:
                 # Since we delete the gcda file merging the new coverage with the old one is necessary
@@ -553,10 +565,7 @@ class SuiteExecutor:
                 new_coverage = float(result_target.coverage_total.hits_percent)
 
                 result_target.coverage_sequence.append(new_coverage)
-        except cov.CoverageCreationError as e:
-            logging.info(
-                "Coverage couldn't be created for test %s: %s", tv.origin, e.msg
-            )
+        else:
             # Make sure that every test gets a coverage
             if self._compute_individual_test_coverages:
                 result_target.coverage_tests.append(
@@ -581,11 +590,9 @@ class SuiteExecutor:
                 next_result = executor.run(program_file, tv)
                 result_target.results.append(next_result)
 
-                self._compute_coverages(
-                    result_target, next_result, program_file, tv, executor
-                )
+                self._record_coverage(result_target, next_result, program_file, tv)
 
-                if next_result == eu.TestResult.COVERS and self._check_for_error:
+                if next_result == eu.COVERS and self._check_for_error:
                     result_target.successful_tests.append(tv)
                     logging.info("Stopping. Error found for test %s", tv)
                     break

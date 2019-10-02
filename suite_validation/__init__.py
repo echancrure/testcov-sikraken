@@ -304,7 +304,7 @@ def _print_suite_execution_results(exec_results):
             "Coverage: {}% (of {})".format(coverage.hits_percent, coverage.count_total)
         )
 
-    if any(r == eu.TestResult.COVERS for r in exec_results.results):
+    if any(r == eu.COVERS for r in exec_results.results):
         verdict = "TRUE"
     else:
         verdict = "UNKNOWN"

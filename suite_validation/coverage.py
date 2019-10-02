@@ -606,7 +606,7 @@ def _append_to_conditions_entries(
 
 
 def get_test_coverage_from_trace_file(
-    program_name, trace_file, test_vector_with_result, coverage_goal
+    program_name, trace_file, test_vector, next_result, coverage_goal
 ) -> TestCoverage:
     lines_hit_counter_dic = {}
     lines_hit = 0
@@ -692,7 +692,7 @@ def get_test_coverage_from_trace_file(
     else:
         raise AssertionError("Unhandled coverage goal " + coverage_goal)
 
-    return TestCoverage(program_name, test_vector_with_result, coverage)
+    return TestCoverage(program_name, {test_vector: next_result}, coverage)
 
 
 def write_test_coverages_to_dir(
@@ -738,7 +738,8 @@ def create_trace_file_and_get_test_coverage(
     program_name,
     data_file,
     output_tracefile,
-    test_vector_with_result,
+    test_vector,
+    next_result,
     coverage_goal,
     gcov_tool="gcov",
 ):
@@ -754,7 +755,7 @@ def create_trace_file_and_get_test_coverage(
         eu.execute(cmd, quiet=True)
         if os.path.exists(output_tracefile):
             test_coverage = get_test_coverage_from_trace_file(
-                program_name, output_tracefile, test_vector_with_result, coverage_goal
+                program_name, output_tracefile, test_vector, next_result, coverage_goal
             )
             return test_coverage
     raise CoverageCreationError("Trace file '%s' not created." % output_tracefile)

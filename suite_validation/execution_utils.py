@@ -17,7 +17,6 @@
 # limitations under the License.
 import logging
 import subprocess
-from enum import Enum
 from typing import List
 
 ERROR_STRING = "Error found."
@@ -142,11 +141,19 @@ class TestVector:
         return self.origin + " " + str(self.vector)
 
 
-class TestResult(Enum):
-    COVERS = "false"
-    UNKNOWN = "unknown"
-    ERROR = "error"
-    ABORTED = "abort"
+class TestResult:
+    def __init__(self, verdict, coverage=None):
+        self.verdict = verdict
+        self.coverage = coverage
+
+    def __eq__(self, other):
+        return self.verdict == other
+
+
+COVERS = TestResult("false")
+UNKNOWN = TestResult("unknown")
+ERROR = TestResult("error")
+ABORTED = TestResult("abort")
 
 
 class SuiteExecutionResult:
