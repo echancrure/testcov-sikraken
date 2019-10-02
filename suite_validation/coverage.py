@@ -605,7 +605,7 @@ def _append_to_conditions_entries(
     )
 
 
-def get_test_coverage_from_trace_file(
+def get_coverage_from_tracefile(
     program_name, trace_file, test_vector, next_result, coverage_goal
 ) -> TestCoverage:
     lines_hit_counter_dic = {}
@@ -695,7 +695,7 @@ def get_test_coverage_from_trace_file(
     return TestCoverage(program_name, {test_vector: next_result}, coverage)
 
 
-def write_test_coverages_to_dir(
+def write_coverages_to_dir(
     output_dir,
     file_name,
     test_coverages=None,
@@ -734,7 +734,7 @@ def write_test_coverages_to_dir(
             writer.writerow(table_column)
 
 
-def create_trace_file_and_get_test_coverage(
+def compute_test_coverage(
     program_name,
     data_file,
     output_tracefile,
@@ -754,7 +754,7 @@ def create_trace_file_and_get_test_coverage(
         cmd += ["-c", "-d", ".", "--no-recursion", "-o", output_tracefile]
         eu.execute(cmd, quiet=True)
         if os.path.exists(output_tracefile):
-            test_coverage = get_test_coverage_from_trace_file(
+            test_coverage = get_coverage_from_tracefile(
                 program_name, output_tracefile, test_vector, next_result, coverage_goal
             )
             return test_coverage

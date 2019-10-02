@@ -326,7 +326,7 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
         old_line_cov = 0
         for tv in vectors:
             result = runner.run(test_file, tv)
-            coverage = runner.compute_test_coverage_from_gcda_file(
+            coverage = runner.compute_coverage(
                 test_file, {tv: result}, eu.COVER_LINES
             )
 
@@ -342,7 +342,7 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
         old_branch_cov = 0
         for tv in vectors:
             result = runner.run(test_file, tv)
-            coverage = runner.compute_test_coverage_from_gcda_file(
+            coverage = runner.compute_coverage(
                 test_file, {tv: result}, eu.COVER_BRANCHES
             )
 
@@ -358,7 +358,7 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
         old_condition_cov = 0
         for tv in vectors:
             result = runner.run(test_file, tv)
-            coverage = runner.compute_test_coverage_from_gcda_file(
+            coverage = runner.compute_coverage(
                 test_file, {tv: result}, eu.COVER_CONDITIONS
             )
 

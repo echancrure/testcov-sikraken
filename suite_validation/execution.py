@@ -323,12 +323,12 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
 
     def run(self, program_file, test_vector: eu.TestVector) -> eu.TestResult:
         result = super().run(program_file, test_vector)
-        result.coverage = self._compute_test_coverage_from_gcda_file(
+        result.coverage = self.compute_coverage(
             program_file, test_vector, result, self._goal
         )
         return result
 
-    def _compute_test_coverage_from_gcda_file(
+    def compute_coverage(
         self, program_file, test_vector, next_result, coverage_goal
     ) -> cov.TestCoverage:
         program_name = _get_program_name(program_file)

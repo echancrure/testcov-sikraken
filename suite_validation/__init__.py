@@ -293,7 +293,7 @@ def parse_coverage_goal_file(goal_file: str) -> str:
     return eu.COVERAGE_GOALS[goal]
 
 
-def _print_suite_execution_results(exec_results):
+def _print_execution_results(exec_results):
     coverage = exec_results.coverage_total
     print("---Results---")
     print("Tests run:", len(exec_results.results))
@@ -376,7 +376,7 @@ def main():
             with open(seq_file, "w") as outp:
                 outp.writelines([str(c) + "\n" for c in exec_results.coverage_sequence])
 
-        cov.write_test_coverages_to_dir(
+        cov.write_coverages_to_dir(
             args.output_dir,
             cov.FILE_NAME_COVERAGE_CSV,
             exec_results.coverage_tests,
@@ -392,4 +392,4 @@ def main():
                 logging.warning("Not plotting coverage statistics: %s", e.msg)
 
         print()
-        _print_suite_execution_results(exec_results)
+        _print_execution_results(exec_results)
