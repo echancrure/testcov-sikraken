@@ -16,8 +16,8 @@ about its usage.
 ## Requirements
 
 * Python >= 3.6
-* clang and llvm >= 3.9
 * gcc >= 8.0
+* lcov >= 1.13
 
 The following requirements are automatically installed by `pipenv` or `setup.py` upon installation,
 but can also be installed manually (e.g., through `pip`):
