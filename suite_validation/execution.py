@@ -23,7 +23,7 @@ import os
 import sys
 import zipfile
 
-from lxml import etree
+import xml.etree.ElementTree as etree
 
 from suite_validation import execution_utils as eu
 from suite_validation import coverage as cov
@@ -647,7 +647,7 @@ def convert_to_vector_if_testcase(test_xml_file, xml_lines):
     """
     try:
         xml = _parse_xml_if_testcase(xml_lines)
-    except etree.XMLSyntaxError as e:
+    except etree.ParseError as e:
         logging.warning("Couldn't parse file %s: %s", test_xml_file, e.msg)
         xml = None
 
