@@ -293,7 +293,7 @@ def parse_coverage_goal_file(goal_file: str) -> str:
     return eu.COVERAGE_GOALS[goal]
 
 
-def _print_execution_results(exec_results):
+def _print_execution_results(exec_results, goal):
     coverage = exec_results.coverage_total
     print("---Results---")
     print("Tests run:", len(exec_results.results))
@@ -304,7 +304,9 @@ def _print_execution_results(exec_results):
             "Coverage: {}% (of {})".format(coverage.hits_percent, coverage.count_total)
         )
 
-    if any(r == eu.COVERS for r in exec_results.results):
+    if goal != eu.COVER_ERRORS:
+        verdict = "DONE"
+    elif any(r == eu.COVERS for r in exec_results.results):
         verdict = "TRUE"
     else:
         verdict = "UNKNOWN"
@@ -392,4 +394,4 @@ def main():
                 logging.warning("Not plotting coverage statistics: %s", e.msg)
 
         print()
-        _print_execution_results(exec_results)
+        _print_execution_results(exec_results, args.goal)
