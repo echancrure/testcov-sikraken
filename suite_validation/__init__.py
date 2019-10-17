@@ -149,7 +149,7 @@ def get_parser():
         "--reduction",
         dest="reduce_tests",
         action="store",
-        default=rs.NAIVE_REDUCTION,
+        default=rs.BYORDER_REDUCTION,
         help="apply reduction strategy to create a reduced test suite. Possible options: {}, {}, {}".format(
             *rs.REDUCTION_STRATEGIES.keys()
         ),

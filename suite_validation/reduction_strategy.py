@@ -3,7 +3,7 @@ import copy
 from suite_validation import coverage as cov
 
 NO_REDUCTION = "NONE"
-NAIVE_REDUCTION = "NAIVE"
+BYORDER_REDUCTION = "BY_ORDER"
 FURTHEST_DIFF_REDUCTION = "DIFF"
 
 
@@ -104,7 +104,7 @@ def furthest_diff_reduction(
 
 REDUCTION_STRATEGIES = {
     NO_REDUCTION: no_reduction,
-    NAIVE_REDUCTION: naive_reduction,
+    BYORDER_REDUCTION: naive_reduction,
     FURTHEST_DIFF_REDUCTION: furthest_diff_reduction,
 }
 

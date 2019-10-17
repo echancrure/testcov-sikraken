@@ -411,7 +411,7 @@ class SuiteExecutor:
         harness_file_target="harness.c",
         compile_target="a.out",
         compute_sequence=False,
-        reduce_tests=rs.NAIVE_REDUCTION,
+        reduce_tests=rs.BYORDER_REDUCTION,
         isolate_tests=True,
         compute_individuals=True,
         memlimit=None,

@@ -558,7 +558,7 @@ class TestSuiteExecutor(TempDirExecutor):
         eq_(test_coverage.count_total, 12)
 
     def test_reduction_correct(self):
-        strategies = [rs.NAIVE_REDUCTION, rs.FURTHEST_DIFF_REDUCTION]
+        strategies = [rs.BYORDER_REDUCTION, rs.FURTHEST_DIFF_REDUCTION]
         for machine_model in MACHINE_MODELS:
             for goal in eu.COVERAGE_GOALS.values():
                 for strategy in strategies:
@@ -645,7 +645,7 @@ class TestSuiteExecutor(TempDirExecutor):
                             total_tc_from_reduced, tc
                         )
                 eq_(total_tc_from_reduced.hits_percent, 100)
-            if strategy == rs.NAIVE_REDUCTION:
+            if strategy == rs.BYORDER_REDUCTION:
                 assert len(result_obj.reduced_coverage_tests) == len(
                     result_obj.coverage_tests
                 ), (
@@ -886,7 +886,7 @@ class TestCoverageChecker:
             assert self.bad_test_coverages[goal] not in reduced_tests
 
             # for naive reduction the test coverage positions in the list is crucial
-            reduced_tests = rs.execute(rs.NAIVE_REDUCTION, covs1)
+            reduced_tests = rs.execute(rs.BYORDER_REDUCTION, covs1)
             assert self.bad_test_coverages[goal] in reduced_tests
             assert self.perfect_test_coverages[goal] in reduced_tests
             assert self.half_perfect_test_coverages[goal] not in reduced_tests
