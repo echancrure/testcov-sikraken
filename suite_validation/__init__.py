@@ -28,7 +28,7 @@ from suite_validation import coverage as cov
 from suite_validation import reduction_strategy as rs
 from suite_validation import metadata_utils
 
-__VERSION__ = "v1.1-dev"
+__VERSION__ = "v3.0-16-g689dd44"
 
 __NAME__ = "testcov"
 
@@ -300,9 +300,8 @@ def _print_execution_results(exec_results, goal):
     if not coverage:
         print("No coverage information available")
     else:
-        print(
-            "Coverage: {}% (of {})".format(coverage.hits_percent, coverage.count_total)
-        )
+        print("Coverage: {}%".format(coverage.hits_percent))
+        print("Number of goals: {}".format(coverage.count_total))
 
     if goal != eu.COVER_ERRORS:
         verdict = "DONE"
