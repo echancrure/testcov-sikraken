@@ -298,7 +298,7 @@ def _print_execution_results(exec_results, goal):
     print("---Results---")
     print("Tests run:", len(exec_results.results))
     if not coverage:
-        print("Coverage: No information available")
+        print("No coverage information available")
     else:
         print(
             "Coverage: {}% (of {})".format(coverage.hits_percent, coverage.count_total)
