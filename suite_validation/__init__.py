@@ -1,4 +1,4 @@
-# testcov is tool for validation and execution of test suites.
+# reduced_program testcov is tool for validation and execution of test suites.
 # This file is part of testcov.
 #
 # Copyright (C) 2018  Dirk Beyer
@@ -21,6 +21,7 @@ import argparse
 import logging
 import os
 import re
+import shutil
 import zipfile
 from suite_validation import execution
 from suite_validation import execution_utils as eu
@@ -157,6 +158,15 @@ def get_parser():
     )
 
     parser.add_argument(
+        "--reduction-output",
+        dest="reduced_suite_name",
+        action="store",
+        default=REDUCED_TESTSUITE_NAME,
+        help="Name to which reduced test suite is written",
+        required=False,
+    )
+
+    parser.add_argument(
         "--no-plots",
         dest="write_plots",
         action="store_false",
@@ -205,15 +215,21 @@ def _write_tests_to_suite(
 
     :param str origin_suite: Path to the zip-file that contains the original test suite
     :param List[utils.TestVector] tests: Test vector to create files for.
-    :param str output_dir: Directory to write to.
+    :param str output_suite: Zip-file or directory to write to.
     """
     if os.path.exists(output_suite):
         logging.debug("File %s already exists - removing it.", output_suite)
-        os.remove(output_suite)
+        if os.path.isdir(output_suite):
+            shutil.rmtree(output_suite, ignore_errors=True)
+        else:
+            os.remove(output_suite)
 
     output_metadata = _create_metadata(origin_suite, program_file, coverage_goal)
-    with zipfile.ZipFile(output_suite, "a") as outp_zip:
-        outp_zip.writestr(metadata_utils.METADATA_XML_NAME, output_metadata)
+    if output_suite.endswith(".zip"):
+        with zipfile.ZipFile(output_suite, "a") as outp_zip:
+            outp_zip.writestr(metadata_utils.METADATA_XML_NAME, output_metadata)
+    else:
+        os.mkdir(output_suite)
 
     test_names = [t.origin for t in tests]
     with zipfile.ZipFile(origin_suite) as inp_zip:
@@ -256,17 +272,35 @@ def _copy_file(relative_file_path, origin_container, dest_container, dest_name):
         dest_name,
     )
     try:
-        with zipfile.ZipFile(dest_container, "a") as outp_zip:
-            if dest_name in outp_zip.namelist():
+        if dest_container.endswith(".zip"):
+            with zipfile.ZipFile(dest_container, "a") as outp_zip:
+                if dest_name in outp_zip.namelist():
+                    logging.info(
+                        "%s already exists in %s - not adding, as it would be a duplicate",
+                        dest_name,
+                        dest_container,
+                    )
+                else:
+                    with zipfile.ZipFile(origin_container) as inp_zip:
+                        content = inp_zip.read(relative_file_path)
+                    outp_zip.writestr(dest_name, content)
+
+        else:
+            dest_file = os.path.join(dest_container, dest_name)
+            if os.path.exists(dest_file):
                 logging.info(
-                    "%s already exists in %s - not adding to the zip file, as it would be a duplicate",
+                    "%s already exists in %s - not adding, as it would be a duplicate",
                     dest_name,
                     dest_container,
                 )
             else:
+                parent_dir = os.path.dirname(dest_file)
+                os.makedirs(parent_dir)
                 with zipfile.ZipFile(origin_container) as inp_zip:
                     content = inp_zip.read(relative_file_path)
-                outp_zip.writestr(dest_name, content)
+                with open(dest_file, "wb") as outp:
+                    outp.write(content)
+
     except KeyError:
         logging.warning("No file %s in %s", relative_file_path, origin_container)
 
@@ -363,7 +397,7 @@ def main():
                 args.test_suite,
                 exec_results.successful_tests,
                 args.goal,
-                os.path.join(args.output_dir, REDUCED_TESTSUITE_NAME),
+                os.path.join(args.output_dir, args.reduced_suite_name),
             )
             if args.check_for_error:
                 # If at least one test covered an error,
