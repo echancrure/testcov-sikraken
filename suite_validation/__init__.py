@@ -40,6 +40,11 @@ SUCCESSFUL_HARNESS_NAME = "covering-test.c"
 """Name of the file the executable harness of a successful test will be written to."""
 REDUCED_TESTSUITE_NAME = "reduced-suite.zip"
 
+VERDICT_DONE = "DONE"
+VERDICT_UNKNOWN = "UNKNOWN"
+VERDICT_TRUE = "TRUE"
+VERDICT_ERROR = "ERROR"
+
 
 class IllegalArgumentError(Exception):
     pass
@@ -327,7 +332,7 @@ def parse_coverage_goal_file(goal_file: str) -> str:
     return eu.COVERAGE_GOALS[goal]
 
 
-def _print_execution_results(exec_results, goal):
+def _print_execution_results(exec_results, goal, error_occurred: bool):
     coverage = exec_results.coverage_total
     print("---Results---")
     print("Tests run:", len(exec_results.results))
@@ -338,11 +343,17 @@ def _print_execution_results(exec_results, goal):
         print("Number of goals: {}".format(coverage.count_total))
 
     if goal != eu.COVER_ERRORS:
-        verdict = "DONE"
-    elif any(r == eu.COVERS for r in exec_results.results):
-        verdict = "TRUE"
+        verdict = VERDICT_DONE
     else:
-        verdict = "UNKNOWN"
+        if any(r == eu.COVERS for r in exec_results.results):
+            verdict = VERDICT_TRUE
+        else:
+            verdict = VERDICT_UNKNOWN
+    if error_occurred:
+        if verdict == VERDICT_TRUE:
+            verdict = VERDICT_ERROR + " ({})".format(verdict)
+        else:
+            verdict = VERDICT_ERROR
     print("Result:", verdict)
 
 
@@ -363,6 +374,8 @@ def main():
     executable = os.path.join(args.output_dir, "a.out")
     compute_individuals = args.individual_test_cov
     reduce_tests = args.reduce_tests
+
+    error_occurred = False
     try:
         executor = execution.SuiteExecutor(
             args.goal,
@@ -388,8 +401,10 @@ def main():
 
     except FileNotFoundError as e:
         logging.error(e)
+        error_occurred = True
     except execution.ExecutionError as e:
         logging.error(e.msg)
+        error_occurred = True
     finally:
         if exec_results.successful_tests:
             _write_tests_to_suite(
@@ -427,4 +442,4 @@ def main():
                 logging.warning("Not plotting coverage statistics: %s", e.msg)
 
         print()
-        _print_execution_results(exec_results, args.goal)
+        _print_execution_results(exec_results, args.goal, error_occurred)
