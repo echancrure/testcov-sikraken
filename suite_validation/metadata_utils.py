@@ -46,23 +46,30 @@ def _get_metadata_root(test_suite: str) -> Optional[ET.Element]:
 
 def get_metadata(test_suite: str) -> Optional[dict]:
     """
-    Return the content of the metadata file in the given test suite,
-    if it exists.
+    Return the content of the metadata file in the given test suite.
+    Raises an xml.etree.ElementTree.ParseError if no metadata file exists
+    or a required field is missing.
     """
     meta_root = _get_metadata_root(test_suite)
     if not meta_root:
-        return None
+        raise ET.ParseError("No metadata.xml found")
+
+    def get_field_text(field_name: str) -> Optional[str]:
+        field = meta_root.find(field_name)
+        if field is None:
+            raise ET.ParseError("Undefined field '<{}>'".format(field_name))
+        return field.text
 
     metadata = {
         ORIGIN_FILE: test_suite,
-        LANGUAGE: meta_root.find("sourcecodelang").text,
-        PRODUCER: meta_root.find("producer").text,
-        SPEC: meta_root.find("specification").text,
-        PROGRAM_FILE: meta_root.find("programfile").text,
-        PROGRAM_HASH: meta_root.find("programhash").text,
-        TESTED_METHOD: meta_root.find("entryfunction").text,
-        ARCHITECTURE: meta_root.find("architecture").text,
-        CREATION_TIME: meta_root.find("creationtime").text,
+        LANGUAGE: get_field_text("sourcecodelang"),
+        PRODUCER: get_field_text("producer"),
+        SPEC: get_field_text("specification"),
+        PROGRAM_FILE: get_field_text("programfile"),
+        PROGRAM_HASH: get_field_text("programhash"),
+        TESTED_METHOD: get_field_text("entryfunction"),
+        ARCHITECTURE: get_field_text("architecture"),
+        CREATION_TIME: get_field_text("creationtime"),
     }
     return metadata
 
@@ -75,8 +82,8 @@ def create_for_reduced(
     """
     m = get_metadata(origin_suite)
 
-    language = m[LANGUAGE]
-    entryfunction = m[TESTED_METHOD]
+    language = "C"
+    entryfunction = m[TESTED_METHOD] or "main"
     architecture = m[ARCHITECTURE]
     creation_time = datetime.datetime.now()
 

@@ -484,18 +484,11 @@ class SuiteExecutor:
                 self._compile_target,
             )
 
-        metadata = mu.get_metadata(test_suite)
-        if metadata is None:
-            raise ExecutionError("No %s found" % mu.METADATA_XML_NAME)
-
-        architecture = metadata[mu.ARCHITECTURE]
-        if architecture is not None:
-            if ("32" in architecture) != ("32" in machine_model):
-                logging.warning(
-                    "Architecture in metadata.xml different from expected: '%s' vs. '%s'",
-                    architecture,
-                    machine_model,
-                )
+        try:
+            metadata = mu.get_metadata(test_suite)
+        except etree.ParseError as e:
+            raise ExecutionError("Test-suite metadata not valid: {}".format(e.msg))
+        self._check_metadata(metadata, machine_model)
 
         # this method call raises an ExecutionError if the given test suite is invalid
         test_vectors = self._get_described_vectors(test_suite)
@@ -506,6 +499,27 @@ class SuiteExecutor:
         self._execute_tests(program_file, test_vectors, executor, result_target)
 
         return result_target
+
+    @staticmethod
+    def _check_metadata(metadata, machine_model) -> None:
+        architecture = metadata[mu.ARCHITECTURE]
+        if architecture is not None:
+            if ("32" in architecture) != ("32" in machine_model):
+                logging.warning(
+                    "Architecture in metadata.xml different from expected: '%s' vs. '%s'",
+                    architecture,
+                    machine_model,
+                )
+        for k in (
+            mu.PRODUCER,
+            mu.SPEC,
+            mu.PROGRAM_FILE,
+            mu.PROGRAM_HASH,
+            mu.TESTED_METHOD,
+            mu.ARCHITECTURE,
+            mu.CREATION_TIME,
+        ):
+            logging.info("Metadata is missing tag: %s", k)
 
     @staticmethod
     def _get_described_vectors(test_suite):
