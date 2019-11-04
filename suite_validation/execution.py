@@ -672,7 +672,6 @@ def convert_to_vector_if_testcase(test_xml_file, xml_lines):
     test_name = os.path.basename(test_xml_file)[:-4]
     vector = eu.TestVector(test_name, test_xml_file)
     for input_tag in xml:
-        logging.debug("Input: %s", input_tag.text)
         vector.add(input_tag.text.strip())
     return vector
 

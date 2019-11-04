@@ -138,7 +138,7 @@ class TestVector:
         return len(self.vector)
 
     def __str__(self):
-        return self.origin + " " + str(self.vector)
+        return self.origin
 
 
 class TestResult:
