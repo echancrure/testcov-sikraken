@@ -300,7 +300,7 @@ def _copy_file(relative_file_path, origin_container, dest_container, dest_name):
                 )
             else:
                 parent_dir = os.path.dirname(dest_file)
-                os.makedirs(parent_dir)
+                os.makedirs(parent_dir, exist_ok=True)
                 with zipfile.ZipFile(origin_container) as inp_zip:
                     content = inp_zip.read(relative_file_path)
                 with open(dest_file, "wb") as outp:
