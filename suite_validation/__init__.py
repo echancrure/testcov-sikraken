@@ -134,11 +134,10 @@ def get_parser():
     )
 
     parser.add_argument(
-        "--no-sequence-file",
-        dest="print_seq_file",
-        action="store_const",
-        const=None,
-        default="coverage-sequence.csv",
+        "--no-sequence",
+        dest="print_seq",
+        action="store_false",
+        default=True,
         help="don't print sequence of accumulated coverage per executed test to file",
         required=False,
     )
@@ -380,7 +379,7 @@ def main():
         executor = execution.SuiteExecutor(
             args.goal,
             args.timelimit_per_run,
-            compute_sequence=args.print_seq_file is not None,
+            compute_sequence=args.print_seq,
             reduce_tests=reduce_tests,
             harness_file_target=harness_file,
             compile_target=executable,
@@ -420,11 +419,6 @@ def main():
                 _write_harness(
                     args.file, exec_results.successful_tests[0], args.output_dir
                 )
-
-        if exec_results.coverage_sequence and args.print_seq_file:
-            seq_file = os.path.join(args.output_dir, args.print_seq_file)
-            with open(seq_file, "w") as outp:
-                outp.writelines([str(c) + "\n" for c in exec_results.coverage_sequence])
 
         cov.write_coverages_to_dir(
             args.output_dir,
