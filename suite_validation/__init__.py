@@ -233,7 +233,10 @@ def _write_tests_to_suite(
         with zipfile.ZipFile(output_suite, "a") as outp_zip:
             outp_zip.writestr(metadata_utils.METADATA_XML_NAME, output_metadata)
     else:
-        os.mkdir(output_suite)
+        os.makedirs(output_suite, exist_ok=True)
+        metadata_file = os.path.join(output_suite, metadata_utils.METADATA_XML_NAME)
+        with open(metadata_file, "bw") as metadata_outp:
+            metadata_outp.write(output_metadata)
 
     test_names = [t.origin for t in tests]
     with zipfile.ZipFile(origin_suite) as inp_zip:
