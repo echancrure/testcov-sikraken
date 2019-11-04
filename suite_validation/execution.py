@@ -510,16 +510,6 @@ class SuiteExecutor:
                     architecture,
                     machine_model,
                 )
-        for k in (
-            mu.PRODUCER,
-            mu.SPEC,
-            mu.PROGRAM_FILE,
-            mu.PROGRAM_HASH,
-            mu.TESTED_METHOD,
-            mu.ARCHITECTURE,
-            mu.CREATION_TIME,
-        ):
-            logging.info("Metadata is missing tag: %s", k)
 
     @staticmethod
     def _get_described_vectors(test_suite):
