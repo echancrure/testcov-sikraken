@@ -59,6 +59,7 @@ DUMMY_FILE = "DUMMY_FILE"
 DUMMY_TEST_VECTOR_RESULT = {eu.TestVector("dummy_tv", "dummy.xml"): eu.UNKNOWN}
 
 
+# pylint: disable=protected-access
 class TempDirExecutor:
     def __init__(self):
         self.temp_dir = None
@@ -701,15 +702,15 @@ class TestCoverageChecker:
 
     bad_test_coverages = {
         eu.COVER_LINES: _get_cov(
-            cov.LinesCoverage(
+            cov._LinesCoverag(
                 {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0}
             )
         ),
         eu.COVER_BRANCHES: _get_cov(
-            cov.BranchesCoverage({4: [False, False], 8: [False, False]})
+            cov._BranchesCoverage({4: [False, False], 8: [False, False]})
         ),
         eu.COVER_CONDITIONS: _get_cov(
-            cov.ConditionsCoverage(
+            cov._ConditionsCoverage(
                 [
                     cov.ConditionsEntry(4, {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0}),
                     cov.ConditionsEntry(8, {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0}),
@@ -720,15 +721,15 @@ class TestCoverageChecker:
 
     perfect_test_coverages = {
         eu.COVER_LINES: _get_cov(
-            cov.LinesCoverage(
+            cov._LinesCoverag(
                 {1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1}
             )
         ),
         eu.COVER_BRANCHES: _get_cov(
-            cov.BranchesCoverage({4: [True, True], 8: [True, True]})
+            cov._BranchesCoverage({4: [True, True], 8: [True, True]})
         ),
         eu.COVER_CONDITIONS: _get_cov(
-            cov.ConditionsCoverage(
+            cov._ConditionsCoverage(
                 [
                     cov.ConditionsEntry(4, {0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1}),
                     cov.ConditionsEntry(8, {0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1}),
@@ -739,15 +740,15 @@ class TestCoverageChecker:
 
     half_perfect_test_coverages = {
         eu.COVER_LINES: _get_cov(
-            cov.LinesCoverage(
+            cov._LinesCoverag(
                 {1: 0, 2: 1, 3: 0, 4: 1, 5: 0, 6: 1, 7: 0, 8: 1, 9: 0, 10: 1}
             )
         ),
         eu.COVER_BRANCHES: _get_cov(
-            cov.BranchesCoverage({4: [True, False], 8: [True, False]})
+            cov._BranchesCoverage({4: [True, False], 8: [True, False]})
         ),
         eu.COVER_CONDITIONS: _get_cov(
-            cov.ConditionsCoverage(
+            cov._ConditionsCoverage(
                 [
                     cov.ConditionsEntry(4, {0: 1, 1: 1, 2: 1, 3: 0, 4: 0, 5: 0}),
                     cov.ConditionsEntry(8, {0: 1, 1: 1, 2: 1, 3: 0, 4: 0, 5: 0}),
@@ -758,15 +759,15 @@ class TestCoverageChecker:
 
     half_perfect_test_coverages_complementary = {
         eu.COVER_LINES: _get_cov(
-            cov.LinesCoverage(
+            cov._LinesCoverag(
                 {1: 1, 2: 0, 3: 1, 4: 0, 5: 1, 6: 0, 7: 1, 8: 0, 9: 1, 10: 0}
             )
         ),
         eu.COVER_BRANCHES: _get_cov(
-            cov.BranchesCoverage({4: [False, True], 8: [False, True]})
+            cov._BranchesCoverage({4: [False, True], 8: [False, True]})
         ),
         eu.COVER_CONDITIONS: _get_cov(
-            cov.ConditionsCoverage(
+            cov._ConditionsCoverage(
                 [
                     cov.ConditionsEntry(4, {0: 0, 1: 0, 2: 0, 3: 1, 4: 1, 5: 1}),
                     cov.ConditionsEntry(8, {0: 0, 1: 0, 2: 0, 3: 1, 4: 1, 5: 1}),

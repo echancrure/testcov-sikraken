@@ -65,7 +65,7 @@ class LcovSector(Enum):
     IN_TEST_RECORD = 1
 
 
-class CoverageComparable:
+class _CoverageComparable:
     """
     A class that implements CoverageComparable must be able to compute the coverage relation between an object of the
     class and another object of the same class. The computation of a coverage relation must return two values: The first
@@ -106,6 +106,11 @@ class CoverageComparable:
     @property
     @abstractmethod
     def hits(self) -> int:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def count_total(self) -> int:
         raise NotImplementedError
 
     @abstractmethod
@@ -208,7 +213,7 @@ class ConditionsEntry:
         )
 
 
-class ConditionsCoverage(CoverageComparable):
+class _ConditionsCoverage(_CoverageComparable):
     """
     Contains a list of ConditionsEntry to represent all ConditionEntries that appear in the program.
     Each ConditionsEntry is assigned to a certain program line. A conditions coverage satisfies full coverage
@@ -240,7 +245,7 @@ class ConditionsCoverage(CoverageComparable):
             for e2 in cov.conditions_entries
             if e1.same_program_line(e2)
         ]
-        return ConditionsCoverage(merged)
+        return _ConditionsCoverage(merged)
 
     def get_conditions_entry(self, program_line) -> Optional[ConditionsEntry]:
         return next(
@@ -292,7 +297,7 @@ class ConditionsCoverage(CoverageComparable):
         return this_entry.is_coverage_for_program_line_extended(other_entry)
 
 
-class LinesCoverage(CoverageComparable):
+class _LinesCoverage(_CoverageComparable):
     """
     Contains a dict with the program lines as keys and hit numbers as corresponding values. If each program line has
     a hit number greater than zero the program is fully covered regarding the line coverage.
@@ -322,7 +327,7 @@ class LinesCoverage(CoverageComparable):
             l: self.lines_hit_counter[l] + cov.lines_hit_counter[l]
             for l in self.lines_hit_counter
         }
-        return LinesCoverage(summarized_lines_coverage)
+        return _LinesCoverage(summarized_lines_coverage)
 
     def compute_coverage_relation(self, other: "LinesCoverage") -> Tuple[float, float]:
         lines_only_covered_by_self = 0
@@ -356,7 +361,7 @@ class LinesCoverage(CoverageComparable):
         )
 
 
-class BranchesCoverage(CoverageComparable):
+class _BranchesCoverage(_CoverageComparable):
     """
     Contains a dictionary with program lines as keys and two-element lists with booleans as values. For each program
     line a corresponding list exists to state whether branch one and whether branch two are hit.
@@ -402,7 +407,7 @@ class BranchesCoverage(CoverageComparable):
                     self.branches_hit_counter[line][i]
                     or cov.branches_hit_counter[line][i]
                 )
-        return BranchesCoverage(summarized_branches_coverage)
+        return _BranchesCoverage(summarized_branches_coverage)
 
     def compute_coverage_relation(
         self, other: "BranchesCoverage"
@@ -449,7 +454,7 @@ class TestCoverage:
         self,
         file_name: str,
         test_vector_results: Dict[eu.TestVector, eu.TestResult],
-        coverage: Optional[CoverageComparable] = None,
+        coverage: Optional[_CoverageComparable] = None,
     ):
         self.filename = file_name
         self.test_vector_results = test_vector_results
@@ -678,15 +683,15 @@ def get_coverage_from_tracefile(
             "File '%s' does not exist. Returning empty test coverage", trace_file
         )
 
-    coverage: CoverageComparable
+    coverage: _CoverageComparable
     if coverage_goal in [eu.COVER_LINES, eu.COVER_ERRORS]:
-        coverage = LinesCoverage(lines_hit_counter_dic)
+        coverage = _LinesCoverage(lines_hit_counter_dic)
         assert lines_hit == coverage.hits
         assert lines_found == coverage.count_total
     elif coverage_goal is eu.COVER_BRANCHES:
-        coverage = BranchesCoverage(branches_hit_counter)
+        coverage = _BranchesCoverage(branches_hit_counter)
     elif coverage_goal is eu.COVER_CONDITIONS:
-        coverage = ConditionsCoverage(conditions_entries)
+        coverage = _ConditionsCoverage(conditions_entries)
         assert conditions_found == coverage.count_total
         assert conditions_taken == coverage.hits
     else:
@@ -742,7 +747,7 @@ def compute_test_coverage(
     next_result,
     coverage_goal,
     gcov_tool="gcov",
-):
+) -> TestCoverage:
     if os.path.exists(data_file):
         cmd = ["lcov", "--gcov-tool", gcov_tool]
         if coverage_goal in [eu.COVER_CONDITIONS, eu.COVER_BRANCHES]:
