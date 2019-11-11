@@ -401,6 +401,30 @@ class IsolatingRunner(CoverageMeasuringExecutionRunner):
             os.path.join(".", os.path.relpath(executable, start="./")),
         ]
 
+    def run(self, program_file, test_vector: eu.TestVector) -> eu.TestResult:
+        result = super().run(program_file, test_vector)
+        if self._use_runexec:
+            result.execution_info._cpu_time = self._get_cputime(result.execution_info)
+            result.execution_info._wall_time = self._get_walltime(result.execution_info)
+        return result
+
+    @staticmethod
+    def _get_cputime(execution_info) -> float:
+        for line in reversed(execution_info.stdout.split("\n")):
+            match = re.match("cputime=([0-9]+\.[0-9]+)s", line)
+            if match:
+                return float(match.group(1))
+        return execution_info.cpu_time
+
+
+    @staticmethod
+    def _get_walltime(execution_info) -> float:
+        for line in reversed(execution_info.stdout.split("\n")):
+            match = re.match("walltime=([0-9]+\.[0-9]+)s", line)
+            if match:
+                return float(match.group(1))
+        return execution_info.wall_time
+
 
 class SuiteExecutor:
     """Provides methods to execute a full test suite in the XML format."""
