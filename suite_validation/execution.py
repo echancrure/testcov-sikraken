@@ -406,6 +406,12 @@ class IsolatingRunner(CoverageMeasuringExecutionRunner):
         if self._use_runexec:
             result.execution_info._cpu_time = self._get_cputime(result.execution_info)
             result.execution_info._wall_time = self._get_walltime(result.execution_info)
+            result.execution_info._returncode = self._get_returncode(
+                result.execution_info
+            )
+            result.execution_info._got_aborted = self._was_aborted(
+                result.execution_info
+            )
         return result
 
     @staticmethod
@@ -423,6 +429,28 @@ class IsolatingRunner(CoverageMeasuringExecutionRunner):
             if match:
                 return float(match.group(1))
         return execution_info.wall_time
+
+    @staticmethod
+    def _get_returncode(execution_info) -> float:
+        for line in reversed(execution_info.stdout.split("\n")):
+            match = re.match("returnvalue=((-)?[0-9]+)", line)
+            if match:
+                return int(match.group(1))
+            match = re.match("exitsignal=([0-9]+)", line)
+            if match:
+                # runexec returns exitsignals as positive numbers.
+                # Negate to be consistent with C return code, which uses
+                # negative numbers to reference signals
+                return -int(match.group(1))
+            assert not re.match("exitsignal=(-[0-9]+)", line)
+        return execution_info.returncode
+
+    @staticmethod
+    def _was_aborted(execution_info) -> float:
+        for line in reversed(execution_info.stdout.split("\n")):
+            if line.startswith("terminationreason=") or re.match("exitsignal=", line):
+                return True
+        return execution_info.got_aborted
 
 
 class SuiteExecutor:
