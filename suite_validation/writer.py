@@ -11,6 +11,7 @@ from suite_validation import execution
 
 # Constants for csv output
 DELIMITER_TEST_COVERAGES = ";"
+HEADER_ID = "#"
 HEADER_TEST = "Test"
 HEADER_COVERAGE_INDIVIDUAL = "Coverage (individual)"
 HEADER_COVERAGE_SEQUENCE = "Coverage (accumulated)"
@@ -174,8 +175,10 @@ def _collect_data(exec_results):
     coverage_sequence = exec_results.coverage_sequence
     reduced_test_coverages = exec_results.reduced_coverage_tests
 
-    header = list()
+    header = [HEADER_ID]
     data = list()
+    # add ids for executions, starting from 1 to match plot
+    data.append(list(range(1, len(exec_results.results) + 1)))
     if test_coverages:
         header += [HEADER_TEST, HEADER_COVERAGE_INDIVIDUAL]
         data.append([tc.test_vectors_as_string() for tc in test_coverages])
