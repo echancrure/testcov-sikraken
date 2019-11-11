@@ -11,15 +11,15 @@ from suite_validation import execution
 
 # Constants for csv output
 DELIMITER_TEST_COVERAGES = ";"
-CSV_HEADER_TEST = "Test"
-CSV_HEADER_COVERAGE_INDIVIDUAL = "Coverage (individual)"
-CSV_HEADER_COVERAGE_SEQUENCE = "Coverage (accumulated)"
-CSV_HEADER_COVERAGE_REDUCED = "Part of reduced suite"
-CSV_HEADER_RESULT = "Execution success"
-CSV_HEADER_RETURNCODE = "Returncode"
-CSV_HEADER_CPUTIME = "CPU-Time (s)"
-CSV_HEADER_WALLTIME = "Wall-Time (s)"
-CSV_HEADER_MEMORY = "Memory used (byte)"
+HEADER_TEST = "Test"
+HEADER_COVERAGE_INDIVIDUAL = "Coverage (individual)"
+HEADER_COVERAGE_SEQUENCE = "Coverage (accumulated)"
+HEADER_COVERAGE_REDUCED = "Part of reduced suite"
+HEADER_RESULT = "Execution success"
+HEADER_RETURNCODE = "Returncode"
+HEADER_CPUTIME = "CPU-Time (s)"
+HEADER_WALLTIME = "Wall-Time (s)"
+HEADER_MEMORY = "Memory used (byte)"
 
 SUCCESSFUL_TESTSUITE_FOLDER = "test-suite"
 SUCCESSFUL_TEST_NAME = "covering-test.xml"
@@ -177,14 +177,14 @@ def _collect_data(exec_results):
     header = list()
     data = list()
     if test_coverages:
-        header += [CSV_HEADER_TEST, CSV_HEADER_COVERAGE_INDIVIDUAL]
+        header += [HEADER_TEST, HEADER_COVERAGE_INDIVIDUAL]
         data.append([tc.test_vectors_as_string() for tc in test_coverages])
         data.append([tc.hits_percent for tc in test_coverages])
     if coverage_sequence:
-        header.append(CSV_HEADER_COVERAGE_SEQUENCE)
+        header.append(HEADER_COVERAGE_SEQUENCE)
         data.append(coverage_sequence)
     if reduced_test_coverages:
-        header.append(CSV_HEADER_COVERAGE_REDUCED)
+        header.append(HEADER_COVERAGE_REDUCED)
         assert (
             test_coverages
         ), "Reduced test coverage can only be used with individual test coverage"
@@ -193,11 +193,11 @@ def _collect_data(exec_results):
         data.append([test in reduced_tests for test in test_names])
 
     header += [
-        CSV_HEADER_RESULT,
-        CSV_HEADER_RETURNCODE,
-        CSV_HEADER_CPUTIME,
-        CSV_HEADER_WALLTIME,
-        CSV_HEADER_MEMORY,
+        HEADER_RESULT,
+        HEADER_RETURNCODE,
+        HEADER_CPUTIME,
+        HEADER_WALLTIME,
+        HEADER_MEMORY,
     ]
     data.append([not r.execution_info.got_aborted for r in exec_results.results])
     data.append([r.execution_info.returncode for r in exec_results.results])
