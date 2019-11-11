@@ -1,4 +1,5 @@
 import csv
+import json
 import logging
 import os
 import zipfile
@@ -6,6 +7,7 @@ import shutil
 import numpy as np
 import suite_validation
 from suite_validation import metadata_utils
+from suite_validation import execution
 
 # Constants for csv output
 DELIMITER_TEST_COVERAGES = ";"
@@ -126,16 +128,51 @@ def _copy_file(relative_file_path, origin_container, dest_container, dest_name):
         logging.warning("No file %s in %s", relative_file_path, origin_container)
 
 
-def write_execution_results(output_file, exec_results) -> None:
+def write_results(output_file, exec_results, output_format) -> None:
     output_dir = os.path.dirname(output_file)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir, exist_ok=True)
     if os.path.exists(output_file):
         os.remove(output_file)
 
+    header, data = _collect_data(exec_results)
+    if output_format == "json":
+        _write_results_json(output_file, header, data)
+    elif output_format == "csv":
+        _write_results_csv(output_file, header, data)
+    else:
+        assert False
+
+
+def _write_results_json(output_file, header, data) -> None:
+    json_data = list()
+    for table_row in data:
+        single_data = dict()
+        for idx, key in enumerate(header):
+            assert key not in single_data
+            single_data[key] = table_row[idx]
+        json_data.append(single_data)
+
+    with open(output_file, mode="w") as outp:
+        # don't sort keys so we have same order as header specifies
+        json.dump(json_data, outp, indent=2, sort_keys=False)
+
+
+def _write_results_csv(output_file, header, data) -> None:
+    with open(output_file, mode="w") as individual_test_cov_file:
+        writer = csv.writer(
+            individual_test_cov_file, delimiter=DELIMITER_TEST_COVERAGES
+        )
+        writer.writerow(header)
+        for row in data:
+            writer.writerow(row)
+
+
+def _collect_data(exec_results):
     test_coverages = exec_results.coverage_tests
     coverage_sequence = exec_results.coverage_sequence
     reduced_test_coverages = exec_results.reduced_coverage_tests
+
     header = list()
     data = list()
     if test_coverages:
@@ -152,7 +189,7 @@ def write_execution_results(output_file, exec_results) -> None:
         ), "Reduced test coverage can only be used with individual test coverage"
         test_names = [tc.test_vectors_as_string() for tc in test_coverages]
         reduced_tests = [tc.test_vectors_as_string() for tc in reduced_test_coverages]
-        data.append(["x" if test in reduced_tests else "o" for test in test_names])
+        data.append([test in reduced_tests for test in test_names])
 
     header += [
         CSV_HEADER_RESULT,
@@ -160,20 +197,21 @@ def write_execution_results(output_file, exec_results) -> None:
         CSV_HEADER_CPUTIME,
         CSV_HEADER_WALLTIME,
     ]
-    data.append(
-        ["o" if r.execution_info.got_aborted else "x" for r in exec_results.results]
-    )
+    data.append([not r.execution_info.got_aborted for r in exec_results.results])
     data.append([r.execution_info.returncode for r in exec_results.results])
-    data.append([r.execution_info.cpu_time if r.execution_info.cpu_time else '' for r in exec_results.results])
-    data.append([r.execution_info.wall_time if r.execution_info.wall_time else '' for r in exec_results.results])
+    data.append(
+        [
+            r.execution_info.cpu_time if r.execution_info.cpu_time else ""
+            for r in exec_results.results
+        ]
+    )
+    data.append(
+        [
+            r.execution_info.wall_time if r.execution_info.wall_time else ""
+            for r in exec_results.results
+        ]
+    )
 
     table = np.array(data)
-    with open(output_file, mode="w") as individual_test_cov_file:
-        writer = csv.writer(
-            individual_test_cov_file, delimiter=DELIMITER_TEST_COVERAGES
-        )
-        writer.writerow(header)
-        for table_column in table.T:
-            writer.writerow(table_column)
 
-
+    return header, table.T

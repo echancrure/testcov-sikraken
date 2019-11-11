@@ -416,7 +416,6 @@ class IsolatingRunner(CoverageMeasuringExecutionRunner):
                 return float(match.group(1))
         return execution_info.cpu_time
 
-
     @staticmethod
     def _get_walltime(execution_info) -> float:
         for line in reversed(execution_info.stdout.split("\n")):

@@ -33,7 +33,7 @@ __VERSION__ = "v3.0-16-g689dd44"
 __NAME__ = "testcov"
 
 
-RESULTS_FILE = "results.csv"
+RESULTS_NAME = "results"
 REDUCED_TESTSUITE_NAME = "reduced-suite.zip"
 
 VERDICT_DONE = "DONE"
@@ -163,6 +163,15 @@ def get_parser():
         action="store",
         default=REDUCED_TESTSUITE_NAME,
         help="Name to which reduced test suite is written",
+        required=False,
+    )
+
+    parser.add_argument(
+        "--results-format",
+        dest="results_format",
+        action="store",
+        default="json",
+        help="Format to use for writing individual results. Possible options: csv, json",
         required=False,
     )
 
@@ -318,8 +327,11 @@ def main():
                     args.file, exec_results.successful_tests[0], args.output_dir
                 )
 
-        suite_writer.write_execution_results(
-            os.path.join(args.output_dir, RESULTS_FILE), exec_results
+        results_file_name = RESULTS_NAME + "." + args.results_format
+        suite_writer.write_results(
+            os.path.join(args.output_dir, results_file_name),
+            exec_results,
+            args.results_format,
         )
         if args.write_plots and exec_results.coverage_total:
             try:
