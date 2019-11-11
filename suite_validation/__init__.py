@@ -18,11 +18,13 @@
 """Main module of testcov."""
 
 import argparse
+import csv
 import logging
 import os
 import re
 import shutil
 import zipfile
+import numpy as np
 from suite_validation import execution
 from suite_validation import execution_utils as eu
 from suite_validation import coverage as cov
@@ -32,6 +34,18 @@ from suite_validation import metadata_utils
 __VERSION__ = "v3.0-16-g689dd44"
 
 __NAME__ = "testcov"
+
+# Constants for csv output
+RESULTS_FILE = "results.csv"
+DELIMITER_TEST_COVERAGES = ";"
+CSV_HEADER_TEST = "Test"
+CSV_HEADER_COVERAGE_INDIVIDUAL = "Coverage (individual)"
+CSV_HEADER_COVERAGE_SEQUENCE = "Coverage (accumulated)"
+CSV_HEADER_COVERAGE_REDUCED = "Part of reduced suite"
+CSV_HEADER_RESULT = "Execution success"
+CSV_HEADER_RETURNCODE = "Returncode"
+CSV_HEADER_CPUTIME = "CPU-Time (s)"
+CSV_HEADER_WALLTIME = "Wall-Time (s)"
 
 SUCCESSFUL_TESTSUITE_FOLDER = "test-suite"
 SUCCESSFUL_TEST_NAME = "covering-test.xml"
@@ -359,6 +373,57 @@ def _print_execution_results(exec_results, goal, error_occurred: bool):
     print("Result:", verdict)
 
 
+def _write_execution_results(output_file, exec_results) -> None:
+    output_dir = os.path.dirname(output_file)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir, exist_ok=True)
+    if os.path.exists(output_file):
+        os.remove(output_file)
+
+    test_coverages = exec_results.coverage_tests
+    coverage_sequence = exec_results.coverage_sequence
+    reduced_test_coverages = exec_results.reduced_coverage_tests
+    header = list()
+    data = list()
+    if test_coverages:
+        header += [CSV_HEADER_TEST, CSV_HEADER_COVERAGE_INDIVIDUAL]
+        data.append([tc.test_vectors_as_string() for tc in test_coverages])
+        data.append([tc.hits_percent for tc in test_coverages])
+    if coverage_sequence:
+        header.append(CSV_HEADER_COVERAGE_SEQUENCE)
+        data.append(coverage_sequence)
+    if reduced_test_coverages:
+        header.append(CSV_HEADER_COVERAGE_REDUCED)
+        assert (
+            test_coverages
+        ), "Reduced test coverage can only be used with individual test coverage"
+        test_names = [tc.test_vectors_as_string() for tc in test_coverages]
+        reduced_tests = [tc.test_vectors_as_string() for tc in reduced_test_coverages]
+        data.append(["x" if test in reduced_tests else "o" for test in test_names])
+
+    header += [
+        CSV_HEADER_RESULT,
+        CSV_HEADER_RETURNCODE,
+        CSV_HEADER_CPUTIME,
+        CSV_HEADER_WALLTIME,
+    ]
+    data.append(
+        ["o" if r.execution_info.got_aborted else "x" for r in exec_results.results]
+    )
+    data.append([r.execution_info.returncode for r in exec_results.results])
+    data.append([round(r.execution_info.cpu_time, 2) if r.execution_info.cpu_time else '' for r in exec_results.results])
+    data.append([round(r.execution_info.wall_time, 2) if r.execution_info.wall_time else '' for r in exec_results.results])
+
+    table = np.array(data)
+    with open(output_file, mode="w") as individual_test_cov_file:
+        writer = csv.writer(
+            individual_test_cov_file, delimiter=DELIMITER_TEST_COVERAGES
+        )
+        writer.writerow(header)
+        for table_column in table.T:
+            writer.writerow(table_column)
+
+
 def main():
     args = parse()
 
@@ -423,12 +488,8 @@ def main():
                     args.file, exec_results.successful_tests[0], args.output_dir
                 )
 
-        cov.write_coverages_to_dir(
-            args.output_dir,
-            cov.FILE_NAME_COVERAGE_CSV,
-            exec_results.coverage_tests,
-            exec_results.coverage_sequence,
-            exec_results.reduced_coverage_tests,
+        _write_execution_results(
+            os.path.join(args.output_dir, RESULTS_FILE), exec_results
         )
         if args.write_plots and exec_results.coverage_total:
             try:

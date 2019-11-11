@@ -28,13 +28,6 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 from suite_validation import execution_utils as eu
 
-# Constants for csv output
-FILE_NAME_COVERAGE_CSV = "coverage.csv"
-TEST = "Test"
-COVERAGE_INDIVIDUAL = "Coverage (individual)"
-COVERAGE_SEQUENCE = "Coverage (accumulated)"
-COVERAGE_REDUCED = "Part of reduced suite"
-DELIMITER_TEST_COVERAGES = ";"
 
 MODULE_DIRECTORY = os.path.join(os.path.dirname(__file__), os.path.pardir)
 
@@ -698,45 +691,6 @@ def get_coverage_from_tracefile(
         raise AssertionError("Unhandled coverage goal " + coverage_goal)
 
     return TestCoverage(program_name, {test_vector: next_result}, coverage)
-
-
-def write_coverages_to_dir(
-    output_dir,
-    file_name,
-    test_coverages=None,
-    coverage_sequence=None,
-    reduced_test_coverages=None,
-):
-    output_file = os.path.join(output_dir, file_name)
-    with open(output_file, mode="w") as individual_test_cov_file:
-        writer = csv.writer(
-            individual_test_cov_file, delimiter=DELIMITER_TEST_COVERAGES
-        )
-        header = list()
-        data = list()
-        if test_coverages:
-            header += [TEST, COVERAGE_INDIVIDUAL]
-            data.append([tc.test_vectors_as_string() for tc in test_coverages])
-            data.append([tc.hits_percent for tc in test_coverages])
-        if coverage_sequence:
-            header.append(COVERAGE_SEQUENCE)
-            data.append(coverage_sequence)
-        if reduced_test_coverages:
-            header.append(COVERAGE_REDUCED)
-            assert (
-                test_coverages
-            ), "Reduced test coverage can only be used with individual test coverage"
-            test_names = [tc.test_vectors_as_string() for tc in test_coverages]
-            reduced_tests = [
-                tc.test_vectors_as_string() for tc in reduced_test_coverages
-            ]
-            data.append(["x" if test in reduced_tests else "o" for test in test_names])
-
-        table = np.array(data)
-
-        writer.writerow(header)
-        for table_column in table.T:
-            writer.writerow(table_column)
 
 
 def compute_test_coverage(

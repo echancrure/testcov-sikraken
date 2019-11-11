@@ -17,7 +17,9 @@
 # limitations under the License.
 import logging
 import subprocess
+import time
 from typing import List
+import psutil
 
 ERROR_STRING = "Error found."
 
@@ -142,18 +144,19 @@ class TestVector:
 
 
 class TestResult:
-    def __init__(self, verdict, coverage=None):
+    def __init__(self, verdict, execution_info, coverage=None):
         self.verdict = verdict
+        self.execution_info = execution_info
         self.coverage = coverage
 
     def __eq__(self, other):
         return self.verdict == other
 
 
-COVERS = TestResult("false")
-UNKNOWN = TestResult("unknown")
-ERROR = TestResult("error")
-ABORTED = TestResult("abort")
+COVERS = "false"
+UNKNOWN = "unknown"
+ERROR = "error"
+ABORTED = "abort"
 
 
 class SuiteExecutionResult:
@@ -172,11 +175,13 @@ class SuiteExecutionResult:
 class ExecutionResult:
     """Results of a subprocess execution."""
 
-    def __init__(self, returncode, stdout, stderr, got_aborted):
+    def __init__(self, returncode, stdout, stderr, got_aborted, cpu_time, wall_time):
         self._returncode = returncode
         self._stdout = stdout
         self._stderr = stderr
         self._got_aborted = got_aborted
+        self._cpu_time = cpu_time
+        self._wall_time = wall_time
 
     @property
     def returncode(self):
@@ -194,6 +199,14 @@ class ExecutionResult:
     def got_aborted(self):
         return self._got_aborted
 
+    @property
+    def cpu_time(self):
+        return self._cpu_time
+
+    @property
+    def wall_time(self):
+        return self._wall_time
+
 
 def execute(command, quiet=False, input_str=None, timelimit=None):
     def shut_down(process):
@@ -203,7 +216,8 @@ def execute(command, quiet=False, input_str=None, timelimit=None):
     log_cmd = logging.debug if quiet else logging.info
     log_cmd(" ".join(command))
 
-    process = subprocess.Popen(
+    wall_time_start = time.perf_counter()
+    process = psutil.Popen(
         command,
         stdin=subprocess.PIPE if input_str else None,
         stdout=subprocess.PIPE,
@@ -213,6 +227,7 @@ def execute(command, quiet=False, input_str=None, timelimit=None):
 
     output = None
     err_output = None
+    wall_time = None
     try:
         if input_str and not isinstance(input_str, bytes):
             input_str = input_str.encode()
@@ -225,6 +240,8 @@ def execute(command, quiet=False, input_str=None, timelimit=None):
         logging.debug("Timeout of %ss expired. Killing process.", timelimit)
         returncode = shut_down(process)
         got_aborted = True
+    wall_time = time.perf_counter() - wall_time_start
+
     # We decode output, but we can't decode error output, since it may contain undecodable bytes.
     output = output.decode() if output else ""
 
@@ -233,7 +250,7 @@ def execute(command, quiet=False, input_str=None, timelimit=None):
     if err_output:
         logging.debug("Error output of execution:\n%s", err_output.decode())
 
-    return ExecutionResult(returncode, output, err_output, got_aborted)
+    return ExecutionResult(returncode, output, err_output, got_aborted, None, wall_time)
 
 
 def found_err(run_result):

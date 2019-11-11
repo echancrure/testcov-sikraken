@@ -238,6 +238,7 @@ class ExecutionRunner:
         executable = self.get_executable_harness(program_file)
         input_vector = self._get_input_vector(test_vector)
 
+        run_result = None
         if executable and os.path.exists(executable):
             run_result = eu.execute(
                 self._get_execute_cmd(executable),
@@ -247,14 +248,14 @@ class ExecutionRunner:
             )
             if eu.found_err(run_result):
                 logging.debug("Error found for test %s", test_vector)
-                return eu.COVERS
+                return eu.TestResult(eu.COVERS, run_result)
             if run_result.got_aborted:
                 logging.info("Aborted execution for test %s", test_vector)
-                return eu.ABORTED
+                return eu.TestResult(eu.ABORTED, run_result)
             if run_result.returncode != 0:
                 logging.debug("Non-0 return code for test %s", test_vector)
-            return eu.UNKNOWN
-        return eu.ERROR
+            return eu.TestResult(eu.UNKNOWN, run_result)
+        return eu.TestResult(eu.ERROR, run_result)
 
     def _get_execute_cmd(self, executable):
         # pylint: disable=no-self-use
