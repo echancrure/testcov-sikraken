@@ -406,6 +406,7 @@ class IsolatingRunner(CoverageMeasuringExecutionRunner):
         if self._use_runexec:
             result.execution_info._cpu_time = self._get_cputime(result.execution_info)
             result.execution_info._wall_time = self._get_walltime(result.execution_info)
+            result.execution_info._memory_used = self._get_memory(result.execution_info)
             result.execution_info._returncode = self._get_returncode(
                 result.execution_info
             )
@@ -429,6 +430,14 @@ class IsolatingRunner(CoverageMeasuringExecutionRunner):
             if match:
                 return float(match.group(1))
         return execution_info.wall_time
+
+    @staticmethod
+    def _get_memory(execution_info) -> float:
+        for line in reversed(execution_info.stdout.split("\n")):
+            match = re.match("memory=([0-9]+)B", line)
+            if match:
+                return int(match.group(1))
+        return execution_info.memory_used
 
     @staticmethod
     def _get_returncode(execution_info) -> float:

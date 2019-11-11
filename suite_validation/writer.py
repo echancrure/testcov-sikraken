@@ -19,6 +19,7 @@ CSV_HEADER_RESULT = "Execution success"
 CSV_HEADER_RETURNCODE = "Returncode"
 CSV_HEADER_CPUTIME = "CPU-Time (s)"
 CSV_HEADER_WALLTIME = "Wall-Time (s)"
+CSV_HEADER_MEMORY = "Memory used (byte)"
 
 SUCCESSFUL_TESTSUITE_FOLDER = "test-suite"
 SUCCESSFUL_TEST_NAME = "covering-test.xml"
@@ -196,6 +197,7 @@ def _collect_data(exec_results):
         CSV_HEADER_RETURNCODE,
         CSV_HEADER_CPUTIME,
         CSV_HEADER_WALLTIME,
+        CSV_HEADER_MEMORY,
     ]
     data.append([not r.execution_info.got_aborted for r in exec_results.results])
     data.append([r.execution_info.returncode for r in exec_results.results])
@@ -208,6 +210,12 @@ def _collect_data(exec_results):
     data.append(
         [
             r.execution_info.wall_time if r.execution_info.wall_time else ""
+            for r in exec_results.results
+        ]
+    )
+    data.append(
+        [
+            r.execution_info.memory_used if r.execution_info.memory_used else ""
             for r in exec_results.results
         ]
     )

@@ -175,13 +175,16 @@ class SuiteExecutionResult:
 class ExecutionResult:
     """Results of a subprocess execution."""
 
-    def __init__(self, returncode, stdout, stderr, got_aborted, cpu_time, wall_time):
+    def __init__(
+        self, returncode, stdout, stderr, got_aborted, cpu_time, wall_time, memory_used
+    ):
         self._returncode = returncode
         self._stdout = stdout
         self._stderr = stderr
         self._got_aborted = got_aborted
         self._cpu_time = cpu_time
         self._wall_time = wall_time
+        self._memory_used = memory_used
 
     @property
     def returncode(self):
@@ -206,6 +209,10 @@ class ExecutionResult:
     @property
     def wall_time(self):
         return self._wall_time
+
+    @property
+    def memory_used(self):
+        return self._memory_used
 
 
 def execute(command, quiet=False, input_str=None, timelimit=None):
@@ -250,7 +257,9 @@ def execute(command, quiet=False, input_str=None, timelimit=None):
     if err_output:
         logging.debug("Error output of execution:\n%s", err_output.decode())
 
-    return ExecutionResult(returncode, output, err_output, got_aborted, None, wall_time)
+    return ExecutionResult(
+        returncode, output, err_output, got_aborted, None, wall_time, None
+    )
 
 
 def found_err(run_result):
