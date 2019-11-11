@@ -18,40 +18,22 @@
 """Main module of testcov."""
 
 import argparse
-import csv
 import logging
 import os
 import re
-import shutil
-import zipfile
-import numpy as np
 from suite_validation import execution
 from suite_validation import execution_utils as eu
 from suite_validation import coverage as cov
 from suite_validation import reduction_strategy as rs
 from suite_validation import metadata_utils
+from suite_validation import writer as suite_writer
 
 __VERSION__ = "v3.0-16-g689dd44"
 
 __NAME__ = "testcov"
 
-# Constants for csv output
-RESULTS_FILE = "results.csv"
-DELIMITER_TEST_COVERAGES = ";"
-CSV_HEADER_TEST = "Test"
-CSV_HEADER_COVERAGE_INDIVIDUAL = "Coverage (individual)"
-CSV_HEADER_COVERAGE_SEQUENCE = "Coverage (accumulated)"
-CSV_HEADER_COVERAGE_REDUCED = "Part of reduced suite"
-CSV_HEADER_RESULT = "Execution success"
-CSV_HEADER_RETURNCODE = "Returncode"
-CSV_HEADER_CPUTIME = "CPU-Time (s)"
-CSV_HEADER_WALLTIME = "Wall-Time (s)"
 
-SUCCESSFUL_TESTSUITE_FOLDER = "test-suite"
-SUCCESSFUL_TEST_NAME = "covering-test.xml"
-"""Name of the file a successful test will be written to."""
-SUCCESSFUL_HARNESS_NAME = "covering-test.c"
-"""Name of the file the executable harness of a successful test will be written to."""
+RESULTS_FILE = "results.csv"
 REDUCED_TESTSUITE_NAME = "reduced-suite.zip"
 
 VERDICT_DONE = "DONE"
@@ -225,107 +207,6 @@ def parse():
     return args
 
 
-def _write_tests_to_suite(
-    program_file, origin_suite, tests, coverage_goal, output_suite
-):
-    """
-    Writes the given tests from the given test suite to a new suite.
-
-    :param str origin_suite: Path to the zip-file that contains the original test suite
-    :param List[utils.TestVector] tests: Test vector to create files for.
-    :param str output_suite: Zip-file or directory to write to.
-    """
-    if os.path.exists(output_suite):
-        logging.debug("File %s already exists - removing it.", output_suite)
-        if os.path.isdir(output_suite):
-            shutil.rmtree(output_suite, ignore_errors=True)
-        else:
-            os.remove(output_suite)
-
-    output_metadata = _create_metadata(origin_suite, program_file, coverage_goal)
-    if output_suite.endswith(".zip"):
-        with zipfile.ZipFile(output_suite, "a") as outp_zip:
-            outp_zip.writestr(metadata_utils.METADATA_XML_NAME, output_metadata)
-    else:
-        os.makedirs(output_suite, exist_ok=True)
-        metadata_file = os.path.join(output_suite, metadata_utils.METADATA_XML_NAME)
-        with open(metadata_file, "bw") as metadata_outp:
-            metadata_outp.write(output_metadata)
-
-    test_names = [t.origin for t in tests]
-    with zipfile.ZipFile(origin_suite) as inp_zip:
-        for test in inp_zip.namelist():
-            if test in test_names:
-                _copy_file(test, origin_suite, output_suite, test)
-
-
-def _create_metadata(origin_suite: str, program_file: str, coverage_goal: str) -> str:
-    producer = " ".join([__NAME__, __VERSION__])
-    return metadata_utils.create_for_reduced(
-        origin_suite, producer, program_file, coverage_goal
-    )
-
-
-def _write_harness(program_file, test_vector, output_dir):
-    """
-    Writes, for the given test, an executable harness to the output folder.
-
-    :param str program_file: Path to the program file.
-    :param eu.TestVector test_vector: test vector to create harness for.
-    :param str output_dir: Output directory to write into.
-    """
-
-    test_c_file = os.path.join(output_dir, SUCCESSFUL_HARNESS_NAME)
-    harness_content = execution.HarnessCreator().convert(program_file, test_vector)
-    with open(program_file) as progr_inp:
-        harness_content = progr_inp.read() + harness_content
-    with open(test_c_file, "w+") as outp:
-        outp.write(harness_content)
-    logging.info("Successful test data written to %s", SUCCESSFUL_TESTSUITE_FOLDER)
-
-
-def _copy_file(relative_file_path, origin_container, dest_container, dest_name):
-    logging.debug(
-        "Copying %s from %s to %s/%s",
-        relative_file_path,
-        origin_container,
-        dest_container,
-        dest_name,
-    )
-    try:
-        if dest_container.endswith(".zip"):
-            with zipfile.ZipFile(dest_container, "a") as outp_zip:
-                if dest_name in outp_zip.namelist():
-                    logging.info(
-                        "%s already exists in %s - not adding, as it would be a duplicate",
-                        dest_name,
-                        dest_container,
-                    )
-                else:
-                    with zipfile.ZipFile(origin_container) as inp_zip:
-                        content = inp_zip.read(relative_file_path)
-                    outp_zip.writestr(dest_name, content)
-
-        else:
-            dest_file = os.path.join(dest_container, dest_name)
-            if os.path.exists(dest_file):
-                logging.info(
-                    "%s already exists in %s - not adding, as it would be a duplicate",
-                    dest_name,
-                    dest_container,
-                )
-            else:
-                parent_dir = os.path.dirname(dest_file)
-                os.makedirs(parent_dir, exist_ok=True)
-                with zipfile.ZipFile(origin_container) as inp_zip:
-                    content = inp_zip.read(relative_file_path)
-                with open(dest_file, "wb") as outp:
-                    outp.write(content)
-
-    except KeyError:
-        logging.warning("No file %s in %s", relative_file_path, origin_container)
-
-
 def parse_coverage_goal_file(goal_file: str) -> str:
     with open(goal_file) as inp:
         content = inp.read().strip()
@@ -371,57 +252,6 @@ def _print_execution_results(exec_results, goal, error_occurred: bool):
         else:
             verdict = VERDICT_ERROR
     print("Result:", verdict)
-
-
-def _write_execution_results(output_file, exec_results) -> None:
-    output_dir = os.path.dirname(output_file)
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir, exist_ok=True)
-    if os.path.exists(output_file):
-        os.remove(output_file)
-
-    test_coverages = exec_results.coverage_tests
-    coverage_sequence = exec_results.coverage_sequence
-    reduced_test_coverages = exec_results.reduced_coverage_tests
-    header = list()
-    data = list()
-    if test_coverages:
-        header += [CSV_HEADER_TEST, CSV_HEADER_COVERAGE_INDIVIDUAL]
-        data.append([tc.test_vectors_as_string() for tc in test_coverages])
-        data.append([tc.hits_percent for tc in test_coverages])
-    if coverage_sequence:
-        header.append(CSV_HEADER_COVERAGE_SEQUENCE)
-        data.append(coverage_sequence)
-    if reduced_test_coverages:
-        header.append(CSV_HEADER_COVERAGE_REDUCED)
-        assert (
-            test_coverages
-        ), "Reduced test coverage can only be used with individual test coverage"
-        test_names = [tc.test_vectors_as_string() for tc in test_coverages]
-        reduced_tests = [tc.test_vectors_as_string() for tc in reduced_test_coverages]
-        data.append(["x" if test in reduced_tests else "o" for test in test_names])
-
-    header += [
-        CSV_HEADER_RESULT,
-        CSV_HEADER_RETURNCODE,
-        CSV_HEADER_CPUTIME,
-        CSV_HEADER_WALLTIME,
-    ]
-    data.append(
-        ["o" if r.execution_info.got_aborted else "x" for r in exec_results.results]
-    )
-    data.append([r.execution_info.returncode for r in exec_results.results])
-    data.append([r.execution_info.cpu_time if r.execution_info.cpu_time else '' for r in exec_results.results])
-    data.append([r.execution_info.wall_time if r.execution_info.wall_time else '' for r in exec_results.results])
-
-    table = np.array(data)
-    with open(output_file, mode="w") as individual_test_cov_file:
-        writer = csv.writer(
-            individual_test_cov_file, delimiter=DELIMITER_TEST_COVERAGES
-        )
-        writer.writerow(header)
-        for table_column in table.T:
-            writer.writerow(table_column)
 
 
 def main():
@@ -474,7 +304,7 @@ def main():
         error_occurred = True
     finally:
         if exec_results.successful_tests:
-            _write_tests_to_suite(
+            suite_writer.write_tests_to_suite(
                 args.file,
                 args.test_suite,
                 exec_results.successful_tests,
@@ -484,11 +314,11 @@ def main():
             if args.check_for_error:
                 # If at least one test covered an error,
                 # make the first one into an executable harness
-                _write_harness(
+                suite_writer.write_harness(
                     args.file, exec_results.successful_tests[0], args.output_dir
                 )
 
-        _write_execution_results(
+        suite_writer.write_execution_results(
             os.path.join(args.output_dir, RESULTS_FILE), exec_results
         )
         if args.write_plots and exec_results.coverage_total:
