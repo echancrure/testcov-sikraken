@@ -411,8 +411,8 @@ def _write_execution_results(output_file, exec_results) -> None:
         ["o" if r.execution_info.got_aborted else "x" for r in exec_results.results]
     )
     data.append([r.execution_info.returncode for r in exec_results.results])
-    data.append([round(r.execution_info.cpu_time, 2) if r.execution_info.cpu_time else '' for r in exec_results.results])
-    data.append([round(r.execution_info.wall_time, 2) if r.execution_info.wall_time else '' for r in exec_results.results])
+    data.append([r.execution_info.cpu_time if r.execution_info.cpu_time else '' for r in exec_results.results])
+    data.append([r.execution_info.wall_time if r.execution_info.wall_time else '' for r in exec_results.results])
 
     table = np.array(data)
     with open(output_file, mode="w") as individual_test_cov_file:
