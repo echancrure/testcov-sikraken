@@ -634,9 +634,10 @@ class SuiteExecutor:
                     )
                 else:
                     result_target.coverage_sequence = [0]
-        logging.debug(
-            "Accumulated coverage: %s%%", result_target.coverage_total.hits_percent
-        )
+        if result_target.coverage_total:
+            logging.debug(
+                "Accumulated coverage: %s%%", result_target.coverage_total.hits_percent
+            )
 
     def _execute_tests(self, program_file, test_vectors, executor, result_target):
         """Executes all test vectors on the given program using the given executor
