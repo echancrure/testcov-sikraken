@@ -20,12 +20,10 @@
 from enum import Enum
 import os
 import logging
-import csv
 
 from typing import Dict, Tuple, List, Optional
 from abc import ABCMeta, abstractmethod
 
-import numpy as np
 from suite_validation import execution_utils as eu
 
 
