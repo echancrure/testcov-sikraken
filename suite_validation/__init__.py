@@ -1,4 +1,4 @@
-# reduced_program testcov is tool for validation and execution of test suites.
+# testcov is a tool for validation and execution of test suites.
 # This file is part of testcov.
 #
 # Copyright (C) 2018  Dirk Beyer
