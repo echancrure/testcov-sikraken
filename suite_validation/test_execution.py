@@ -702,7 +702,7 @@ class TestCoverageChecker:
 
     bad_test_coverages = {
         eu.COVER_LINES: _get_cov(
-            cov._LinesCoverag(
+            cov._LinesCoverage(
                 {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0}
             )
         ),
@@ -721,7 +721,7 @@ class TestCoverageChecker:
 
     perfect_test_coverages = {
         eu.COVER_LINES: _get_cov(
-            cov._LinesCoverag(
+            cov._LinesCoverage(
                 {1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1}
             )
         ),
@@ -740,7 +740,7 @@ class TestCoverageChecker:
 
     half_perfect_test_coverages = {
         eu.COVER_LINES: _get_cov(
-            cov._LinesCoverag(
+            cov._LinesCoverage(
                 {1: 0, 2: 1, 3: 0, 4: 1, 5: 0, 6: 1, 7: 0, 8: 1, 9: 0, 10: 1}
             )
         ),
@@ -759,7 +759,7 @@ class TestCoverageChecker:
 
     half_perfect_test_coverages_complementary = {
         eu.COVER_LINES: _get_cov(
-            cov._LinesCoverag(
+            cov._LinesCoverage(
                 {1: 1, 2: 0, 3: 1, 4: 0, 5: 1, 6: 0, 7: 1, 8: 0, 9: 1, 10: 0}
             )
         ),
