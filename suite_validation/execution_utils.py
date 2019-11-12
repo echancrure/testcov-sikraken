@@ -178,41 +178,13 @@ class ExecutionResult:
     def __init__(
         self, returncode, stdout, stderr, got_aborted, cpu_time, wall_time, memory_used
     ):
-        self._returncode = returncode
-        self._stdout = stdout
-        self._stderr = stderr
-        self._got_aborted = got_aborted
-        self._cpu_time = cpu_time
-        self._wall_time = wall_time
-        self._memory_used = memory_used
-
-    @property
-    def returncode(self):
-        return self._returncode
-
-    @property
-    def stdout(self):
-        return self._stdout
-
-    @property
-    def stderr(self):
-        return self._stderr
-
-    @property
-    def got_aborted(self):
-        return self._got_aborted
-
-    @property
-    def cpu_time(self):
-        return self._cpu_time
-
-    @property
-    def wall_time(self):
-        return self._wall_time
-
-    @property
-    def memory_used(self):
-        return self._memory_used
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+        self.got_aborted = got_aborted
+        self.cpu_time = cpu_time
+        self.wall_time = wall_time
+        self.memory_used = memory_used
 
 
 def execute(command, quiet=False, input_str=None, timelimit=None):

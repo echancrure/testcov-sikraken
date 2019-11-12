@@ -404,21 +404,19 @@ class IsolatingRunner(CoverageMeasuringExecutionRunner):
     def run(self, program_file, test_vector: eu.TestVector) -> eu.TestResult:
         result = super().run(program_file, test_vector)
         if self._use_runexec:
-            result.execution_info._cpu_time = self._get_cputime(result.execution_info)
-            result.execution_info._wall_time = self._get_walltime(result.execution_info)
-            result.execution_info._memory_used = self._get_memory(result.execution_info)
-            result.execution_info._returncode = self._get_returncode(
+            result.execution_info.cpu_time = self._get_cputime(result.execution_info)
+            result.execution_info.wall_time = self._get_walltime(result.execution_info)
+            result.execution_info.memory_used = self._get_memory(result.execution_info)
+            result.execution_info.returncode = self._get_returncode(
                 result.execution_info
             )
-            result.execution_info._got_aborted = self._was_aborted(
-                result.execution_info
-            )
+            result.execution_info.got_aborted = self._was_aborted(result.execution_info)
         return result
 
     @staticmethod
     def _get_cputime(execution_info) -> float:
         for line in reversed(execution_info.stdout.split("\n")):
-            match = re.match("cputime=([0-9]+\.[0-9]+)s", line)
+            match = re.match(r"cputime=([0-9]+\.[0-9]+)s", line)
             if match:
                 return float(match.group(1))
         return execution_info.cpu_time
@@ -426,7 +424,7 @@ class IsolatingRunner(CoverageMeasuringExecutionRunner):
     @staticmethod
     def _get_walltime(execution_info) -> float:
         for line in reversed(execution_info.stdout.split("\n")):
-            match = re.match("walltime=([0-9]+\.[0-9]+)s", line)
+            match = re.match(r"walltime=([0-9]+\.[0-9]+)s", line)
             if match:
                 return float(match.group(1))
         return execution_info.wall_time
