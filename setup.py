@@ -3,7 +3,7 @@
 import re
 from setuptools import setup
 
-with open('suite_validation/__init__.py') as inp:
+with open('suite_validation/_tool_info.py') as inp:
     VERSION = re.search(r'^__VERSION__\s*=\s*[\"\'](.*)[\"\']', inp.read(),
                         re.M).group(1)
 

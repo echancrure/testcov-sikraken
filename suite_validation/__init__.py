@@ -23,15 +23,9 @@ import os
 import re
 from suite_validation import execution
 from suite_validation import execution_utils as eu
-from suite_validation import coverage as cov
 from suite_validation import reduction_strategy as rs
-from suite_validation import metadata_utils
 from suite_validation import writer as suite_writer
-
-__VERSION__ = "v3.0-16-g689dd44"
-
-__NAME__ = "testcov"
-
+from suite_validation import _tool_info
 
 RESULTS_NAME = "results"
 REDUCED_TESTSUITE_NAME = "reduced-suite.zip"
@@ -48,10 +42,12 @@ class IllegalArgumentError(Exception):
 
 def get_parser():
     parser = argparse.ArgumentParser(
-        prog=__NAME__, formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        prog=_tool_info.__NAME__, formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
-    parser.add_argument("--version", "-v", action="version", version=__VERSION__)
+    parser.add_argument(
+        "--version", "-v", action="version", version=_tool_info.__VERSION__
+    )
 
     parser.add_argument(
         "--goal",

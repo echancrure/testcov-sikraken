@@ -5,7 +5,7 @@ import os
 import zipfile
 import shutil
 import numpy as np
-import suite_validation
+from suite_validation import _tool_info
 from suite_validation import metadata_utils
 from suite_validation import execution
 
@@ -64,7 +64,7 @@ def write_tests_to_suite(
 
 
 def _create_metadata(origin_suite: str, program_file: str, coverage_goal: str) -> str:
-    producer = " ".join([suite_validation.__NAME__, suite_validation.__VERSION__])
+    producer = " ".join([_tool_info.__NAME__, _tool_info.__VERSION__])
     return metadata_utils.create_for_reduced(
         origin_suite, producer, program_file, coverage_goal
     )
