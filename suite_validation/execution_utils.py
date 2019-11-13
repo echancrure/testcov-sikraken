@@ -19,7 +19,6 @@ import logging
 import subprocess
 import time
 from typing import List
-import psutil
 
 ERROR_STRING = "Error found."
 
@@ -196,7 +195,7 @@ def execute(command, quiet=False, input_str=None, timelimit=None):
     log_cmd(" ".join(command))
 
     wall_time_start = time.perf_counter()
-    process = psutil.Popen(
+    process = subprocess.Popen(
         command,
         stdin=subprocess.PIPE if input_str else None,
         stdout=subprocess.PIPE,
