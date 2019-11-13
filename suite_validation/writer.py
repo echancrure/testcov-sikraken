@@ -30,7 +30,7 @@ from suite_validation import execution
 
 # Constants for csv output
 DELIMITER_TEST_COVERAGES = ";"
-HEADER_ID = "#"
+HEADER_ID = "id"
 HEADER_TEST = "Test"
 HEADER_COVERAGE_INDIVIDUAL = "Coverage (individual)"
 HEADER_COVERAGE_SEQUENCE = "Coverage (accumulated)"
