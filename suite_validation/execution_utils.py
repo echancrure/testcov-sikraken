@@ -221,7 +221,10 @@ def execute(command, quiet=False, input_str=None, timelimit=None):
     wall_time = time.perf_counter() - wall_time_start
 
     # We decode output, but we can't decode error output, since it may contain undecodable bytes.
-    output = output.decode() if output else ""
+    try:
+        output = output.decode() if output else ""
+    except UnicodeDecodeError:
+        pass  # fail silently, continue with encoded output
 
     if output:
         logging.debug("Output of execution:\n%s", output)
