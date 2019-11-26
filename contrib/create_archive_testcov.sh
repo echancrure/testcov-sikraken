@@ -2,6 +2,10 @@
 set -eao pipefail
 IFS=$'\t\n'
 
+if ! git diff --quiet; then
+  echo "Archive directory is dirty. Please commit pending changes and then re-run this script."
+  false
+fi
 DIRNAME="$(dirname "$(readlink -f "$0")")/.."
 VERSION=$(git describe --always --dirty)
 TMPDIR=$(mktemp -d)
