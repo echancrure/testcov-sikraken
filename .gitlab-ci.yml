@@ -16,6 +16,11 @@ variables:
       - coverage.xml
       - cover
 
+.integration-tests: &integration-tests
+    stage: test
+    script:
+        - bin/testcov --verbose --test-suite test/suites/suite-invalid-unicode.zip test/test_invalid_unicode.c --goal contrib/goal_files/coverage-branches.prp --no-isolation
+
 pylint:
   stage: test
   script:
@@ -37,6 +42,16 @@ unit-tests:python-3.6:
 
 unit-tests:python-3.7:
   <<: *unit-tests
+  variables:
+    PYTHON_VERSION: '3.7'
+
+integration-tests:python-3.6:
+  <<: *integration-tests
+  variables:
+    PYTHON_VERSION: '3.6'
+
+integration-tests:python-3.7:
+  <<: *integration-tests
   variables:
     PYTHON_VERSION: '3.7'
 
