@@ -20,6 +20,7 @@ variables:
     stage: test
     script:
         - bin/testcov --verbose --test-suite test/suites/suite-invalid-unicode.zip test/test_invalid_unicode.c --goal contrib/goal_files/coverage-branches.prp --no-isolation
+        - bin/testcov --verbose --test-suite test/suites/suite-invalid-unicode-test.zip test/test_invalid_unicode.c --goal contrib/goal_files/coverage-branches.prp --no-isolation
 
 pylint:
   stage: test
