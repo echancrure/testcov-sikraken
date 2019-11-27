@@ -35,6 +35,20 @@ check-format:
   variables:
     PYTHON_VERSION: '3.7'
 
+check-archive:
+    stage: test
+    # Use docker image without dependencies installed
+    # - these should be included in the archive and used correctly
+    image: ${CI_REGISTRY_IMAGE}/test:plain
+    # Archive testcov and run a simple test case on the archived version to check that it is working as expected
+    script:
+        - "./contrib/create_archive_testcov.sh"
+        - cd /tmp && unzip "$CI_PROJECT_DIR/testcov.zip" && cd -
+        - cd /tmp/testcov && ./bin/testcov --no-isolation --verbose --test-suite "$CI_PROJECT_DIR/test/suites/suite-valid.zip" --goal "$CI_PROJECT_DIR/contrib/goal_files/coverage-error-call.prp" "$CI_PROJECT_DIR/test/test_false.c"
+    artifacts:
+        paths:
+            - testcov.zip
+
 unit-tests:python-3.6:
   <<: *unit-tests
   variables:

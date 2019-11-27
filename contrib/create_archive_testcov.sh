@@ -16,7 +16,7 @@ ln -s "$DIRNAME" testcov
 cd testcov
 EGGDIR=$(mktemp -d)
 python3 setup.py egg_info -e "$EGGDIR"
-pip install --target lib -r "$EGGDIR/testcov.egg-info/requires.txt"
+python3 -m pip install --target lib -r "$EGGDIR/testcov.egg-info/requires.txt"
 rm -r "$EGGDIR"
 mkdir -p testcov/lib/bin
 cp $(which lcov) testcov/lib/bin
