@@ -21,6 +21,7 @@ import argparse
 import logging
 import os
 import re
+from typing import Tuple
 from suite_validation import execution
 from suite_validation import execution_utils as eu
 from suite_validation import reduction_strategy as rs
@@ -234,19 +235,20 @@ def parse_coverage_goal_file(goal_file: str) -> str:
     return eu.COVERAGE_GOALS[goal]
 
 
-def _print_execution_results(exec_results, goal, error_occurred: bool):
+def _decide_execution_result(exec_results, goal, error_occurred: bool) -> Tuple[str, int]:
+    """ Checks test-execution results and prepares the results string/return code."""
+    results_output = ["---Results---", "Tests run: {}".format(len(exec_results.results))]
     coverage = exec_results.coverage_total
-    print("---Results---")
-    print("Tests run:", len(exec_results.results))
     if not coverage:
-        print("No coverage information available")
+        results_output.append("No coverage information available")
     else:
-        print("Coverage: {}%".format(coverage.hits_percent))
-        print("Number of goals: {}".format(coverage.count_total))
+        results_output.append("Coverage: {}%".format(coverage.hits_percent))
+        results_output.append("Number of goals: {}".format(coverage.count_total))
 
     if goal != eu.COVER_ERRORS:
         if any(r == eu.ABORTED for r in exec_results.results):
             verdict = VERDICT_UNKNOWN
+            return_code = 1
         else:
             verdict = VERDICT_DONE
     else:
@@ -259,7 +261,14 @@ def _print_execution_results(exec_results, goal, error_occurred: bool):
             verdict = VERDICT_ERROR + " ({})".format(verdict)
         else:
             verdict = VERDICT_ERROR
-    print("Result:", verdict)
+    results_output.append("Result: {}".format(verdict))
+    results_str = "\n".join(results_output)
+
+    if verdict not in (VERDICT_DONE, VERDICT_TRUE):
+        return_code = 1
+    else:
+        return_code = 0
+    return results_str, return_code
 
 
 def main():
@@ -281,6 +290,7 @@ def main():
     reduce_tests = args.reduce_tests
 
     error_occurred = False
+    return_code = None
     try:
         executor = execution.SuiteExecutor(
             args.goal,
@@ -340,5 +350,7 @@ def main():
             except ImportError as e:
                 logging.warning("Not plotting coverage statistics: %s", e.msg)
 
+        results_str, return_code = _decide_execution_result(exec_results, args.goal, error_occurred)
         print()
-        _print_execution_results(exec_results, args.goal, error_occurred)
+        print(results_str)
+    return return_code
