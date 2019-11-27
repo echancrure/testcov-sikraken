@@ -228,8 +228,8 @@ class ExecutionRunner:
         with open(harness_file, "w+") as outp:
             outp.write(harness_content)
         self.harness_file = (
-            harness_file
-        )  # set this only after successfully writing the harness
+            harness_file  # set this only after successfully writing the harness
+        )
 
         output_file = self._compile_target
         return self.compile(program_file, harness_file, output_file)

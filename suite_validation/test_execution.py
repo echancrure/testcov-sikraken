@@ -804,7 +804,10 @@ class TestCoverageChecker:
         total_test_coverage = cov.TestCoverage.merge(
             self.bad_test_coverages[goal], self.perfect_test_coverages[goal]
         )
-        first_extends_second, second_extends_first = total_test_coverage.coverage.compute_coverage_relation(
+        (
+            first_extends_second,
+            second_extends_first,
+        ) = total_test_coverage.coverage.compute_coverage_relation(
             self.perfect_test_coverages[goal].coverage
         )
         eq_(first_extends_second, 0.0)

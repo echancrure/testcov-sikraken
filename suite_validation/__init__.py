@@ -235,9 +235,14 @@ def parse_coverage_goal_file(goal_file: str) -> str:
     return eu.COVERAGE_GOALS[goal]
 
 
-def _decide_execution_result(exec_results, goal, error_occurred: bool) -> Tuple[str, int]:
+def _decide_execution_result(
+    exec_results, goal, error_occurred: bool
+) -> Tuple[str, int]:
     """ Checks test-execution results and prepares the results string/return code."""
-    results_output = ["---Results---", "Tests run: {}".format(len(exec_results.results))]
+    results_output = [
+        "---Results---",
+        "Tests run: {}".format(len(exec_results.results)),
+    ]
     coverage = exec_results.coverage_total
     if not coverage:
         results_output.append("No coverage information available")
@@ -350,7 +355,9 @@ def main():
             except ImportError as e:
                 logging.warning("Not plotting coverage statistics: %s", e.msg)
 
-        results_str, return_code = _decide_execution_result(exec_results, args.goal, error_occurred)
+        results_str, return_code = _decide_execution_result(
+            exec_results, args.goal, error_occurred
+        )
         print()
         print(results_str)
     return return_code

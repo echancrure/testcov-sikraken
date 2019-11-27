@@ -33,7 +33,7 @@ class ReductionStrategyError(Exception):
 
 
 def no_reduction(
-    individual_coverages: List[cov.TestCoverage]
+    individual_coverages: List[cov.TestCoverage],
 ) -> List[cov.TestCoverage]:
     """
     If reduction is switched off, an empty list is returned.
@@ -45,7 +45,7 @@ def no_reduction(
 
 
 def naive_reduction(
-    individual_coverages: List[cov.TestCoverage]
+    individual_coverages: List[cov.TestCoverage],
 ) -> List[cov.TestCoverage]:
     """
     Finds a list of reduced individual test coverages. Processes the list in sequence. An
@@ -73,7 +73,7 @@ def naive_reduction(
 
 
 def furthest_diff_reduction(
-    individual_coverages: List[cov.TestCoverage]
+    individual_coverages: List[cov.TestCoverage],
 ) -> List[cov.TestCoverage]:
     """
     Finds a list of reduced individual tests by computing a total test coverage that is as effective as

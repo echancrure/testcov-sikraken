@@ -258,9 +258,10 @@ class _ConditionsCoverage(_CoverageComparable):
             if e1.same_program_line(e2)
         )
         for conditions_self, conditions_other in entries_per_line:
-            current_only_self, current_only_other = conditions_self.compute_coverage_relation(
-                conditions_other
-            )
+            (
+                current_only_self,
+                current_only_other,
+            ) = conditions_self.compute_coverage_relation(conditions_other)
             conditions_only_covered_by_self += current_only_self
             conditions_only_covered_by_other += current_only_other
         if self.count_total == 0:
