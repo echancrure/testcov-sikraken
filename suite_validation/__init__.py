@@ -245,7 +245,10 @@ def _print_execution_results(exec_results, goal, error_occurred: bool):
         print("Number of goals: {}".format(coverage.count_total))
 
     if goal != eu.COVER_ERRORS:
-        verdict = VERDICT_DONE
+        if any(r == eu.ABORTED for r in exec_results.results):
+            verdict = VERDICT_UNKNOWN
+        else:
+            verdict = VERDICT_DONE
     else:
         if any(r == eu.COVERS for r in exec_results.results):
             verdict = VERDICT_TRUE
