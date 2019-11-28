@@ -21,6 +21,7 @@ import logging
 import re
 import os
 import sys
+import tempfile
 import zipfile
 
 import xml.etree.ElementTree as etree
@@ -541,10 +542,12 @@ class SuiteExecutor:
         branch_label_line_numbers = None
 
         if self._goal in [eu.COVER_BRANCHES, eu.COVER_ERRORS]:
-            # Beware! Overwrites program_file parameter
-            program_file, branch_label_line_numbers = tr.instrument_program(
-                program_file
+            instrumented_program_file = self._get_instrumented_file_name(program_file)
+            branch_label_line_numbers = tr.instrument_program(
+                program_file, instrumented_program_file
             )
+            # Beware! Overwrites program_file parameter
+            program_file = instrumented_program_file
 
         if self._isolate_tests:
             executor = IsolatingRunner(
@@ -583,6 +586,12 @@ class SuiteExecutor:
         self._execute_tests(program_file, test_vectors, executor, result_target)
 
         return result_target
+
+    @staticmethod
+    def _get_instrumented_file_name(original_file) -> str:
+        filename = os.path.basename(original_file)
+        tmp_dir = tempfile.mkdtemp(prefix="testcov-")
+        return os.path.join(tmp_dir, "instrumented_" + filename)
 
     @staticmethod
     def _check_metadata(metadata, machine_model) -> None:
