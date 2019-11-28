@@ -18,6 +18,7 @@ RUN python3.7 -m pip install -U pip && python3.7 -m pip install \
   black \
   benchexec \
   matplotlib \
-  numpy
+  numpy \
+  pycparser
 
 RUN rm -f /usr/bin/python3 /usr/bin/python && ln -s /usr/bin/python3.7 /usr/bin/python3 && ln -s /usr/bin/python3 /usr/bin/python

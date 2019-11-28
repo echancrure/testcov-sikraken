@@ -63,6 +63,8 @@ class _CoverageComparable:
     value represents the ratio of the measured unit (for instance line coverage) that the class object covers but that
     is not covered by the other object. The second value represents the ratio of the measured unit that the other object
     covers but is not covered by the class object.
+    Moreover, an instance of a class that implements CoverageComparable must be mergable with another instance of the
+    same class.
     """
 
     __metaclass__ = ABCMeta
@@ -128,7 +130,7 @@ class _CoverageComparable:
 class ConditionsEntry:
     """
     An instance of ConditionsEntry has a dictionary with indices as keys to address the conditions and counter numbers
-    as corresponding values which say how often the conditions have been hit. Moreover an instance has a program line
+    as corresponding values which say how often the conditions have been hit. Moreover, an instance has a program line
     to relate to the program where the conditions appear. Note that ConditionsEntry does not implement
     CoverageComparable.
     An instance of ConditionsEntry is fully covered when each indices has a corresponding counter value that is greater
@@ -355,50 +357,31 @@ class _LinesCoverage(_CoverageComparable):
 
 class _BranchesCoverage(_CoverageComparable):
     """
-    Contains a dictionary with program lines as keys and two-element lists with booleans as values. For each program
-    line a corresponding list exists to state whether branch one and whether branch two are hit.
-    Note that the values can be wrong because getting branch coverage with lcov does NOT WORK so far!
-    If there will be a solution later to fix this issue it might be interesting to store how often the branches
-    have been taken and not only whether they have been taken. In consequence, this class might be refactored.
-
-    Two-element list 'value' at a certain program line:
-    # value[0] == False and value[1] == False: This coverage is not possible
-    # value[0] == False and value[1] == True: Only "if" branch executed
-    # value[0] == True and value[1] == False: only "else" branch executed
-    # value[0] == True and value[1] == True: "if" branch and "else" branch executed
+    Contains a dictionary with line numbers as keys which correspond to the appearance of inserted branch labels in the
+    rewritten C program. As values the hit numbers of these branch label line numbers are stored.
+    Full coverage is satisfied when each line number is hit at least once.
     """
 
-    def __init__(self, branches_hit_counter: Dict[int, List[bool]]):
+    def __init__(self, branches_hit_counter: Dict[int, int]):
         self.branches_hit_counter = branches_hit_counter
 
     @property
     def count_total(self):
-        return len(self.branches_hit_counter) * 2
+        return len(self.branches_hit_counter)
 
     @property
     def hits(self):
-        hit = 0
-        for value in self.branches_hit_counter.values():
-            # hit is increased with two when both branches are executed
-            if value[0]:
-                hit += 1
-            if value[1]:
-                hit += 1
-        return hit
+        return len([v for v in self.branches_hit_counter.values() if v > 0])
 
     @property
     def relevant_program_lines(self):
         return self.branches_hit_counter.keys()
 
     def merge(self, cov: "BranchesCoverage") -> "BranchesCoverage":
-        summarized_branches_coverage = {}
-        for line in self.relevant_program_lines:
-            summarized_branches_coverage[line] = [False, False]
-            for i in (0, 1):
-                summarized_branches_coverage[line][i] = (
-                    self.branches_hit_counter[line][i]
-                    or cov.branches_hit_counter[line][i]
-                )
+        summarized_branches_coverage = {
+            l: self.branches_hit_counter[l] + cov.branches_hit_counter[l]
+            for l in self.relevant_program_lines
+        }
         return _BranchesCoverage(summarized_branches_coverage)
 
     def compute_coverage_relation(
@@ -407,15 +390,11 @@ class _BranchesCoverage(_CoverageComparable):
         number_branches_taken_only_self = 0
         number_branches_taken_only_other = 0
         for program_line in self.relevant_program_lines:
-            branches_taken_self = self.branches_hit_counter[program_line]
-            branches_taken_other = other.branches_hit_counter[program_line]
-            if branches_taken_self[0] <= 0 < branches_taken_other[0]:
+            branch_taken_self = self.branches_hit_counter[program_line]
+            branch_taken_other = other.branches_hit_counter[program_line]
+            if branch_taken_self <= 0 < branch_taken_other:
                 number_branches_taken_only_other += 1
-            if branches_taken_other[0] <= 0 < branches_taken_self[0]:
-                number_branches_taken_only_self += 1
-            if branches_taken_self[1] <= 0 < branches_taken_other[1]:
-                number_branches_taken_only_other += 1
-            if branches_taken_other[1] <= 0 < branches_taken_self[1]:
+            if branch_taken_other <= 0 < branch_taken_self:
                 number_branches_taken_only_self += 1
         return (
             float(number_branches_taken_only_self) / float(self.count_total),
@@ -423,15 +402,13 @@ class _BranchesCoverage(_CoverageComparable):
         )
 
     def is_program_line_covered(self, pl):
-        return pl in self.relevant_program_lines and all(self.branches_hit_counter[pl])
+        return pl in self.relevant_program_lines and self.branches_hit_counter[pl] > 0
 
     def is_coverage_for_program_line_extended(
         self, other: "BranchesCoverage", pl
     ) -> bool:
-        branch_taken_self = self.branches_hit_counter[pl]
-        branch_taken_other = other.branches_hit_counter[pl]
-        return (not branch_taken_self[0] and branch_taken_other[0]) or (
-            not branch_taken_self[1] and branch_taken_other[1]
+        return not self.is_program_line_covered(pl) and other.is_program_line_covered(
+            pl
         )
 
 
@@ -516,10 +493,30 @@ def remove_prefix(line, prefix):
     return line[len(prefix) :]
 
 
+def _examine_line_with_counter(
+    line_with_counter,
+    lines_hit_counter,
+    branches_hit_counter,
+    branch_label_line_numbers,
+):
+
+    chunks = line_with_counter.split(",")
+    assert len(chunks) == 2
+    program_line = int(chunks[0])
+    hit_counter = int(chunks[1])
+
+    # -> LINE COVERAGE
+    lines_hit_counter[program_line] = hit_counter
+
+    # -> BRANCH COVERAGE
+    # if we do have line numbers of branch labels from the transformer process then we are interested
+    # in getting the branch coverage
+    if branch_label_line_numbers and program_line in branch_label_line_numbers:
+        branches_hit_counter[program_line] = hit_counter
+
+
 def _examine_line_with_condition(
-    line_with_condition_info,
-    branch_condition_hit_counter_dic,
-    conditions_entries: List[ConditionsEntry],
+    line_with_condition_info, conditions_entries: List[ConditionsEntry]
 ):
     chunks = line_with_condition_info.split(",")
     # chunks should be [program_line, block-number, branch-number, taken]
@@ -540,40 +537,9 @@ def _examine_line_with_condition(
     else:
         number_of_condition_taken = int(number_of_condition_taken)
 
-    _append_to_branch_coverage(
-        branch_condition_hit_counter_dic,
-        program_line,
-        condition_index,
-        number_of_condition_taken,
-    )
     _append_to_conditions_entries(
         conditions_entries, program_line, condition_index, number_of_condition_taken
     )
-
-
-# Not working with lcov so far
-def _append_to_branch_coverage(
-    branch_hit_counter: Dict, program_line, condition_index, number_of_condition_taken
-):
-    """
-    Currently this method delivers wrong branch coverages because lcov does not provide a pattern in its trace files
-    which we can use to find out which branch is taken when looking at the conditions.
-    :param branch_hit_counter:
-    :param program_line: the program line where this branching appears
-    :param condition_index:  a unique value to address the condition
-    :param number_of_condition_taken: the number how often the condition is taken
-    :return:
-    """
-    if program_line not in branch_hit_counter.keys():
-        branch_hit_counter[program_line] = [False, False]
-    if number_of_condition_taken >= 1:
-        # a branch is fully executed when at least the condition is one time satisfied and one time not
-        # branch number even when condition not satisfied
-        # branch number odd when condition satisfied
-        if condition_index % 2 == 0:
-            branch_hit_counter[program_line][0] = True
-        else:
-            branch_hit_counter[program_line][1] = True
 
 
 def _append_to_conditions_entries(
@@ -603,15 +569,26 @@ def _append_to_conditions_entries(
 
 
 def get_coverage_from_tracefile(
-    program_name, trace_file, test_vector, next_result, coverage_goal
+    program_name,
+    trace_file,
+    test_vector,
+    next_result,
+    coverage_goal,
+    branch_label_line_numbers=None,
 ) -> TestCoverage:
+
+    # Variables are filled by reading the trace file. After reading is finished these variables are
+    # used to build the test coverage
     lines_hit_counter_dic = {}
+    branches_hit_counter_dic = {}
+
+    # Values can be read directly from the trace file and are only used for assertion checks
     lines_hit = 0
     lines_found = 0
-    branches_hit_counter = {}
     conditions_taken = 0
     conditions_found = 0
     conditions_entries = []
+
     if os.path.exists(trace_file):
         lcov_sector = LcovSector.BEFORE_TEST_RECORD.value
         with open(trace_file) as file:
@@ -630,13 +607,12 @@ def get_coverage_from_tracefile(
                     if line.startswith(
                         LcovPrefix.BRANCH_LINE_CONDITION_HIT_COUNTER.value
                     ):
-                        branch_line_information = remove_prefix(
+                        line_with_condition_information = remove_prefix(
                             line, LcovPrefix.BRANCH_LINE_CONDITION_HIT_COUNTER.value
                         )
+                        # -> CONDITION COVERAGE
                         _examine_line_with_condition(
-                            branch_line_information,
-                            branches_hit_counter,
-                            conditions_entries,
+                            line_with_condition_information, conditions_entries
                         )
                     elif line.startswith(LcovPrefix.CONDITIONS_FOUND.value):
                         conditions_found = int(
@@ -647,13 +623,18 @@ def get_coverage_from_tracefile(
                             remove_prefix(line, LcovPrefix.CONDITIONS_TAKEN.value)
                         )
                     elif line.startswith(LcovPrefix.LINE_HIT_COUNTER.value):
-                        line_with_counter = remove_prefix(
+                        line_with_hit_counter = remove_prefix(
                             line, LcovPrefix.LINE_HIT_COUNTER.value
                         )
-                        chunks = line_with_counter.split(",")
-                        # chunks should be [program-line, hit-counter]
-                        assert len(chunks) == 2
-                        lines_hit_counter_dic[int(chunks[0])] = int(chunks[1])
+                        # -> LINE COVERAGE
+                        # -> BRANCH COVERAGE
+                        _examine_line_with_counter(
+                            line_with_hit_counter,
+                            lines_hit_counter_dic,
+                            branches_hit_counter_dic,
+                            branch_label_line_numbers,
+                        )
+
                     elif line.startswith(LcovPrefix.LINES_FOUND.value):
                         lines_found = int(
                             remove_prefix(line, LcovPrefix.LINES_FOUND.value)
@@ -681,7 +662,13 @@ def get_coverage_from_tracefile(
         assert lines_hit == coverage.hits
         assert lines_found == coverage.count_total
     elif coverage_goal is eu.COVER_BRANCHES:
-        coverage = _BranchesCoverage(branches_hit_counter)
+        if branch_label_line_numbers is None:
+            coverage = None
+            branches_hit_counter_dic = None
+        else:
+            # Branch coverage is the goal. However, the line numbers with branch labels can be empty
+            # when there exist no branches in the program
+            coverage = _BranchesCoverage(branches_hit_counter_dic)
     elif coverage_goal is eu.COVER_CONDITIONS:
         coverage = _ConditionsCoverage(conditions_entries)
         assert conditions_found == coverage.count_total
@@ -699,6 +686,7 @@ def compute_test_coverage(
     test_vector,
     next_result,
     coverage_goal,
+    branch_label_line_numbers=None,
     gcov_tool="gcov",
 ) -> TestCoverage:
     if os.path.exists(data_file):
@@ -713,7 +701,12 @@ def compute_test_coverage(
         eu.execute(cmd, quiet=True)
         if os.path.exists(output_tracefile):
             test_coverage = get_coverage_from_tracefile(
-                program_name, output_tracefile, test_vector, next_result, coverage_goal
+                program_name,
+                output_tracefile,
+                test_vector,
+                next_result,
+                coverage_goal,
+                branch_label_line_numbers,
             )
             return test_coverage
     raise CoverageCreationError("Trace file '%s' not created." % output_tracefile)

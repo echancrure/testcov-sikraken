@@ -24,6 +24,7 @@ but can also be installed manually (e.g., through `pip`):
 * lxml >= 4.0
 * numpy >= 1.15
 * BenchExec >= 1.20
+* pycparser >= 2.19
 
 Older versions of GCC can be used, but may mistakenly mark the last else-branch of a program
 as covered, even it if wasn't. We thus recommend to use gcc version 8.0 or later.

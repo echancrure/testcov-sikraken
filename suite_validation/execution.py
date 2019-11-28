@@ -29,6 +29,7 @@ from suite_validation import execution_utils as eu
 from suite_validation import coverage as cov
 from suite_validation import metadata_utils as mu
 from suite_validation import reduction_strategy as rs
+from suite_validation import transformer as tr
 
 HARNESS_FILE_NAME = "harness.c"
 HARNESS_GCDA_FILE = "harness.gcda"
@@ -282,6 +283,7 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
         machine_model,
         timelimit_per_run,
         goal,
+        branch_label_line_numbers,
         harness_file_target="harness.c",
         compile_target="a.out",
         compiler="gcc",
@@ -294,6 +296,7 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
             compiler,
         )
         self._goal = goal
+        self._branch_label_line_numbers = branch_label_line_numbers
         self._data_file = self._get_data_file()
 
     @staticmethod
@@ -325,12 +328,21 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
     def run(self, program_file, test_vector: eu.TestVector) -> eu.TestResult:
         result = super().run(program_file, test_vector)
         result.coverage = self.compute_coverage(
-            program_file, test_vector, result, self._goal
+            program_file,
+            test_vector,
+            result,
+            self._goal,
+            self._branch_label_line_numbers,
         )
         return result
 
     def compute_coverage(
-        self, program_file, test_vector, next_result, coverage_goal
+        self,
+        program_file,
+        test_vector,
+        next_result,
+        coverage_goal,
+        branch_label_line_numbers=None,
     ) -> cov.TestCoverage:
         program_name = _get_program_name(program_file)
         if self.harness_file and os.path.exists(self._get_data_file()):
@@ -342,6 +354,7 @@ class CoverageMeasuringExecutionRunner(ExecutionRunner):
                 test_vector,
                 next_result,
                 coverage_goal,
+                branch_label_line_numbers,
             )
 
         logging.info(
@@ -356,6 +369,7 @@ class IsolatingRunner(CoverageMeasuringExecutionRunner):
         machine_model,
         timelimit_per_run,
         goal,
+        branch_label_line_numbers,
         harness_file_target="harness.c",
         compile_target="a.out",
         memlimit=None,
@@ -366,6 +380,7 @@ class IsolatingRunner(CoverageMeasuringExecutionRunner):
             machine_model,
             timelimit_per_run if not use_runexec else None,
             goal,
+            branch_label_line_numbers,
             harness_file_target,
             compile_target,
         )
@@ -523,11 +538,20 @@ class SuiteExecutor:
         if result_target is None:
             result_target = eu.SuiteExecutionResult()
 
+        branch_label_line_numbers = None
+
+        if self._goal in [eu.COVER_BRANCHES, eu.COVER_ERRORS]:
+            # Beware! Overwrites program_file parameter
+            program_file, branch_label_line_numbers = tr.instrument_program(
+                program_file
+            )
+
         if self._isolate_tests:
             executor = IsolatingRunner(
                 machine_model,
                 self._timelimit,
                 self._goal,
+                branch_label_line_numbers,
                 self._harness_file_target,
                 self._compile_target,
                 self._memlimit,
@@ -539,6 +563,7 @@ class SuiteExecutor:
                 machine_model,
                 self._timelimit,
                 self._goal,
+                branch_label_line_numbers,
                 self._harness_file_target,
                 self._compile_target,
             )
@@ -652,6 +677,7 @@ class SuiteExecutor:
 
         try:
             print("⏳ Executing tests.", file=self._info_target, end="", flush=True)
+
             for tv in test_vectors:
                 result_target.tests.append(tv)
                 next_result = executor.run(program_file, tv)
