@@ -11,11 +11,12 @@ project_dir = script.parent.parent
 module_dir = project_dir
 lib_dir = project_dir / "lib"
 bin_dir = project_dir / "bin"
+binary_lib_dir = lib_dir / "bin"
 
 sys.path.insert(0, str(module_dir))
 sys.path.append(str(lib_dir))
 
-os.environ["PATH"] += os.pathsep + str(bin_dir)
+os.environ["PATH"] += os.pathsep + str(bin_dir) + os.pathsep + str(binary_lib_dir)
 
 import suite_validation
 
