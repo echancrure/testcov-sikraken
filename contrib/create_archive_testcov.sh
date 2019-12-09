@@ -18,8 +18,8 @@ EGGDIR=$(mktemp -d)
 python3 setup.py egg_info -e "$EGGDIR"
 python3 -m pip install --target lib -r "$EGGDIR/testcov.egg-info/requires.txt"
 rm -r "$EGGDIR"
-mkdir -p testcov/lib/bin
-cp $(which lcov) testcov/lib/bin
+mkdir -p "${DIRNAME}"/lib/bin
+cp $(which lcov) "${DIRNAME}"/lib/bin
 )
 # Set version number
 find testcov/suite_validation -name '*.py' -exec sed -i "s/\(__VERSION__\s*=\s*\).*/\1\"$VERSION\"/" '{}' +
