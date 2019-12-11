@@ -253,7 +253,6 @@ def _decide_execution_result(
     if goal != eu.COVER_ERRORS:
         if any(r == eu.ABORTED for r in exec_results.results):
             verdict = VERDICT_UNKNOWN
-            return_code = 1
         else:
             verdict = VERDICT_DONE
     else:
@@ -269,7 +268,7 @@ def _decide_execution_result(
     results_output.append("Result: {}".format(verdict))
     results_str = "\n".join(results_output)
 
-    if verdict not in (VERDICT_DONE, VERDICT_TRUE):
+    if verdict.startswith(VERDICT_ERROR):
         return_code = 1
     else:
         return_code = 0
