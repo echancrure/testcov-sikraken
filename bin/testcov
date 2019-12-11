@@ -7,7 +7,7 @@ import pathlib
 sys.dont_write_bytecode = True
 
 script = pathlib.Path(__file__).resolve()
-project_dir = script.parent.parent
+project_dir = script.parent.parent.absolute()
 module_dir = project_dir
 lib_dir = project_dir / "lib"
 bin_dir = project_dir / "bin"
@@ -16,6 +16,11 @@ binary_lib_dir = lib_dir / "bin"
 sys.path.insert(0, str(module_dir))
 sys.path.append(str(lib_dir))
 
+if "PYTHONPATH" not in os.environ:
+    os.environ["PYTHONPATH"] = ""
+os.environ["PYTHONPATH"] += os.pathsep + str(
+    lib_dir
+)  # necessary so subprocesses also use libraries
 os.environ["PATH"] += os.pathsep + str(bin_dir) + os.pathsep + str(binary_lib_dir)
 
 import suite_validation
