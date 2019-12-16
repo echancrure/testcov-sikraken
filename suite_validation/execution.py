@@ -248,7 +248,7 @@ class ExecutionRunner:
                 input_str=input_vector,
                 timelimit=self.timelimit,
             )
-            if eu.found_err(run_result):
+            if eu.found_err(run_result.stderr):
                 logging.debug("Error found for test %s", test_vector)
                 return eu.TestResult(eu.COVERS, run_result)
             if run_result.got_aborted:
@@ -389,6 +389,9 @@ class IsolatingRunner(CoverageMeasuringExecutionRunner):
         self._timelimit = timelimit_per_run
         self._cpu_cores = cores
         self._use_runexec = use_runexec
+        tempdir = tempfile.mkdtemp(prefix="testcov-")
+        self._output_log = os.path.join(tempdir, "output.log")
+        self._output_dir = "."  # necessary to be cwd for coverage computation to work
 
     def _get_execute_cmd(self, executable):
         # At the moment, this does not consider executables provided through PATH
@@ -401,7 +404,14 @@ class IsolatingRunner(CoverageMeasuringExecutionRunner):
                 resource_options += ["--timelimit", str(self._timelimit)]
             if self._cpu_cores:
                 resource_options += ["--cores", str(self._cpu_cores)]
-            cmd = ["runexec", "--container", "--input", "-"] + resource_options
+            cmd = [
+                "runexec",
+                "--container",
+                "--input",
+                "-",
+                "--output",
+                self._output_log,
+            ] + resource_options
         else:
             cmd = ["containerexec"]
         return cmd + [
@@ -412,13 +422,18 @@ class IsolatingRunner(CoverageMeasuringExecutionRunner):
             "--result-files",
             "harness.gcda",
             "--output-dir",
-            ".",
+            self._output_dir,
             "--",
             os.path.join(".", os.path.relpath(executable, start="./")),
         ]
 
     def run(self, program_file, test_vector: eu.TestVector) -> eu.TestResult:
         result = super().run(program_file, test_vector)
+        if self._use_runexec:
+            with open(self._output_log) as outp:
+                if eu.found_err(outp.read()):
+                    logging.debug("Error found for test %s", test_vector)
+                    result.verdict = eu.COVERS
         if self._use_runexec:
             result.execution_info.cpu_time = self._get_cputime(result.execution_info)
             result.execution_info.wall_time = self._get_walltime(result.execution_info)

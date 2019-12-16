@@ -240,5 +240,5 @@ def execute(command, quiet=False, input_str=None, timelimit=None):
     )
 
 
-def found_err(run_result):
-    return run_result.stderr and ERROR_STRING.encode() in run_result.stderr
+def found_err(output):
+    return output and ERROR_STRING in str(output)
