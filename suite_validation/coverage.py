@@ -691,10 +691,12 @@ def compute_test_coverage(
 ) -> TestCoverage:
     if os.path.exists(data_file):
         cmd = ["lcov", "--gcov-tool", gcov_tool]
-        if coverage_goal in [eu.COVER_CONDITIONS, eu.COVER_BRANCHES]:
+        if coverage_goal == eu.COVER_CONDITIONS:
             # add coverage information about with branch conditions were taken/evaluated.
-            # we don't use this option when computing line coverage
-            # because lcov produces wrong line coverage with old versions of gcov (<= 8)
+            # This option makes lcov pretty slow, so
+            # we only use this option when necessary
+            # for performance reasons. In addition,
+            # lcov produces wrong line coverage with old versions of gcov (<= 8)
             # if this option is used
             cmd += ["--rc", "lcov_branch_coverage=1"]
         cmd += ["-c", "-d", ".", "--no-recursion", "-o", output_tracefile]
