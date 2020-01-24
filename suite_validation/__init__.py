@@ -275,6 +275,25 @@ def _decide_execution_result(
     return results_str, return_code
 
 
+def reduce_testsuite(execution_results, reduction_strategy) -> None:
+    """
+    Creates a reduced test suite for the given execution results, insitu.
+    Puts the reduced test suite into execution_results.reduced_coverage_tests.
+    Also replaces the set of successful tests with this reduced suite.
+    """
+    if not (execution_results.coverage_tests and execution_results.coverage_total):
+        logging.debug("Can't reduce test suite because of missing coverage information")
+        return
+    execution_results.reduced_coverage_tests = rs.execute(
+        reduction_strategy, execution_results.coverage_tests[:]
+    )
+    execution_results.successful_tests = [
+        tvec
+        for tcov in execution_results.reduced_coverage_tests
+        for tvec in tcov.test_vectors
+    ]
+
+
 def main():
     args = parse()
 
@@ -291,7 +310,6 @@ def main():
     harness_file = os.path.join(args.output_dir, "harness.c")
     executable = os.path.join(args.output_dir, "a.out")
     compute_individuals = args.individual_test_cov
-    reduce_tests = args.reduce_tests
 
     error_occurred = False
     return_code = None
@@ -300,7 +318,6 @@ def main():
             args.goal,
             args.timelimit_per_run,
             compute_sequence=args.print_seq,
-            reduce_tests=reduce_tests,
             harness_file_target=harness_file,
             compile_target=executable,
             compute_individuals=compute_individuals,
@@ -317,6 +334,9 @@ def main():
             logging.warning(
                 "No test case in exchange format found in '%s'", args.test_suite
             )
+        else:
+            # Post-processing of test data
+            reduce_testsuite(exec_results, args.reduce_tests)
 
     except FileNotFoundError as e:
         logging.error(e)
@@ -325,6 +345,7 @@ def main():
         logging.error(e.msg)
         error_occurred = True
     finally:
+        # Output data
         if exec_results.successful_tests:
             suite_writer.write_tests_to_suite(
                 args.file,

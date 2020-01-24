@@ -381,7 +381,6 @@ class TestSuiteExecutor(TempDirExecutor):
         timelimit=None,
         compute_sequence=True,
         compute_individuals=True,
-        reduce_tests=rs.NO_REDUCTION,
     ):
         harness_file = _get_harness_file_target()
         compile_output_file = _get_compile_target()
@@ -393,7 +392,6 @@ class TestSuiteExecutor(TempDirExecutor):
             compute_sequence=compute_sequence,
             isolate_tests=False,
             compute_individuals=compute_individuals,
-            reduce_tests=reduce_tests,
             use_runexec=False,
         )
 
@@ -562,18 +560,19 @@ class TestSuiteExecutor(TempDirExecutor):
         strategies = [rs.BYORDER_REDUCTION, rs.FURTHEST_DIFF_REDUCTION]
         for machine_model in MACHINE_MODELS:
             for goal in eu.COVERAGE_GOALS.values():
+                runner = self.get_runner(goal)
                 for strategy in strategies:
-                    runner = self.get_runner(goal, reduce_tests=strategy)
-                    yield self._check_reduction_correct_suite_simple_if, runner, machine_model, goal
-                    yield self._check_reduction_correct_suite_simple_if_inverted, runner, machine_model, goal, strategy
+                    yield self._check_reduction_correct_suite_simple_if, runner, strategy, machine_model, goal
+                    yield self._check_reduction_correct_suite_simple_if_inverted, runner, strategy, machine_model, goal
 
     @staticmethod
-    def _check_reduction_correct_suite_simple_if(runner, machine_model, goal):
+    def _check_reduction_correct_suite_simple_if(runner, strategy, machine_model, goal):
         # the program has only one if statement (x > 0) and is fed by two different test vectors
         # the sequence of the test vectors is x:= 2, x:= -2
         result_obj: eu.SuiteExecutionResult = runner.run(
             TEST_FILE_SIMPLE_IF, SUITE_SIMPLE_IF, machine_model
         )
+        suite_validation.reduce_testsuite(result_obj, strategy)
         if goal in [eu.COVER_LINES]:
             assert len(result_obj.reduced_coverage_tests) < len(
                 result_obj.coverage_tests
@@ -619,13 +618,14 @@ class TestSuiteExecutor(TempDirExecutor):
 
     @staticmethod
     def _check_reduction_correct_suite_simple_if_inverted(
-        runner, machine_model, goal, strategy
+        runner, strategy, machine_model, goal
     ):
         # the program has one if statement (x > 0) and is fed by two different test vectors
         # the sequence of the test vectors is x:=-2, x:=2
         result_obj: eu.SuiteExecutionResult = runner.run(
             TEST_FILE_SIMPLE_IF, SUITE_SIMPLE_IF_SWAPPED, machine_model
         )
+        suite_validation.reduce_testsuite(result_obj, strategy)
         if goal in [eu.COVER_LINES]:
             if strategy == rs.FURTHEST_DIFF_REDUCTION:
                 assert len(result_obj.reduced_coverage_tests) < len(

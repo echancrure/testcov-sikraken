@@ -29,7 +29,6 @@ import xml.etree.ElementTree as etree
 from suite_validation import execution_utils as eu
 from suite_validation import coverage as cov
 from suite_validation import metadata_utils as mu
-from suite_validation import reduction_strategy as rs
 from suite_validation import transformer as tr
 
 HARNESS_FILE_NAME = "harness.c"
@@ -501,7 +500,6 @@ class SuiteExecutor:
         harness_file_target="harness.c",
         compile_target="a.out",
         compute_sequence=False,
-        reduce_tests=rs.BYORDER_REDUCTION,
         isolate_tests=True,
         compute_individuals=True,
         memlimit=None,
@@ -516,7 +514,6 @@ class SuiteExecutor:
         self._harness_file_target = harness_file_target
         self._compile_target = compile_target
         self._compute_sequence = compute_sequence
-        self._reduce_tests = reduce_tests
         self._isolate_tests = isolate_tests
         self._compute_individual_test_coverages = compute_individuals
         self._memlimit = memlimit
@@ -709,20 +706,16 @@ class SuiteExecutor:
 
                 self._record_coverage(result_target, next_result, program_file, tv)
 
-                if next_result == eu.COVERS and self._check_for_error:
+                if not self._check_for_error:
+                    # if we do not try to reach an error, every test is successful, by default
+                    result_target.successful_tests.append(tv)
+                if self._check_for_error and next_result == eu.COVERS:
                     result_target.successful_tests.append(tv)
                     logging.info("Stopping. Error found for test %s", tv)
                     break
                 print(".", file=self._info_target, end="", flush=True)
         finally:
             print("\n✔️  Done!", file=self._info_target, flush=True)  # print newline
-            if result_target.coverage_tests and result_target.coverage_total:
-                result_target.reduced_coverage_tests = rs.execute(
-                    self._reduce_tests, result_target.coverage_tests[:]
-                )
-                if not self._check_for_error:
-                    for tc in result_target.reduced_coverage_tests:
-                        result_target.successful_tests.extend(tc.test_vectors)
 
 
 def _remove_lcov_trace_file():
