@@ -26,7 +26,6 @@ from contextlib import contextmanager
 import itertools
 import logging
 import re
-import os
 from typing import List, Dict, Tuple, Set, Iterable, Optional
 import pycparser
 from pycparser import c_generator
