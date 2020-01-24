@@ -59,6 +59,14 @@ def get_parser():
     )
 
     parser.add_argument(
+        "--no-stop-on-success",
+        dest="stop_on_success",
+        action="store_false",
+        default=True,
+        help="Do not stop early if goal is cover-error and an error-call is found. This argument will always execute the full test suite (within the set limits)",
+    )
+
+    parser.add_argument(
         "--test-suite",
         dest="test_suite",
         action="store",
@@ -326,6 +334,7 @@ def main():
             use_runexec=args.use_runexec,
             isolate_tests=args.use_isolation,
             info_output=True,
+            stop_on_success=args.stop_on_success,
         )
 
         executor.run(args.file, args.test_suite, args.machine_model, exec_results)

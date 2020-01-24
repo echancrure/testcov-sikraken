@@ -506,8 +506,10 @@ class SuiteExecutor:
         cores=None,
         use_runexec=True,
         info_output=False,
+        stop_on_success=False,
     ):
         self._check_for_error = goal == eu.COVER_ERRORS
+        self._stop_on_success = stop_on_success
         self._goal = goal
         self._timelimit = timelimit_per_run
 
@@ -711,8 +713,9 @@ class SuiteExecutor:
                     result_target.successful_tests.append(tv)
                 if self._check_for_error and next_result == eu.COVERS:
                     result_target.successful_tests.append(tv)
-                    logging.info("Stopping. Error found for test %s", tv)
-                    break
+                    if self._stop_on_success:
+                        logging.info("Stopping. Error found for test %s", tv)
+                        break
                 print(".", file=self._info_target, end="", flush=True)
         finally:
             print("\n✔️  Done!", file=self._info_target, flush=True)  # print newline
