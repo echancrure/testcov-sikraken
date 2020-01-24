@@ -20,6 +20,7 @@
 import logging
 import re
 import os
+import shutil
 import sys
 import tempfile
 import zipfile
@@ -40,6 +41,7 @@ GCNO_FILE_END = ".gcno"
 
 # Contains the extractable coverage data and is stored in the cwd
 LCOV_TRACE_FILE = "current_test.info"
+INFO_FILES_DIR = "info_files"
 
 
 class ExecutionError(Exception):
@@ -507,6 +509,7 @@ class SuiteExecutor:
         use_runexec=True,
         info_output=False,
         stop_on_success=False,
+        output_dir="output",
     ):
         self._check_for_error = goal == eu.COVER_ERRORS
         self._stop_on_success = stop_on_success
@@ -526,6 +529,10 @@ class SuiteExecutor:
         ), "Conflicting arguments: Can't use runexec without isolating runs"
 
         self._info_target = sys.stderr if info_output else None
+
+        self._output_dir = output_dir
+        self._output_dir_info = os.path.join(self._output_dir, INFO_FILES_DIR)
+        os.makedirs(self._output_dir_info, exist_ok=True)
 
     def run(self, program_file, test_suite, machine_model, result_target=None):
         """Execute the given tests on the given program.
@@ -666,7 +673,7 @@ class SuiteExecutor:
                 else:
                     result_target.coverage_total = current_coverage
                 _remove_harness_gcda_file()
-                _remove_lcov_trace_file()
+                self._remove_lcov_trace_file(tv.name)
             else:
                 # No merging necessary because we never delete the gcda file.
                 # The gcda file always contains the coverage from all tests.
@@ -721,9 +728,12 @@ class SuiteExecutor:
             print("\n✔️  Done!", file=self._info_target, flush=True)  # print newline
 
 
-def _remove_lcov_trace_file():
-    if os.path.exists(LCOV_TRACE_FILE):
-        os.remove(LCOV_TRACE_FILE)
+    def _remove_lcov_trace_file(self, test_name):
+        if os.path.exists(LCOV_TRACE_FILE):
+            target = os.path.join(self._output_dir_info, test_name + ".info")
+            target_dir = os.path.dirname(target)
+            os.makedirs(target_dir, exist_ok=True)
+            shutil.move(LCOV_TRACE_FILE, target)
 
 
 def _remove_harness_gcda_file():
