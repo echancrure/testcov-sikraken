@@ -396,10 +396,19 @@ class _BranchesCoverage(_CoverageComparable):
                 number_branches_taken_only_other += 1
             if branch_taken_other <= 0 < branch_taken_self:
                 number_branches_taken_only_self += 1
-        return (
-            float(number_branches_taken_only_self) / float(self.count_total),
-            float(number_branches_taken_only_other) / float(other.count_total),
-        )
+        if self.count_total == 0:
+            own_relation = 0
+        else:
+            own_relation = float(number_branches_taken_only_self) / float(
+                self.count_total
+            )
+        if other.count_total == 0:
+            other_relation = 0
+        else:
+            other_relation = float(number_branches_taken_only_other) / float(
+                other.count_total
+            )
+        return own_relation, other_relation
 
     def is_program_line_covered(self, pl):
         return pl in self.relevant_program_lines and self.branches_hit_counter[pl] > 0
@@ -448,10 +457,12 @@ class TestCoverage:
     @property
     def hits_percent(self):
         if not self.coverage:
-            return 0
-        if self.count_total == 0:
-            return 1.0
-        return round(float(self.hits) / float(self.count_total) * 100, 2)
+            cov = 0
+        elif self.count_total == 0:
+            cov = 100
+        else:
+            cov = float(self.hits) / float(self.count_total) * 100
+        return round(cov, 2)
 
     def test_vectors_as_string(self):
         # Normally this method is called when the test coverage for an individual test is printed. If so this method
