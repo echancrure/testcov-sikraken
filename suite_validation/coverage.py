@@ -583,10 +583,10 @@ def get_coverage_from_tracefile(
     branches_hit_counter_dic = {}
 
     # Values can be read directly from the trace file and are only used for assertion checks
-    lines_hit = 0
-    lines_found = 0
-    conditions_taken = 0
-    conditions_found = 0
+    lines_hit = None
+    lines_found = None
+    conditions_taken = None
+    conditions_found = None
     conditions_entries = []
 
     if os.path.exists(trace_file):
@@ -615,10 +615,12 @@ def get_coverage_from_tracefile(
                             line_with_condition_information, conditions_entries
                         )
                     elif line.startswith(LcovPrefix.CONDITIONS_FOUND.value):
+                        assert conditions_found is None, "Two entries for 'conditions found' in tracefile"
                         conditions_found = int(
                             remove_prefix(line, LcovPrefix.CONDITIONS_FOUND.value)
                         )
                     elif line.startswith(LcovPrefix.CONDITIONS_TAKEN.value):
+                        assert conditions_taken is None, "Two entries for 'conditions hit' in tracefile"
                         conditions_taken = int(
                             remove_prefix(line, LcovPrefix.CONDITIONS_TAKEN.value)
                         )
@@ -636,10 +638,12 @@ def get_coverage_from_tracefile(
                         )
 
                     elif line.startswith(LcovPrefix.LINES_FOUND.value):
+                        assert lines_found is None, "Two entries for 'lines found' in tracefile"
                         lines_found = int(
                             remove_prefix(line, LcovPrefix.LINES_FOUND.value)
                         )
                     elif line.startswith(LcovPrefix.LINES_NONZERO_HIT_COUNTER.value):
+                        assert lines_hit is None, "Two entries for 'lines hit' in tracefile"
                         lines_hit = int(
                             remove_prefix(
                                 line, LcovPrefix.LINES_NONZERO_HIT_COUNTER.value
@@ -659,8 +663,8 @@ def get_coverage_from_tracefile(
     coverage: _CoverageComparable
     if coverage_goal in [eu.COVER_LINES, eu.COVER_ERRORS]:
         coverage = _LinesCoverage(lines_hit_counter_dic)
-        assert lines_hit == coverage.hits
-        assert lines_found == coverage.count_total
+        assert lines_hit is None or lines_hit == coverage.hits
+        assert lines_found is None or lines_found == coverage.count_total
     elif coverage_goal is eu.COVER_BRANCHES:
         if branch_label_line_numbers is None:
             coverage = None
@@ -671,8 +675,8 @@ def get_coverage_from_tracefile(
             coverage = _BranchesCoverage(branches_hit_counter_dic)
     elif coverage_goal is eu.COVER_CONDITIONS:
         coverage = _ConditionsCoverage(conditions_entries)
-        assert conditions_found == coverage.count_total
-        assert conditions_taken == coverage.hits
+        assert conditions_found is None or conditions_found == coverage.count_total
+        assert conditions_taken is None or conditions_taken == coverage.hits
     else:
         raise AssertionError("Unhandled coverage goal " + coverage_goal)
 
