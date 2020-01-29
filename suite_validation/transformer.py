@@ -165,7 +165,7 @@ def _get_nodes_reaching(cfg: CfgNode, labels: Iterable[str]) -> Iterable[CfgNode
         yield next_node
 
 
-def _get_targets(cfg: CfgNode, labels: Iterable[str]) -> Iterable[pycparser.c_ast.Node]:
+def _get_targets(cfg: CfgNode, labels: Iterable[str]) -> Iterable[CfgNode]:
     labels = set(labels)
     waitlist: List[CfgNode] = [cfg]
     del cfg  # don't use anymore
