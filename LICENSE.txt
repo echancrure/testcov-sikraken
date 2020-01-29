@@ -1,6 +1,6 @@
  *  testcov is a test-suite executor, validator and coverage measurement tool.
  *
- *  Copyright (C) 2018  Dirk Beyer
+ *  Copyright (C) 2018 - 2020  Dirk Beyer
  *  All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
