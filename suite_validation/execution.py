@@ -734,7 +734,14 @@ class SuiteExecutor:
             target = os.path.join(self._output_dir_info, test_name + ".info")
             target_dir = os.path.dirname(target)
             os.makedirs(target_dir, exist_ok=True)
-            shutil.move(LCOV_TRACE_FILE, target)
+            try:
+                shutil.move(LCOV_TRACE_FILE, target)
+            except UnicodeEncodeError as e:
+                logging.info("Can't move tracefile to %s: %s", target, e)
+                file_count = len(os.listdir(target_dir))
+                target = os.path.join(target_dir, "test" + str(file_count) + ".info")
+                logging.info("Moved tracefile to %s", target)
+                shutil.move(LCOV_TRACE_FILE, target)
 
 
 def _remove_harness_gcda_file():
