@@ -21,6 +21,7 @@ variables:
     script:
         - bin/testcov --verbose --test-suite test/suites/suite-invalid-unicode.zip test/test_invalid_unicode.c --goal contrib/goal_files/coverage-branches.prp --no-isolation
         - bin/testcov --verbose --test-suite test/suites/suite-invalid-unicode-test.zip test/test_invalid_unicode.c --goal contrib/goal_files/coverage-branches.prp --no-isolation
+        - 'bin/testcov --verbose --test-suite test/suites/suite-valid.zip test/test_false.c --goal contrib/goal_files/coverage-error-call.prp --no-isolation --no-stop-on-success && test $(ls output/info_files | wc -l) -eq 2'
 
 pylint:
   stage: test
