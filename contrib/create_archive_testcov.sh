@@ -6,6 +6,11 @@ if ! git diff --quiet; then
   echo "Archive directory is dirty. Please commit pending changes and then re-run this script."
   false
 fi
+LCOV_LOC=$(which lcov)
+GENINFO_LOC=$(which geninfo)
+[ -z $LCOV_LOC ] && echo "lcov missing on system. Please install LCOV or add it to your PATH" && false
+[ -z $GENINFO_LOC ] && echo "geninfo missing on system. Please install LCOV or add it to your PATH" && false
+
 DIRNAME="$(dirname "$(readlink -f "$0")")/.."
 VERSION=$(git describe --always --dirty)
 TMPDIR=$(mktemp -d)
