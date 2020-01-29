@@ -262,15 +262,6 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
                 vector_going_one_way
             ]
 
-    def test_get_branch_coverage_single_execution(self):
-        vector_going_one_way = eu.TestVector("vector1", "vector1.xml")
-        vector_going_one_way.add("5")
-
-        for machine_model in MACHINE_MODELS:
-            yield self._check_branch_coverage_multiple_executions, machine_model, [
-                vector_going_one_way
-            ]
-
     def test_get_condition_coverage_single_execution(self):
         vector_going_one_way = eu.TestVector("vector1", "vector1.xml")
         vector_going_one_way.add("5")
@@ -293,18 +284,6 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
                 vector_going_other_way,
             ]
 
-    def test_get_branch_coverage_multiple_executions(self):
-        vector_going_one_way = eu.TestVector("vector1", "vector1.xml")
-        vector_going_one_way.add("5")
-
-        vector_going_other_way = eu.TestVector("vector2", "vector2.xml")
-        vector_going_other_way.add("-5")
-
-        for machine_model in MACHINE_MODELS:
-            yield self._check_branch_coverage_multiple_executions, machine_model, [
-                vector_going_one_way,
-                vector_going_other_way,
-            ]
 
     def test_get_condition_coverage_multiple_executions(self):
         vector_going_one_way = eu.TestVector("vector1", "vector1.xml")
@@ -333,21 +312,6 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
             assert coverage.hits > old_line_cov, "Line coverage didn't increase"
 
             old_line_cov = coverage.hits
-
-    def _check_branch_coverage_multiple_executions(self, machine_model, vectors):
-        goal = eu.COVER_BRANCHES
-        runner = self.get_runner(machine_model, None, goal)
-        test_file = TEST_FILE_WITHOUT_ERR
-
-        old_branch_cov = 0
-        for tv in vectors:
-            result = runner.run(test_file, tv)
-            coverage = runner.compute_coverage(test_file, tv, result, goal)
-
-            assert coverage.hits > 0, "Branch coverage at 0"
-            assert coverage.hits > old_branch_cov, "Branch coverage didn't increase"
-
-            old_branch_cov = coverage.hits
 
     def _check_condition_coverage_multiple_executions(self, machine_model, vectors):
         goal = eu.COVER_CONDITIONS
