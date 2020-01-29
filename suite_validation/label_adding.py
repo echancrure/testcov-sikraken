@@ -25,7 +25,7 @@ from typing import Optional, Iterable
 import pycparser
 
 LABEL_PREFIX = "BRANCH_"
-
+GOTO_PREFIX = "goto " + LABEL_PREFIX
 
 class LabelAdder(pycparser.c_ast.NodeVisitor):
     """Add labels at each branch on the visited AST, in-situ."""
@@ -33,14 +33,12 @@ class LabelAdder(pycparser.c_ast.NodeVisitor):
     def __init__(self, optimize_labels=True):
         # del args  # not used at the moment
         self._labels = 0
-        self.added = set()
         self._optimize = optimize_labels
 
     def _get_label(self) -> pycparser.c_ast.Label:
         name = LABEL_PREFIX + str(self._labels)
         self._labels += 1
         label = pycparser.c_ast.Label(name, stmt=pycparser.c_ast.EmptyStatement())
-        # self.added.add(label)
         return label
 
     def _add_label_at_start(
@@ -50,7 +48,12 @@ class LabelAdder(pycparser.c_ast.NodeVisitor):
             if node.block_items is None:
                 node.block_items = list()
             label = self._get_label()
+            goto = pycparser.c_ast.Goto(label.name)
+
             node.block_items.insert(0, label)
+            # make sure that goto is first element of block_items,
+            # to avoid endless loop between label and goto
+            node.block_items.insert(0, goto)
             return node
 
         return self._add_label_at_start(
