@@ -551,6 +551,8 @@ class SuiteExecutor:
 
         :param str program_file: Path to program file
         :param str test_suite: Path to zip file that contains test files.
+        :param machine_model: machine model to use. Should be
+            either execution_utils.MACHINE_MODEL_32 or execution_utils.MACHINE_MODEL_64
         :param Optional[eu.SuiteExecutionResult] result_target: if set, execution results will be
             written into the given object. This allows easy access to intermediate results.
 
@@ -565,7 +567,7 @@ class SuiteExecutor:
         if self._goal in [eu.COVER_BRANCHES, eu.COVER_ERRORS]:
             instrumented_program_file = self._get_instrumented_file_name(program_file)
             branch_label_line_numbers = tr.instrument_program(
-                program_file, instrumented_program_file
+                program_file, machine_model, instrumented_program_file
             )
             # Beware! Overwrites program_file parameter
             program_file = instrumented_program_file

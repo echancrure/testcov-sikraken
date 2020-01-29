@@ -37,6 +37,8 @@ COVERAGE_GOALS = {
 MACHINE_MODEL_32 = "-m32"
 MACHINE_MODEL_64 = "-m64"
 
+COMPILER = "gcc"
+
 EXTERNAL_DECLARATIONS = [
     ("_IO_FILE", "struct _IO_FILE;", "#include<stdio.h>;"),
     ("FILE", "typedef struct _IO_FILE FILE;", "#include<stdio.h>;"),

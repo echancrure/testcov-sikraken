@@ -31,6 +31,7 @@ import pycparser
 from pycparser import c_generator
 
 from suite_validation import label_adding as la
+from suite_validation import execution_utils as eu
 
 
 class ParseError(Exception):
@@ -81,7 +82,28 @@ class CfgCall(CfgNode):
         return list(self._succs) + [self.summary_succ]
 
 
-def instrument_program(input_program: str, output_program: str) -> List[int]:
+def _preprocess(input_program: str, machine_model: str) -> str:
+    """
+    Pre-processes the given program.
+
+    :param input_program: program to pre-process
+    :param machine_model: machine-model to use for pre-processing
+    :return: name of new, pre-processed program file
+    """
+    preprocessed_file = input_program + ".i"
+    cmd = [eu.COMPILER, machine_model, "-E", input_program, "-o", preprocessed_file]
+    eu.execute(cmd)
+
+    return preprocessed_file
+
+
+def instrument_program(
+    input_program: str, machine_model: str, output_program: str
+) -> List[int]:
+    if not input_program.endswith(
+        ".i"
+    ):  # very simple heuristic to decide whether program is preprocessed
+        input_program = _preprocess(input_program, machine_model)
     content = _get_content(input_program)
 
     ast = _parse(content)
