@@ -27,6 +27,7 @@ import pycparser
 LABEL_PREFIX = "BRANCH_"
 GOTO_PREFIX = "goto " + LABEL_PREFIX
 
+
 class LabelAdder(pycparser.c_ast.NodeVisitor):
     """Add labels at each branch on the visited AST, in-situ."""
 

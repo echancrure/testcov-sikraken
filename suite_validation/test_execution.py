@@ -284,7 +284,6 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
                 vector_going_other_way,
             ]
 
-
     def test_get_condition_coverage_multiple_executions(self):
         vector_going_one_way = eu.TestVector("vector1", "vector1.xml")
         vector_going_one_way.add("5")

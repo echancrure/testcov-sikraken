@@ -615,12 +615,16 @@ def get_coverage_from_tracefile(
                             line_with_condition_information, conditions_entries
                         )
                     elif line.startswith(LcovPrefix.CONDITIONS_FOUND.value):
-                        assert conditions_found is None, "Two entries for 'conditions found' in tracefile"
+                        assert (
+                            conditions_found is None
+                        ), "Two entries for 'conditions found' in tracefile"
                         conditions_found = int(
                             remove_prefix(line, LcovPrefix.CONDITIONS_FOUND.value)
                         )
                     elif line.startswith(LcovPrefix.CONDITIONS_TAKEN.value):
-                        assert conditions_taken is None, "Two entries for 'conditions hit' in tracefile"
+                        assert (
+                            conditions_taken is None
+                        ), "Two entries for 'conditions hit' in tracefile"
                         conditions_taken = int(
                             remove_prefix(line, LcovPrefix.CONDITIONS_TAKEN.value)
                         )
@@ -638,12 +642,16 @@ def get_coverage_from_tracefile(
                         )
 
                     elif line.startswith(LcovPrefix.LINES_FOUND.value):
-                        assert lines_found is None, "Two entries for 'lines found' in tracefile"
+                        assert (
+                            lines_found is None
+                        ), "Two entries for 'lines found' in tracefile"
                         lines_found = int(
                             remove_prefix(line, LcovPrefix.LINES_FOUND.value)
                         )
                     elif line.startswith(LcovPrefix.LINES_NONZERO_HIT_COUNTER.value):
-                        assert lines_hit is None, "Two entries for 'lines hit' in tracefile"
+                        assert (
+                            lines_hit is None
+                        ), "Two entries for 'lines hit' in tracefile"
                         lines_hit = int(
                             remove_prefix(
                                 line, LcovPrefix.LINES_NONZERO_HIT_COUNTER.value

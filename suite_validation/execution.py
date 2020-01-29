@@ -727,7 +727,6 @@ class SuiteExecutor:
         finally:
             print("\n✔️  Done!", file=self._info_target, flush=True)  # print newline
 
-
     def _remove_lcov_trace_file(self, test_name):
         if os.path.exists(LCOV_TRACE_FILE):
             target = os.path.join(self._output_dir_info, test_name + ".info")
