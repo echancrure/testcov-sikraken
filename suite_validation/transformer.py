@@ -92,7 +92,7 @@ def _preprocess(input_program: str, machine_model: str) -> str:
     """
     preprocessed_file = input_program + ".i"
     cmd = [eu.COMPILER, machine_model, "-E", input_program, "-o", preprocessed_file]
-    eu.execute(cmd)
+    eu.execute(cmd, quiet=True)
 
     return preprocessed_file
 
