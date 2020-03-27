@@ -34,6 +34,7 @@ check-format:
   stage: test
   script:
       - "black suite_validation && git diff -s --exit-code"
+      - "clang-format -i suite_validation/harness.c && git diff -s --exit-code"
   variables:
     PYTHON_VERSION: '3.7'
 
