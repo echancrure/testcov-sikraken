@@ -48,11 +48,9 @@ void replace_char(char * str, char find, char replace){
 }
 
 void parse_input_from(char * inp_var, char * format, void * destination) {
-    char format_with_fallback[9];
+    char format_with_fallback[13];
     strcpy(format_with_fallback, format);
-    strcat(format_with_fallback, "%c");
-    char leftover;
-    int res;
+    strcat(format_with_fallback, "%c%c%c%c");
     if (inp_var[0] == '0' && inp_var[1] == 'x') {
         replace_char(format_with_fallback, 'd', 'x');
     } else {
@@ -64,9 +62,30 @@ void parse_input_from(char * inp_var, char * format, void * destination) {
         inp_var++;
       }
     }
-    res = sscanf(inp_var, format_with_fallback, destination, &leftover);
+    char leftover[4];
+    int filled = sscanf(inp_var, format_with_fallback, destination, &leftover[0], &leftover[1], &leftover[2], &leftover[3]);
+    _Bool is_valid = 1;
+    if (filled == 5 || filled == 0) {
+      is_valid = 0;
+    }
+    while (filled > 1) {
+      filled--;
+      char literal = leftover[filled - 1];
+      switch (literal) {
+      case 'l':
+      case 'L':
+      case 'u':
+      case 'U':
+      case 'f':
+      case 'F':
+        break;
+      default:
+        is_valid = 0;
+      }
+    }
 
-    if (res != 1) {
+
+    if (!is_valid) {
         fprintf(stderr, "Can't parse input: '%s'\n", inp_var);
         abort_prog();
     }
