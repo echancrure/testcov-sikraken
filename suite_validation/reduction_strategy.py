@@ -68,7 +68,7 @@ def naive_reduction(
         assert total_tc.coverage
         if total_tc.coverage.is_coverage_extended(tc.coverage):
             reduced_coverages.append(tc)
-            total_tc = cov.TestCoverage.merge(total_tc, tc)
+            total_tc = total_tc + tc
     return reduced_coverages
 
 
@@ -109,7 +109,7 @@ def furthest_diff_reduction(
             )
             reduced_coverages.append(optimal_next_tc)
             individual_coverages.remove(optimal_next_tc)
-            total_tc = cov.TestCoverage.merge(total_tc, optimal_next_tc)
+            total_tc = total_tc + optimal_next_tc
             # Get all test coverages that are now fully covered and remove them
             covered_coverages = [
                 tc

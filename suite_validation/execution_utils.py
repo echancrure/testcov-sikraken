@@ -140,18 +140,28 @@ class TestVector:
     def __len__(self):
         return len(self.vector)
 
+    def __repr__(self):
+        return "%s: %s" % (self.origin, self._vector)
+
     def __str__(self):
         return self.origin
 
 
 class TestResult:
     def __init__(self, verdict, execution_info, coverage=None):
+        assert isinstance(verdict, str)
         self.verdict = verdict
         self.execution_info = execution_info
         self.coverage = coverage
 
     def __eq__(self, other):
         return self.verdict == other
+
+    def __str__(self):
+        return self.verdict
+
+    def __repr__(self):
+        return "(%s, %s, %s)" % (self.verdict, self.execution_info, self.coverage)
 
 
 COVERS = "false"
@@ -186,6 +196,12 @@ class ExecutionResult:
         self.cpu_time = cpu_time
         self.wall_time = wall_time
         self.memory_used = memory_used
+
+    def __repr__(self):
+        return "%s(%s)" % (self.__class__.__name__, self.__hash__())
+
+    def __str__(self):
+        return "returncode %s" % self.returncode
 
 
 def execute(command, quiet=False, input_str=None, timelimit=None):

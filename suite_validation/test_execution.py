@@ -249,8 +249,14 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
     def get_runner(machine_model, timelimit, goal=eu.COVER_BRANCHES):
         harness_file = _get_harness_file_target()
         compile_output_file = _get_compile_target()
-        return ex.CoverageMeasuringExecutionRunner(
-            machine_model, timelimit, goal, dict(), harness_file, compile_output_file
+        return ex.LcovCoverageMeasurer(
+            machine_model,
+            timelimit,
+            goal,
+            dict(),
+            harness_file,
+            compile_output_file,
+            individual_runs=False,
         )
 
     def test_get_line_coverage_single_execution(self):
@@ -305,10 +311,12 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
         old_line_cov = 0
         for tv in vectors:
             result = runner.run(test_file, tv)
-            coverage = runner.compute_coverage(test_file, tv, result, goal)
+            coverage = result.coverage
 
             assert coverage.hits > 0, "Line coverage at 0"
-            assert coverage.hits > old_line_cov, "Line coverage didn't increase"
+            assert coverage.hits > old_line_cov, (
+                "Line coverage didn't increase: %s" % coverage.hits
+            )
 
             old_line_cov = coverage.hits
 
@@ -320,12 +328,12 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
         old_condition_cov = 0
         for tv in vectors:
             result = runner.run(test_file, tv)
-            coverage = runner.compute_coverage(test_file, tv, result, goal)
+            coverage = result.coverage
 
             assert coverage.hits > 0, "Condition coverage at 0"
-            assert (
-                coverage.hits > old_condition_cov
-            ), "Condition coverage didn't increase"
+            assert coverage.hits > old_condition_cov, (
+                "Condition coverage didn't increase: %s" % coverage.hits
+            )
 
             old_condition_cov = coverage.hits
 
@@ -340,10 +348,7 @@ class TestSuiteExecutor(TempDirExecutor):
 
     @staticmethod
     def get_runner(
-        goal=eu.COVER_BRANCHES,
-        timelimit=None,
-        compute_sequence=True,
-        compute_individuals=True,
+        goal=eu.COVER_BRANCHES, timelimit=None, compute_individuals=True,
     ):
         harness_file = _get_harness_file_target()
         compile_output_file = _get_compile_target()
@@ -352,7 +357,6 @@ class TestSuiteExecutor(TempDirExecutor):
             timelimit,
             harness_file,
             compile_output_file,
-            compute_sequence=compute_sequence,
             isolate_tests=False,
             compute_individuals=compute_individuals,
             use_runexec=False,
@@ -441,10 +445,7 @@ class TestSuiteExecutor(TempDirExecutor):
                 runners = [
                     self.get_runner(goal),
                     self.get_runner(goal, compute_individuals=False),
-                    self.get_runner(goal, compute_sequence=False),
-                    self.get_runner(
-                        goal, compute_sequence=False, compute_individuals=False
-                    ),
+                    self.get_runner(goal, compute_individuals=False),
                 ]
                 runners_tuples = itertools.combinations(runners, 2)
 
@@ -454,8 +455,8 @@ class TestSuiteExecutor(TempDirExecutor):
     @staticmethod
     def _get_config_str(runner):
         # pylint: disable=protected-access
-        return "SuiteExecutor[ComputeInd={},ComputeSeq={}]".format(
-            runner._compute_individual_test_coverages, runner._compute_sequence
+        return "SuiteExecutor[ComputeInd={}]".format(
+            runner._compute_individual_test_coverages
         )
 
     def _check_coverage_results_equal(
@@ -553,9 +554,7 @@ class TestSuiteExecutor(TempDirExecutor):
                 if total_tc_from_reduced is None:
                     total_tc_from_reduced = tc
                 else:
-                    total_tc_from_reduced = cov.TestCoverage.merge(
-                        total_tc_from_reduced, tc
-                    )
+                    total_tc_from_reduced = total_tc_from_reduced + tc
             eq_(total_tc_from_reduced.hits_percent, 100)
         if goal in [eu.COVER_BRANCHES, eu.COVER_CONDITIONS, eu.COVER_ERRORS]:
             # test with x = 2 and x := -2 included because each test will give 50% branch coverage and 50%
@@ -573,9 +572,7 @@ class TestSuiteExecutor(TempDirExecutor):
                 if total_tc_from_reduced is None:
                     total_tc_from_reduced = tc
                 else:
-                    total_tc_from_reduced = cov.TestCoverage.merge(
-                        total_tc_from_reduced, tc
-                    )
+                    total_tc_from_reduced = total_tc_from_reduced + tc
             eq_(total_tc_from_reduced.hits_percent, 100)  # branch coverage
             eq_(total_tc_from_reduced.hits_percent, 100)  # condition coverage
 
@@ -606,9 +603,7 @@ class TestSuiteExecutor(TempDirExecutor):
                     if total_tc_from_reduced is None:
                         total_tc_from_reduced = tc
                     else:
-                        total_tc_from_reduced = cov.TestCoverage.merge(
-                            total_tc_from_reduced, tc
-                        )
+                        total_tc_from_reduced = total_tc_from_reduced + tc
                 eq_(total_tc_from_reduced.hits_percent, 100)
             if strategy == rs.BYORDER_REDUCTION:
                 assert len(result_obj.reduced_coverage_tests) == len(
@@ -628,9 +623,7 @@ class TestSuiteExecutor(TempDirExecutor):
                     if total_tc_from_reduced is None:
                         total_tc_from_reduced = tc
                     else:
-                        total_tc_from_reduced = cov.TestCoverage.merge(
-                            total_tc_from_reduced, tc
-                        )
+                        total_tc_from_reduced = total_tc_from_reduced + tc
                 eq_(total_tc_from_reduced.hits_percent, 100)
         if goal in [eu.COVER_BRANCHES, eu.COVER_CONDITIONS, eu.COVER_ERRORS]:
             # In naive and furthest diff strategy tests with x = 2 and x := -2 are included
@@ -649,9 +642,7 @@ class TestSuiteExecutor(TempDirExecutor):
                 if total_tc_from_reduced is None:
                     total_tc_from_reduced = tc
                 else:
-                    total_tc_from_reduced = cov.TestCoverage.merge(
-                        total_tc_from_reduced, tc
-                    )
+                    total_tc_from_reduced = total_tc_from_reduced + tc
             if goal is eu.COVER_BRANCHES:
                 eq_(total_tc_from_reduced.hits_percent, 100)
             if goal is eu.COVER_CONDITIONS:
@@ -780,8 +771,8 @@ class TestCoverageChecker:
         eq_(first_extends_second, 1.0)
         eq_(second_extends_first, 0.0)
 
-        total_test_coverage = cov.TestCoverage.merge(
-            self.bad_test_coverages[goal], self.perfect_test_coverages[goal]
+        total_test_coverage = (
+            self.bad_test_coverages[goal] + self.perfect_test_coverages[goal]
         )
         (
             first_extends_second,

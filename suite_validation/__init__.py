@@ -135,15 +135,6 @@ def get_parser():
     )
 
     parser.add_argument(
-        "--no-sequence",
-        dest="print_seq",
-        action="store_false",
-        default=True,
-        help="don't print sequence of accumulated coverage per executed test to file",
-        required=False,
-    )
-
-    parser.add_argument(
         "--no-individual-test-coverage",
         dest="individual_test_cov",
         action="store_false",
@@ -156,6 +147,7 @@ def get_parser():
         dest="reduce_tests",
         action="store",
         default=rs.BYORDER_REDUCTION,
+        choices=rs.REDUCTION_STRATEGIES.keys(),
         help="apply reduction strategy to create a reduced test suite. Possible options: {}, {}, {}".format(
             *rs.REDUCTION_STRATEGIES.keys()
         ),
@@ -320,12 +312,10 @@ def main():
     compute_individuals = args.individual_test_cov
 
     error_occurred = False
-    return_code = None
     try:
         executor = execution.SuiteExecutor(
             args.goal,
             args.timelimit_per_run,
-            compute_sequence=args.print_seq,
             harness_file_target=harness_file,
             compile_target=executable,
             compute_individuals=compute_individuals,

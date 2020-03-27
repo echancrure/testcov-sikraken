@@ -18,26 +18,19 @@
 """Module for coverage of individual tests"""
 
 from enum import Enum
+from functools import reduce
 import os
 import logging
+import shutil
 
 from typing import Dict, Tuple, List, Optional
 from abc import ABCMeta, abstractmethod
 
 from suite_validation import execution_utils as eu
 
-
 MODULE_DIRECTORY = os.path.join(os.path.dirname(__file__), os.path.pardir)
-
 LLVM_GCOV_BINARY = os.path.join(MODULE_DIRECTORY, "bin/llvm-gcov")
-
 TRACE_FILE_CONDITION_NOT_VISITED = "-"
-
-
-class CoverageCreationError(Exception):
-    def __init__(self, msg):
-        super().__init__()
-        self.msg = msg
 
 
 class LcovPrefix(Enum):
@@ -71,7 +64,7 @@ class _CoverageComparable:
 
     @abstractmethod
     def compute_coverage_relation(
-        self, other: "CoverageComparable"
+        self, other: "_CoverageComparable"
     ) -> Tuple[float, float]:
         """
         Computes the coverage relation to another instance that implements CoverageComparable.
@@ -83,7 +76,7 @@ class _CoverageComparable:
 
     @abstractmethod
     def is_coverage_for_program_line_extended(
-        self, other: "CoverageComparable", pl
+        self, other: "_CoverageComparable", pl
     ) -> bool:
         raise NotImplementedError
 
@@ -106,23 +99,29 @@ class _CoverageComparable:
     def count_total(self) -> int:
         raise NotImplementedError
 
+    @property
+    def hits_percent(self) -> float:
+        if self.count_total == 0:
+            return 1
+        return round(self.hits / self.count_total * 100, 2)
+
     @abstractmethod
-    def merge(self, cov: "CoverageComparable") -> "CoverageComparable":
+    def merge(self, cov: "_CoverageComparable") -> "_CoverageComparable":
         raise NotImplementedError
 
-    def covers(self, other: "CoverageComparable") -> bool:
+    def covers(self, other: "_CoverageComparable") -> bool:
         only_covered_by_self, only_covered_by_other = self.compute_coverage_relation(
             other
         )
         return only_covered_by_other <= 0 < only_covered_by_self
 
-    def is_covered(self, other: "CoverageComparable") -> bool:
+    def is_covered(self, other: "_CoverageComparable") -> bool:
         only_covered_by_self, only_covered_by_other = self.compute_coverage_relation(
             other
         )
         return only_covered_by_self <= 0 < only_covered_by_other
 
-    def is_coverage_extended(self, other: "CoverageComparable") -> bool:
+    def is_coverage_extended(self, other: "_CoverageComparable") -> bool:
         _, only_covered_by_other = self.compute_coverage_relation(other)
         return only_covered_by_other > 0
 
@@ -205,6 +204,25 @@ class ConditionsEntry:
             for pl, hit_counter in self.conditions_hit_counter.items()
         )
 
+    def __eq__(self, other):
+        if not isinstance(other, ConditionsEntry):
+            return False
+        return (
+            self.conditions_hit == other.conditions_hit
+            and self.same_program_line(other)
+            and self.conditions_hit_counter == other.conditions_hit_counter
+        )
+
+    def __repr__(self):
+        condition_repr = "\n".join(
+            "\tCondition %s: %s" % (cond, hits)
+            for cond, hits in self.conditions_hit_counter.items()
+        )
+        return "Line %s:\n%s" % (self.program_line, condition_repr)
+
+    def __str__(self):
+        return self.__repr__()
+
 
 class _ConditionsCoverage(_CoverageComparable):
     """
@@ -231,7 +249,7 @@ class _ConditionsCoverage(_CoverageComparable):
     def relevant_program_lines(self):
         return [entry.program_line for entry in self.conditions_entries]
 
-    def merge(self, cov: "ConditionsCoverage") -> "ConditionsCoverage":
+    def merge(self, cov: "_ConditionsCoverage") -> "_ConditionsCoverage":
         merged = [
             ConditionsEntry.merge(e1, e2)
             for e1 in self.conditions_entries
@@ -249,7 +267,7 @@ class _ConditionsCoverage(_CoverageComparable):
         )
 
     def compute_coverage_relation(
-        self, other: "ConditionsCoverage"
+        self, other: "_ConditionsCoverage"
     ) -> Tuple[float, float]:
         conditions_only_covered_by_self = 0
         conditions_only_covered_by_other = 0
@@ -282,13 +300,24 @@ class _ConditionsCoverage(_CoverageComparable):
         return e.is_program_line_covered
 
     def is_coverage_for_program_line_extended(
-        self, other: "ConditionsCoverage", pl
+        self, other: "_ConditionsCoverage", pl
     ) -> bool:
         this_entry = self.get_conditions_entry(pl)
         other_entry = other.get_conditions_entry(pl)
         if not this_entry or not other_entry:
             return False
         return this_entry.is_coverage_for_program_line_extended(other_entry)
+
+    def __eq__(self, other):
+        if not isinstance(other, _ConditionsCoverage):
+            return False
+        return self.conditions_entries == other.conditions_entries
+
+    def __repr__(self):
+        return "%s[%s]" % (self.__class__.__name__, self.conditions_entries)
+
+    def __str__(self):
+        return "%s%% condition coverage" % self.hits_percent
 
 
 class _LinesCoverage(_CoverageComparable):
@@ -316,14 +345,14 @@ class _LinesCoverage(_CoverageComparable):
     def relevant_program_lines(self):
         return self.lines_hit_counter.keys()
 
-    def merge(self, cov: "LinesCoverage"):
+    def merge(self, cov: "_LinesCoverage"):
         summarized_lines_coverage = {
             l: self.lines_hit_counter[l] + cov.lines_hit_counter[l]
             for l in self.lines_hit_counter
         }
         return _LinesCoverage(summarized_lines_coverage)
 
-    def compute_coverage_relation(self, other: "LinesCoverage") -> Tuple[float, float]:
+    def compute_coverage_relation(self, other: "_LinesCoverage") -> Tuple[float, float]:
         lines_only_covered_by_self = 0
         lines_only_covered_by_other = 0
         for program_line in self.relevant_program_lines:
@@ -349,10 +378,23 @@ class _LinesCoverage(_CoverageComparable):
     def is_program_line_covered(self, pl) -> bool:
         return self.lines_hit_counter[pl] > 0
 
-    def is_coverage_for_program_line_extended(self, other: "LinesCoverage", pl) -> bool:
+    def is_coverage_for_program_line_extended(
+        self, other: "_LinesCoverage", pl
+    ) -> bool:
         return not self.is_program_line_covered(pl) and other.is_program_line_covered(
             pl
         )
+
+    def __eq__(self, other):
+        if not isinstance(other, _LinesCoverage):
+            return False
+        return self.lines_hit_counter == other.lines_hit_counter
+
+    def __repr__(self):
+        return "%s[%s]" % (self.__class__.__name__, self.lines_hit_counter)
+
+    def __str__(self):
+        return "%s%% line coverage" % self.hits_percent
 
 
 class _BranchesCoverage(_CoverageComparable):
@@ -377,7 +419,7 @@ class _BranchesCoverage(_CoverageComparable):
     def relevant_program_lines(self):
         return self.branches_hit_counter.keys()
 
-    def merge(self, cov: "BranchesCoverage") -> "BranchesCoverage":
+    def merge(self, cov: "_BranchesCoverage") -> "_BranchesCoverage":
         summarized_branches_coverage = {
             l: self.branches_hit_counter[l] + cov.branches_hit_counter[l]
             for l in self.relevant_program_lines
@@ -385,7 +427,7 @@ class _BranchesCoverage(_CoverageComparable):
         return _BranchesCoverage(summarized_branches_coverage)
 
     def compute_coverage_relation(
-        self, other: "BranchesCoverage"
+        self, other: "_BranchesCoverage"
     ) -> Tuple[float, float]:
         number_branches_taken_only_self = 0
         number_branches_taken_only_other = 0
@@ -414,11 +456,22 @@ class _BranchesCoverage(_CoverageComparable):
         return pl in self.relevant_program_lines and self.branches_hit_counter[pl] > 0
 
     def is_coverage_for_program_line_extended(
-        self, other: "BranchesCoverage", pl
+        self, other: "_BranchesCoverage", pl
     ) -> bool:
         return not self.is_program_line_covered(pl) and other.is_program_line_covered(
             pl
         )
+
+    def __eq__(self, other):
+        if not isinstance(other, _BranchesCoverage):
+            return False
+        return self.branches_hit_counter == other.branches_hit_counter
+
+    def __repr__(self):
+        return "%s[%s]" % (self.__class__.__name__, self.branches_hit_counter)
+
+    def __str__(self):
+        return "%s%% branch coverage" % self.hits_percent
 
 
 class TestCoverage:
@@ -457,12 +510,8 @@ class TestCoverage:
     @property
     def hits_percent(self):
         if not self.coverage:
-            cov = 0
-        elif self.count_total == 0:
-            cov = 100
-        else:
-            cov = float(self.hits) / float(self.count_total) * 100
-        return round(cov, 2)
+            return 0
+        return self.coverage.hits_percent
 
     def test_vectors_as_string(self):
         # Normally this method is called when the test coverage for an individual test is printed. If so this method
@@ -478,26 +527,47 @@ class TestCoverage:
         out += self.test_vectors[i].origin
         return out
 
-    @staticmethod
-    def merge(cov1: "TestCoverage", cov2: "TestCoverage") -> "TestCoverage":
-        assert cov1.filename == cov2.filename
-        assert type(cov1.coverage) is type(cov2.coverage)
+    def __add__(self, other):
+        if not isinstance(other, TestCoverage):
+            raise ValueError()
+        if not self.filename == other.filename:
+            raise ValueError()
+
         summarized_test_vector_results = {
-            **cov2.test_vector_results,
-            **cov1.test_vector_results,
+            **other.test_vector_results,
+            **self.test_vector_results,
         }
-        covs = [c for c in (cov1.coverage, cov2.coverage) if c]
+        covs = [c for c in (self.coverage, other.coverage) if c]
         if not covs:
             summarized_coverage = None
         elif len(covs) == 1:
             summarized_coverage = covs[0]
         else:
-            assert len(covs) == 2, "Unexpected number of coverages"
-            summarized_coverage = covs[0].merge(covs[1])
+            summarized_coverage = reduce(lambda cov1, cov2: cov1.merge(cov2), covs)
 
         return TestCoverage(
-            cov1.filename, summarized_test_vector_results, summarized_coverage
+            self.filename, summarized_test_vector_results, summarized_coverage
         )
+
+    def __eq__(self, other):
+        if not isinstance(other, TestCoverage):
+            return False
+        return (
+            self.filename == other.filename
+            and self.test_vector_results == other.test_vector_results
+            and self.coverage == other.coverage
+        )
+
+    def __repr__(self):
+        return "%s[\n\t%s,\n\t%s,\n\t%s]" % (
+            self.__class__.__name__,
+            self.filename,
+            self.coverage,
+            self.test_vector_results,
+        )
+
+    def __str__(self):
+        return "%s: %s" % (self.filename, self.coverage)
 
 
 def remove_prefix(line, prefix):
@@ -510,7 +580,6 @@ def _examine_line_with_counter(
     branches_hit_counter,
     branch_label_line_numbers,
 ):
-
     chunks = line_with_counter.split(",")
     assert len(chunks) == 2
     program_line = int(chunks[0])
@@ -579,7 +648,7 @@ def _append_to_conditions_entries(
     )
 
 
-def get_coverage_from_tracefile(
+def _get_coverage_from_tracefile(
     program_name,
     trace_file,
     test_vector,
@@ -587,7 +656,6 @@ def get_coverage_from_tracefile(
     coverage_goal,
     branch_label_line_numbers=None,
 ) -> TestCoverage:
-
     # Variables are filled by reading the trace file. After reading is finished these variables are
     # used to build the test coverage
     lines_hit_counter_dic = {}
@@ -600,84 +668,68 @@ def get_coverage_from_tracefile(
     conditions_found = None
     conditions_entries = []
 
-    if os.path.exists(trace_file):
-        lcov_sector = LcovSector.BEFORE_TEST_RECORD.value
-        with open(trace_file) as file:
-            for line in file:
-                line = line.strip()
-                if lcov_sector == LcovSector.BEFORE_TEST_RECORD.value:
-                    if line.startswith(LcovPrefix.FILEPATH.value):
-                        absolute_file_path = remove_prefix(
-                            line, LcovPrefix.FILEPATH.value
-                        )
-                        if os.path.basename(absolute_file_path) == program_name:
-                            lcov_sector = LcovSector.IN_TEST_RECORD.value
+    lcov_sector = LcovSector.BEFORE_TEST_RECORD.value
+    with open(trace_file) as file:
+        for line in file:
+            line = line.strip()
+            if lcov_sector == LcovSector.BEFORE_TEST_RECORD.value:
+                if line.startswith(LcovPrefix.FILEPATH.value):
+                    absolute_file_path = remove_prefix(line, LcovPrefix.FILEPATH.value)
+                    if os.path.basename(absolute_file_path) == program_name:
+                        lcov_sector = LcovSector.IN_TEST_RECORD.value
 
-                elif lcov_sector == LcovSector.IN_TEST_RECORD.value:
+            elif lcov_sector == LcovSector.IN_TEST_RECORD.value:
 
-                    if line.startswith(
-                        LcovPrefix.BRANCH_LINE_CONDITION_HIT_COUNTER.value
-                    ):
-                        line_with_condition_information = remove_prefix(
-                            line, LcovPrefix.BRANCH_LINE_CONDITION_HIT_COUNTER.value
-                        )
-                        # -> CONDITION COVERAGE
-                        _examine_line_with_condition(
-                            line_with_condition_information, conditions_entries
-                        )
-                    elif line.startswith(LcovPrefix.CONDITIONS_FOUND.value):
-                        assert (
-                            conditions_found is None
-                        ), "Two entries for 'conditions found' in tracefile"
-                        conditions_found = int(
-                            remove_prefix(line, LcovPrefix.CONDITIONS_FOUND.value)
-                        )
-                    elif line.startswith(LcovPrefix.CONDITIONS_TAKEN.value):
-                        assert (
-                            conditions_taken is None
-                        ), "Two entries for 'conditions hit' in tracefile"
-                        conditions_taken = int(
-                            remove_prefix(line, LcovPrefix.CONDITIONS_TAKEN.value)
-                        )
-                    elif line.startswith(LcovPrefix.LINE_HIT_COUNTER.value):
-                        line_with_hit_counter = remove_prefix(
-                            line, LcovPrefix.LINE_HIT_COUNTER.value
-                        )
-                        # -> LINE COVERAGE
-                        # -> BRANCH COVERAGE
-                        _examine_line_with_counter(
-                            line_with_hit_counter,
-                            lines_hit_counter_dic,
-                            branches_hit_counter_dic,
-                            branch_label_line_numbers,
-                        )
+                if line.startswith(LcovPrefix.BRANCH_LINE_CONDITION_HIT_COUNTER.value):
+                    line_with_condition_information = remove_prefix(
+                        line, LcovPrefix.BRANCH_LINE_CONDITION_HIT_COUNTER.value
+                    )
+                    # -> CONDITION COVERAGE
+                    _examine_line_with_condition(
+                        line_with_condition_information, conditions_entries
+                    )
+                elif line.startswith(LcovPrefix.CONDITIONS_FOUND.value):
+                    assert (
+                        conditions_found is None
+                    ), "Two entries for 'conditions found' in tracefile"
+                    conditions_found = int(
+                        remove_prefix(line, LcovPrefix.CONDITIONS_FOUND.value)
+                    )
+                elif line.startswith(LcovPrefix.CONDITIONS_TAKEN.value):
+                    assert (
+                        conditions_taken is None
+                    ), "Two entries for 'conditions hit' in tracefile"
+                    conditions_taken = int(
+                        remove_prefix(line, LcovPrefix.CONDITIONS_TAKEN.value)
+                    )
+                elif line.startswith(LcovPrefix.LINE_HIT_COUNTER.value):
+                    line_with_hit_counter = remove_prefix(
+                        line, LcovPrefix.LINE_HIT_COUNTER.value
+                    )
+                    # -> LINE COVERAGE
+                    # -> BRANCH COVERAGE
+                    _examine_line_with_counter(
+                        line_with_hit_counter,
+                        lines_hit_counter_dic,
+                        branches_hit_counter_dic,
+                        branch_label_line_numbers,
+                    )
 
-                    elif line.startswith(LcovPrefix.LINES_FOUND.value):
-                        assert (
-                            lines_found is None
-                        ), "Two entries for 'lines found' in tracefile"
-                        lines_found = int(
-                            remove_prefix(line, LcovPrefix.LINES_FOUND.value)
-                        )
-                    elif line.startswith(LcovPrefix.LINES_NONZERO_HIT_COUNTER.value):
-                        assert (
-                            lines_hit is None
-                        ), "Two entries for 'lines hit' in tracefile"
-                        lines_hit = int(
-                            remove_prefix(
-                                line, LcovPrefix.LINES_NONZERO_HIT_COUNTER.value
-                            )
-                        )
-                    elif line.startswith(LcovPrefix.END_OF_RECORD.value):
-                        break
-
-                else:
+                elif line.startswith(LcovPrefix.LINES_FOUND.value):
+                    assert (
+                        lines_found is None
+                    ), "Two entries for 'lines found' in tracefile"
+                    lines_found = int(remove_prefix(line, LcovPrefix.LINES_FOUND.value))
+                elif line.startswith(LcovPrefix.LINES_NONZERO_HIT_COUNTER.value):
+                    assert lines_hit is None, "Two entries for 'lines hit' in tracefile"
+                    lines_hit = int(
+                        remove_prefix(line, LcovPrefix.LINES_NONZERO_HIT_COUNTER.value)
+                    )
+                elif line.startswith(LcovPrefix.END_OF_RECORD.value):
                     break
 
-    else:
-        logging.debug(
-            "File '%s' does not exist. Returning empty test coverage", trace_file
-        )
+            else:
+                break
 
     coverage: _CoverageComparable
     if coverage_goal in [eu.COVER_LINES, eu.COVER_ERRORS]:
@@ -702,36 +754,60 @@ def get_coverage_from_tracefile(
     return TestCoverage(program_name, {test_vector: next_result}, coverage)
 
 
+def _create_lcov_tracefile(coverage_goal, gcov_tool="gcov"):
+    output_tracefile = "current_test.info"
+    cmd = ["lcov", "--gcov-tool", gcov_tool]
+    if coverage_goal == eu.COVER_CONDITIONS:
+        # add coverage information about which branch conditions were taken/evaluated.
+        # This option makes lcov pretty slow, so
+        # we only use this option when necessary
+        # for performance reasons. In addition,
+        # lcov produces wrong line coverage with old versions of gcov (<= 8)
+        # if this option is used
+        cmd += ["--rc", "lcov_branch_coverage=1"]
+    cmd += ["-c", "-d", ".", "--no-recursion", "-o", output_tracefile]
+    eu.execute(cmd, quiet=True)
+    return output_tracefile
+
+
 def compute_test_coverage(
     program_name,
     data_file,
-    output_tracefile,
     test_vector,
     next_result,
     coverage_goal,
     branch_label_line_numbers=None,
     gcov_tool="gcov",
+    output_dir="output/info_files",
 ) -> TestCoverage:
-    if os.path.exists(data_file):
-        cmd = ["lcov", "--gcov-tool", gcov_tool]
-        if coverage_goal == eu.COVER_CONDITIONS:
-            # add coverage information about with branch conditions were taken/evaluated.
-            # This option makes lcov pretty slow, so
-            # we only use this option when necessary
-            # for performance reasons. In addition,
-            # lcov produces wrong line coverage with old versions of gcov (<= 8)
-            # if this option is used
-            cmd += ["--rc", "lcov_branch_coverage=1"]
-        cmd += ["-c", "-d", ".", "--no-recursion", "-o", output_tracefile]
-        eu.execute(cmd, quiet=True)
-        if os.path.exists(output_tracefile):
-            test_coverage = get_coverage_from_tracefile(
-                program_name,
-                output_tracefile,
-                test_vector,
-                next_result,
-                coverage_goal,
-                branch_label_line_numbers,
-            )
-            return test_coverage
-    raise CoverageCreationError("Trace file '%s' not created." % output_tracefile)
+    if not os.path.exists(data_file):
+        raise FileNotFoundError(data_file)
+
+    tracefile = _create_lcov_tracefile(coverage_goal, gcov_tool)
+    try:
+        return _get_coverage_from_tracefile(
+            program_name,
+            tracefile,
+            test_vector,
+            next_result,
+            coverage_goal,
+            branch_label_line_numbers,
+        )
+    finally:
+        _archive_lcov_trace_file(tracefile, test_vector.name, output_dir)
+
+
+def _archive_lcov_trace_file(tracefile, test_name, output_dir):
+    target = os.path.join(output_dir, test_name + ".info")
+    target_dir = os.path.dirname(target)
+    os.makedirs(target_dir, exist_ok=True)
+    try:
+        shutil.move(tracefile, target)
+    except FileNotFoundError:
+        pass
+    except UnicodeEncodeError as e:
+        logging.info("Can't move tracefile to %s: %s", target, e)
+        file_count = len(os.listdir(target_dir))
+        target = os.path.join(target_dir, "test" + str(file_count) + ".info")
+        logging.info("Moved tracefile to %s", target)
+        shutil.move(tracefile, target)
