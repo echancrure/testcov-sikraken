@@ -715,7 +715,7 @@ class SuiteExecutor:
         else:
             logging.debug("Accumulated coverage: %s%%", accumulated_coverage_in_percent)
             if not result_target.coverage_sequence:
-                result_target.coverage_sequence = [0]  # initialize with 0
+                result_target.coverage_sequence = list()
             result_target.coverage_sequence.append(accumulated_coverage_in_percent)
 
     def _execute_tests(self, program_file, test_vectors, executor, result_target):
