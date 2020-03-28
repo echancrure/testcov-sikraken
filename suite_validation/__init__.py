@@ -148,9 +148,7 @@ def get_parser():
         action="store",
         default=rs.BYORDER_REDUCTION,
         choices=rs.REDUCTION_STRATEGIES.keys(),
-        help="apply reduction strategy to create a reduced test suite. Possible options: {}, {}, {}".format(
-            *rs.REDUCTION_STRATEGIES.keys()
-        ),
+        help="apply reduction strategy to create a reduced test suite.",
         required=False,
     )
 
