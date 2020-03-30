@@ -27,6 +27,7 @@ import zipfile
 
 import xml.etree.ElementTree as etree
 
+from suite_validation import _gcov_coverage
 from suite_validation import execution_utils as eu
 from suite_validation import coverage as cov
 from suite_validation import metadata_utils as mu
@@ -368,6 +369,7 @@ class LcovCoverageMeasurer(ExecutionRunner):
             )
             return None
         finally:
+            _gcov_coverage.create_gcov_file(program_name, data_file)
             if self._individual_runs:
                 self._remove_data_file(data_file)
 
@@ -601,6 +603,7 @@ class SuiteExecutor:
                 self._cpu_cores,
                 self._use_runexec,
                 output_dir=self._output_dir,
+                individual_runs=self._compute_individual_test_coverages,
             )
         else:
             executor = LcovCoverageMeasurer(
@@ -611,6 +614,7 @@ class SuiteExecutor:
                 self._harness_file_target,
                 self._compile_target,
                 output_dir=self._output_dir,
+                individual_runs=self._compute_individual_test_coverages,
             )
 
         try:

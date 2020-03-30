@@ -649,13 +649,8 @@ def _append_to_conditions_entries(
 
 
 def _get_coverage_from_tracefile(
-    program_name,
-    trace_file,
-    test_vector,
-    next_result,
-    coverage_goal,
-    branch_label_line_numbers=None,
-) -> TestCoverage:
+    program_name, trace_file, coverage_goal, branch_label_line_numbers=None,
+) -> Optional[_CoverageComparable]:
     # Variables are filled by reading the trace file. After reading is finished these variables are
     # used to build the test coverage
     lines_hit_counter_dic = {}
@@ -751,7 +746,7 @@ def _get_coverage_from_tracefile(
     else:
         raise AssertionError("Unhandled coverage goal " + coverage_goal)
 
-    return TestCoverage(program_name, {test_vector: next_result}, coverage)
+    return coverage
 
 
 def _create_lcov_tracefile(coverage_goal, gcov_tool="gcov"):
@@ -770,6 +765,25 @@ def _create_lcov_tracefile(coverage_goal, gcov_tool="gcov"):
     return output_tracefile
 
 
+def _compute_test_coverage_lcov(
+    program_name,
+    data_file,
+    coverage_goal,
+    branch_label_line_numbers=None,
+    gcov_tool="gcov",
+) -> Tuple[List[str], _CoverageComparable]:
+    if not os.path.exists(data_file):
+        raise FileNotFoundError(data_file)
+
+    tracefile = _create_lcov_tracefile(coverage_goal, gcov_tool)
+    return (
+        [tracefile],
+        _get_coverage_from_tracefile(
+            program_name, tracefile, coverage_goal, branch_label_line_numbers,
+        ),
+    )
+
+
 def compute_test_coverage(
     program_name,
     data_file,
@@ -780,29 +794,30 @@ def compute_test_coverage(
     gcov_tool="gcov",
     output_dir="output/info_files",
 ) -> TestCoverage:
-    if not os.path.exists(data_file):
-        raise FileNotFoundError(data_file)
-
-    tracefile = _create_lcov_tracefile(coverage_goal, gcov_tool)
-    try:
-        return _get_coverage_from_tracefile(
-            program_name,
-            tracefile,
-            test_vector,
-            next_result,
-            coverage_goal,
-            branch_label_line_numbers,
-        )
-    finally:
-        _archive_lcov_trace_file(tracefile, test_vector.name, output_dir)
+    created_files, coverage = _compute_test_coverage_lcov(
+        program_name, data_file, coverage_goal, branch_label_line_numbers, gcov_tool,
+    )
+    for f in created_files:
+        _archive_file(f, test_vector.name, output_dir)
+    return TestCoverage(program_name, {test_vector: next_result}, coverage)
 
 
-def _archive_lcov_trace_file(tracefile, test_name, output_dir):
-    target = os.path.join(output_dir, test_name + ".info")
+def _archive_file(to_archive, test_name, output_dir):
+    suffix = to_archive.split(".")[-1] if "." in to_archive else ""
+
+    def _get_target(intermediate=""):
+        return os.path.join(output_dir, test_name + intermediate + "." + suffix)
+
+    target = _get_target()
+    i = 1
+    while os.path.exists(target):
+        target = _get_target("-%s" % i)
+        i += 1
+
     target_dir = os.path.dirname(target)
     os.makedirs(target_dir, exist_ok=True)
     try:
-        shutil.move(tracefile, target)
+        shutil.move(to_archive, target)
     except FileNotFoundError:
         pass
     except UnicodeEncodeError as e:
@@ -810,4 +825,4 @@ def _archive_lcov_trace_file(tracefile, test_name, output_dir):
         file_count = len(os.listdir(target_dir))
         target = os.path.join(target_dir, "test" + str(file_count) + ".info")
         logging.info("Moved tracefile to %s", target)
-        shutil.move(tracefile, target)
+        shutil.move(to_archive, target)
