@@ -21,6 +21,7 @@ import argparse
 import logging
 import os
 import re
+import zipfile
 from typing import Tuple
 from suite_validation import execution
 from suite_validation import execution_utils as eu
@@ -309,7 +310,7 @@ def main():
     executable = os.path.join(args.output_dir, "a.out")
     compute_individuals = args.individual_test_cov
 
-    error_occurred = False
+    error_occurred = True  # set to False in try-else
     try:
         executor = execution.SuiteExecutor(
             args.goal,
@@ -337,10 +338,15 @@ def main():
 
     except FileNotFoundError as e:
         logging.error(e)
-        error_occurred = True
+    except (IsADirectoryError, zipfile.BadZipFile) as e:
+        logging.error(e)
+        logging.info(
+            "Test suites are expected as ZIP files. Try to zip the test-suite directory and provide the result as test suite"
+        )
     except execution.ExecutionError as e:
         logging.error(e.msg)
-        error_occurred = True
+    else:
+        error_occurred = False
     finally:
         # Output data
         if exec_results.successful_tests:
