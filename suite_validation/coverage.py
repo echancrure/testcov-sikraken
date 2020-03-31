@@ -810,13 +810,13 @@ def _archive_file(to_archive, test_name, output_dir):
 
     target = _get_target()
     i = 1
-    while os.path.exists(target):
-        target = _get_target("-%s" % i)
-        i += 1
 
     target_dir = os.path.dirname(target)
     os.makedirs(target_dir, exist_ok=True)
     try:
+        while os.path.exists(target):
+            target = _get_target("-%s" % i)
+            i += 1
         shutil.move(to_archive, target)
     except FileNotFoundError:
         pass
@@ -824,5 +824,6 @@ def _archive_file(to_archive, test_name, output_dir):
         logging.info("Can't move tracefile to %s: %s", target, e)
         file_count = len(os.listdir(target_dir))
         target = os.path.join(target_dir, "test" + str(file_count) + ".info")
+        assert not os.path.exists(target), "Going to overwrite file %s" % target
         logging.info("Moved tracefile to %s", target)
         shutil.move(to_archive, target)
