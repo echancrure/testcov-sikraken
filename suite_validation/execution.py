@@ -353,7 +353,7 @@ class LcovCoverageMeasurer(ExecutionRunner):
         program_name = _get_program_name(program_file)
         data_file = LcovCoverageMeasurer.HARNESS_GCDA_FILE
         try:
-            return cov.compute_test_coverage(
+            coverage = cov.compute_test_coverage(
                 program_name,
                 data_file,
                 test_vector,
@@ -362,6 +362,8 @@ class LcovCoverageMeasurer(ExecutionRunner):
                 branch_label_line_numbers,
                 output_dir=self._output_dir_info,
             )
+            _gcov_coverage.create_gcov_file(program_name, data_file)
+            return coverage
         except FileNotFoundError:
             logging.info(
                 "Coverage computation failed. No coverage recorded for run %s",
@@ -369,7 +371,6 @@ class LcovCoverageMeasurer(ExecutionRunner):
             )
             return None
         finally:
-            _gcov_coverage.create_gcov_file(program_name, data_file)
             if self._individual_runs:
                 self._remove_data_file(data_file)
 
