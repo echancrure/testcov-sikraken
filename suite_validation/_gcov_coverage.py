@@ -35,4 +35,4 @@ def _run_gcov(data_file, gcov_tool="gcov"):
         raise FileNotFoundError(data_file)
 
     gcov_cmd = [gcov_tool, "-bc", data_file]
-    return eu.execute(gcov_cmd)
+    return eu.execute(gcov_cmd, quiet=True)
