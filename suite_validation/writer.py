@@ -23,7 +23,7 @@ import logging
 import os
 import zipfile
 import shutil
-import numpy as np
+from typing import List
 from suite_validation import _tool_info
 from suite_validation import metadata_utils
 from suite_validation import execution
@@ -189,6 +189,10 @@ def _write_results_csv(output_file, header, data) -> None:
             writer.writerow(row)
 
 
+def _transpose(data: List[list]):
+    return list(map(list, zip(*data)))
+
+
 def _collect_data(exec_results):
     test_coverages = exec_results.coverage_tests
     coverage_sequence = exec_results.coverage_sequence
@@ -242,6 +246,6 @@ def _collect_data(exec_results):
         ]
     )
 
-    table = np.array(data)
+    table = _transpose(data)
 
-    return header, table.T
+    return header, table

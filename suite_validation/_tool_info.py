@@ -17,6 +17,6 @@
 # limitations under the License.
 """Module with tool-specific info"""
 
-__VERSION__ = "v3-dev"
+__VERSION__ = "testcomp20-40-g2b78172"
 
 __NAME__ = "testcov"

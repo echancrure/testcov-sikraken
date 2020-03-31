@@ -18,7 +18,6 @@ setup(
     install_requires=[
         'lxml>=4.0.0',
         'benchexec>=1.20',
-        'numpy>=1.15',
         'pycparser>=2.19',
     ],
     setup_requires=[
