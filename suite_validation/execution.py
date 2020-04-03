@@ -641,7 +641,10 @@ class SuiteExecutor:
 
         branch_label_line_numbers = None
 
-        if self._goal in [eu.COVER_BRANCHES, eu.COVER_ERRORS]:
+        if not self._use_gcov_only and self._goal in [
+            eu.COVER_BRANCHES,
+            eu.COVER_ERRORS,
+        ]:
             instrumented_program_file = self._get_instrumented_file_name(program_file)
             branch_label_line_numbers = tr.instrument_program(
                 program_file, machine_model, instrumented_program_file
