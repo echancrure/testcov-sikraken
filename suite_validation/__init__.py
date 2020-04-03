@@ -52,6 +52,14 @@ def get_parser():
     )
 
     parser.add_argument(
+        "--use-gcov",
+        dest="use_gcov",
+        action="store_true",
+        default=False,
+        help="Use GCov measurement instead of lcov. This only gives an overall coverage and no individual results, but may be faster.",
+    )
+
+    parser.add_argument(
         "--goal",
         dest="goal_file",
         action="store",
@@ -209,6 +217,13 @@ def parse():
     args.check_for_error = args.goal == eu.COVER_ERRORS
     args.use_runexec = args.use_runexec and args.use_isolation
 
+    if args.use_gcov:
+        args.individual_test_cov = False
+        args.reduce_tests = False
+        args.write_plots = False
+        args.use_isolation = False
+        args.use_runexec = False
+
     return args
 
 
@@ -321,6 +336,7 @@ def main():
             memlimit=args.memlimit,
             cores=args.cpu_cores,
             use_runexec=args.use_runexec,
+            use_gcov_only=args.use_gcov,
             isolate_tests=args.use_isolation,
             info_output=True,
             stop_on_success=args.stop_on_success,

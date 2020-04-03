@@ -271,22 +271,18 @@ class ExecutionRunner:
         return input_vector
 
 
-class LcovCoverageMeasurer(ExecutionRunner):
+class GcovCoverageMeasurer(ExecutionRunner):
     HARNESS_GCDA_FILE = "harness.gcda"
-    TEMPORARY_FILE_SUFFIXES = (".gcda", ".gcno", ".gcov", ".info")
+    TEMPORARY_FILE_SUFFIXES = (".gcda", ".gcno", ".gcov")
 
     def __init__(
         self,
         machine_model,
         timelimit_per_run,
         goal,
-        branch_label_line_numbers,
         harness_file_target="harness.c",
         compile_target="a.out",
         compiler="gcc",
-        output_dir="output",
-        info_files_dir="info_files",
-        individual_runs=True,
     ):
         super().__init__(
             machine_model,
@@ -296,11 +292,7 @@ class LcovCoverageMeasurer(ExecutionRunner):
             compiler,
         )
         self._goal = goal
-        self._branch_label_line_numbers = branch_label_line_numbers
-        self._output_dir_info = os.path.join(output_dir, info_files_dir)
         self.harness_file = None
-        self._individual_runs = individual_runs
-        os.makedirs(self._output_dir_info, exist_ok=True)
 
     def _get_compile_cmd(
         self, program_file, harness_file, output_file, c_version="gnu11"
@@ -327,13 +319,74 @@ class LcovCoverageMeasurer(ExecutionRunner):
                 logging.info("Removing existing file %s", f)
                 os.remove(f)
 
-    def compile(self, program_file, harness_file, output_file):
-        self._remove_existing_data_files(harness_file)
-        return super().compile(program_file, harness_file, output_file)
+    def _compute_coverage_with_gcov(self, program_name, data_file) -> Optional[float]:
+        try:
+            _, execution_result = _gcov_coverage.create_gcov_file(
+                program_name, data_file
+            )
+        except FileNotFoundError:
+            return None
+        return _gcov_coverage.parse_gcov_output(
+            program_name, execution_result.stdout, self._goal
+        )
 
     def run(self, program_file, test_vector: eu.TestVector) -> eu.TestResult:
         result = super().run(program_file, test_vector)
-        result.coverage = self.compute_coverage(
+        program_name = _get_program_name(program_file)
+        data_file = GcovCoverageMeasurer.HARNESS_GCDA_FILE
+        try:
+            result.coverage = self._compute_coverage_with_gcov(program_name, data_file)
+        except _gcov_coverage.GcovError as e:
+            logging.info("GCov coverage could not be computed: %s", e)
+            result.coverage = None
+        return result
+
+
+class LcovCoverageMeasurer(GcovCoverageMeasurer):
+    HARNESS_GCDA_FILE = "harness.gcda"
+    TEMPORARY_FILE_SUFFIXES = (".gcda", ".gcno", ".gcov", ".info")
+
+    def __init__(
+        self,
+        machine_model,
+        timelimit_per_run,
+        goal,
+        branch_label_line_numbers,
+        harness_file_target="harness.c",
+        compile_target="a.out",
+        compiler="gcc",
+        output_dir="output",
+        info_files_dir="info_files",
+        individual_runs=True,
+    ):
+        super().__init__(
+            machine_model,
+            timelimit_per_run,
+            goal,
+            harness_file_target,
+            compile_target,
+            compiler,
+        )
+        self._goal = goal
+        self._branch_label_line_numbers = branch_label_line_numbers
+        self._output_dir_info = os.path.join(output_dir, info_files_dir)
+        self.harness_file = None
+        self._individual_runs = individual_runs
+        os.makedirs(self._output_dir_info, exist_ok=True)
+
+    @staticmethod
+    def _get_info_file(harness_file):
+        harness_name = ".".join(harness_file.split("/")[-1].split(".")[:-1])
+        return harness_name + ".info"
+
+    def _remove_existing_data_files(self, harness_file):
+        super()._remove_existing_data_files(harness_file)
+        info_file = self._get_info_file(harness_file)
+        os.remove(info_file)
+
+    def run(self, program_file, test_vector: eu.TestVector) -> eu.TestResult:
+        result = super().run(program_file, test_vector)
+        result.coverage = self._compute_coverage(
             program_file,
             test_vector,
             result,
@@ -342,7 +395,7 @@ class LcovCoverageMeasurer(ExecutionRunner):
         )
         return result
 
-    def compute_coverage(
+    def _compute_coverage(
         self,
         program_file,
         test_vector,
@@ -362,7 +415,6 @@ class LcovCoverageMeasurer(ExecutionRunner):
                 branch_label_line_numbers,
                 output_dir=self._output_dir_info,
             )
-            _gcov_coverage.create_gcov_file(program_name, data_file)
             return coverage
         except FileNotFoundError:
             logging.info(
@@ -530,6 +582,7 @@ class SuiteExecutor:
         memlimit=None,
         cores=None,
         use_runexec=True,
+        use_gcov_only=False,
         info_output=False,
         stop_on_success=False,
         output_dir="output",
@@ -546,6 +599,10 @@ class SuiteExecutor:
         self._memlimit = memlimit
         self._cpu_cores = cores
         self._use_runexec = use_runexec
+        self._use_gcov_only = use_gcov_only
+        assert (
+            not self._use_gcov_only or not self._isolate_tests
+        ), "Conflicting arguments: Can't use gcov-only measurement with test isolation"
         assert (
             not self._use_runexec or self._isolate_tests
         ), "Conflicting arguments: Can't use runexec without isolating runs"
@@ -606,6 +663,15 @@ class SuiteExecutor:
                 output_dir=self._output_dir,
                 individual_runs=self._compute_individual_test_coverages,
             )
+        elif self._use_gcov_only:
+            executor = GcovCoverageMeasurer(
+                machine_model,
+                self._timelimit,
+                self._goal,
+                self._harness_file_target,
+                self._compile_target,
+            )
+
         else:
             executor = LcovCoverageMeasurer(
                 machine_model,
@@ -702,14 +768,11 @@ class SuiteExecutor:
 
         if self._compute_individual_test_coverages:
             result_target.coverage_tests.append(current_coverage)
-        result_target.coverage_total = self._merge_coverages(
-            result_target.coverage_total, current_coverage
-        )
-        assert (
-            result_target.coverage_total is not None
-            and current_coverage.coverage is None
-            or result_target.coverage_total.coverage is not None
-        )
+            result_target.coverage_total = self._merge_coverages(
+                result_target.coverage_total, current_coverage
+            )
+        else:
+            result_target.coverage_total = current_coverage
 
         try:
             accumulated_coverage_in_percent = float(
