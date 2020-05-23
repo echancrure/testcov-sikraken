@@ -1,34 +1,26 @@
-# tfbuilder is a module for easy creation of test-format XML files.
-# This file is part of tfbuilder.
+# This file is part of the Test-Comp test format,
+# an exchange format for test suites:
+# https://gitlab.com/sosy-lab/software/test-format
 #
 # Copyright (C) 2018  Dirk Beyer
-# All rights reserved.
+# SPDX-FileCopyrightText: 2018-2019 Dirk Beyer <https://www.sosy-lab.org>
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
+
 """Module for easy creation of test-format XML files.
 
 The Builder class is the only relevant component of this module.
 
 Sub-modules are available and provide constants for common metadata:
-    * tfbuilder.architecture
-    * tfbuilder.specs
+    * tsbuilder.architecture
+    * tsbuilder.specs
 """
 
 import hashlib
 import datetime
 from lxml import etree as ET
 
-__VERSION__ = "v1.3-dev"
+__VERSION__ = "v2.0-dev"
 
 METADATA_DTD = '<!DOCTYPE test-metadata PUBLIC "+//IDN sosy-lab.org//DTD'\
     + ' test-format test-metadata 1.1//EN"'\

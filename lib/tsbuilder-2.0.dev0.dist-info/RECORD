@@ -1,0 +1,16 @@
+tsbuilder-2.0.dev0.dist-info/DESCRIPTION.rst,sha256=OCTuuN6LcWulhHS3d5rfjdsQtW22n7HENFRh6jC6ego,10
+tsbuilder-2.0.dev0.dist-info/INSTALLER,sha256=zuuue4knoyJ-UwPPXg8fezS7VCrXJQrAP7zeNuwvFQg,4
+tsbuilder-2.0.dev0.dist-info/METADATA,sha256=oij9oWdE36PfE7nh5HdfUn9OSmh8XbwDlex9fYU_VvU,647
+tsbuilder-2.0.dev0.dist-info/RECORD,,
+tsbuilder-2.0.dev0.dist-info/WHEEL,sha256=8Lm45v9gcYRm70DrgFGVe4WsUtUMi1_0Tso1hqPGMjA,92
+tsbuilder-2.0.dev0.dist-info/direct_url.json,sha256=J-c4TRRtiO9K2Hm_2aY5qqze6IYbqyBmZDTbOXJq93Y,103
+tsbuilder-2.0.dev0.dist-info/metadata.json,sha256=Y6JLpFtv4sODn4FJDqsRrdAEe5qL4YWsDwbLxyCEeqk,901
+tsbuilder-2.0.dev0.dist-info/top_level.txt,sha256=HHNI-1usV3vsjFE3n4tCt0oTkCn9x_uJCi99B_KZziw,10
+tsbuilder/__init__.py,sha256=kgTA-FLh2ERanBbMO17B4rhuRp2khtGS_TB_7tq2KcY,8652
+tsbuilder/__pycache__/__init__.cpython-36.pyc,,
+tsbuilder/__pycache__/architecture.cpython-36.pyc,,
+tsbuilder/__pycache__/specs.cpython-36.pyc,,
+tsbuilder/__pycache__/test_tsbuilder.cpython-36.pyc,,
+tsbuilder/architecture.py,sha256=IRwZWwn1kMT6C4I811n87Q1e15ShpeGWqupHBrcA0n0,441
+tsbuilder/specs.py,sha256=E-9Iva8EIx8pN2xOFl86nbdf2AOWPzkGBI65eDjsdxw,954
+tsbuilder/test_tsbuilder.py,sha256=_EwLV5qCh4LOfrT7uagl4LeUSrRjMurrtdpqGVEZL7Q,4773

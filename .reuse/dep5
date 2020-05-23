@@ -1,0 +1,8 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: TestCov
+Upstream-Contact: Dirk Beyer <https://www.sosy-lab.org>
+Source: https://gitlab.com/sosy-lab/software/test-suite-validator/
+
+Files: lib/tsbuilder-2.0.dev0.dist-info/*
+Copyright: 2018-2020 Dirk Beyer <https://www.sosy-lab.org>
+License: Apache-2.0

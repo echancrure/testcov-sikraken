@@ -12,7 +12,7 @@ import zipfile
 import datetime
 import os
 from typing import Optional
-from tfbuilder import MetadataBuilder
+from tsbuilder import MetadataBuilder
 
 LANGUAGE = "sourcecodelang"
 PRODUCER = "producer"
