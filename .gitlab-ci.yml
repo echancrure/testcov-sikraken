@@ -1,3 +1,11 @@
+# This file is part of TestCov,
+# a robust test executor with reliable coverage measurement:
+# https://gitlab.com/sosy-lab/software/test-suite-validator/
+#
+# SPDX-FileCopyrightText: 2019-2020 Dirk Beyer <https://www.sosy-lab.org>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # To execute a job locally, install gitlab-runner (https://docs.gitlab.com/runner/install/)
 # and run the following command:
 # gitlab-runner exec docker --docker-privileged --docker-volumes /sys/fs/cgroup:/sys/fs/cgroup:rw --env CI_REGISTRY_IMAGE=registry.gitlab.com/sosy-lab/software/test-format <<JOB_NAME>>
@@ -89,3 +97,13 @@ integration-tests:python-3.7:
 #     variables:
 #       - $CODACY_PROJECT_TOKEN # required for job
 #       - $CI_PROJECT_PATH == $PROJECT_PATH # not on forks
+
+reuse:
+  stage: test
+  dependencies: []
+  needs: []
+  image:
+    name: fsfe/reuse:latest
+    entrypoint: [""]
+  script:
+    - reuse lint

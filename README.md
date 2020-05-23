@@ -1,4 +1,16 @@
+<!--
+This file is part of TestCov,
+a robust test executor with reliable coverage measurement:
+https://gitlab.com/sosy-lab/software/test-suite-validator/
+
+SPDX-FileCopyrightText: 2019-2020 Dirk Beyer <https://www.sosy-lab.org>
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # TestCov
+
+[![Apache 2.0 License](https://img.shields.io/badge/license-Apache--2-brightgreen.svg?style=flat)](https://www.apache.org/licenses/LICENSE-2.0)
 
 The tool `bin/testcov` creates a C harness
 that reads test values from standard input,
