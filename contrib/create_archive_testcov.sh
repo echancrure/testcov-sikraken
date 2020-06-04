@@ -42,3 +42,4 @@ zip --exclude="*/lib/PyYAML-*.dist-info/*" --exclude="*/lib/yaml*" --exclude="*/
 popd
 mv "$TMPDIR/testcov.zip" ./
 echo "Wrote testcov.zip, version $VERSION"
+git reset --hard

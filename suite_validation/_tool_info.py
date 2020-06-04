@@ -9,6 +9,6 @@
 
 """Module with tool-specific info"""
 
-__VERSION__ = "testcomp20-40-g2b78172"
+__VERSION__ = "3.1-dev"
 
 __NAME__ = "testcov"
