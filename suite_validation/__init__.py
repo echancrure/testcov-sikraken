@@ -34,6 +34,33 @@ class IllegalArgumentError(Exception):
     pass
 
 
+class StorePath(argparse.Action):
+    def __init__(self, option_strings, dest, nargs=None, **kwargs):
+        super().__init__(option_strings, dest, nargs, **kwargs)
+
+    @staticmethod
+    def create_path(path) -> str:
+        return path
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        del parser, option_string
+        paths = None
+        if values is not None:
+            if isinstance(values, str):
+                paths = self.create_path(values)
+            else:
+                paths = [self.create_path(v) for v in values]
+        setattr(namespace, self.dest, paths)
+
+
+class StoreInputPath(StorePath):
+    @staticmethod
+    def create_path(path) -> str:
+        if not os.path.exists(path):
+            raise ValueError("Given path %s does not exist" % path)
+        return path
+
+
 def get_parser():
     parser = argparse.ArgumentParser(
         prog=_tool_info.__NAME__, formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -54,7 +81,7 @@ def get_parser():
     parser.add_argument(
         "--goal",
         dest="goal_file",
-        action="store",
+        action=StoreInputPath,
         required=True,
         help="coverage goal file",
     )
@@ -70,7 +97,7 @@ def get_parser():
     parser.add_argument(
         "--test-suite",
         dest="test_suite",
-        action="store",
+        action=StoreInputPath,
         help="zip-file that contains test suite",
         required=True,
     )
@@ -104,7 +131,7 @@ def get_parser():
     parser.add_argument(
         "--output",
         dest="output_dir",
-        action="store",
+        action=StorePath,
         default="output",
         help="output directory to write to",
     )
@@ -156,7 +183,7 @@ def get_parser():
     parser.add_argument(
         "--reduction-output",
         dest="reduced_suite_name",
-        action="store",
+        action=StorePath,
         default=REDUCED_TESTSUITE_NAME,
         help="Name to which reduced test suite is written",
         required=False,
@@ -196,7 +223,7 @@ def get_parser():
         help="Don't run tests in isolation. No resource limits will be considered and file modifications are possible.",
     )
 
-    parser.add_argument("file", action="store", help="program file")
+    parser.add_argument("file", action=StoreInputPath, help="program file")
 
     return parser
 
