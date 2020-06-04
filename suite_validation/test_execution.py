@@ -33,6 +33,7 @@ TEST_FILE_WITH_NO_TERMINATION = os.path.join(TEST_DIRECTORY, "test_no-terminatio
 TEST_FILE_WITH_STRINGS = os.path.join(TEST_DIRECTORY, "test_string.c")
 TEST_FILE_COVERAGE = os.path.join(TEST_DIRECTORY, "test_coverages.c")
 TEST_FILE_SIMPLE_IF = os.path.join(TEST_DIRECTORY, "test_simple-if.c")
+TEST_FILE_NO_INPUTS = os.path.join(TEST_DIRECTORY, "test_no_inputs.c")
 
 TEST_HARNESS = os.path.join(TEST_DIRECTORY, "test_harness.c")
 
@@ -44,6 +45,7 @@ SUITE_INVALID_ZIP = os.path.join(SUITE_DIR, "suite-metadata-missing.zip")
 SUITE_COVERAGE = os.path.join(SUITE_DIR, "suite-coverages.zip")
 SUITE_SIMPLE_IF = os.path.join(SUITE_DIR, "suite-simple-if.zip")
 SUITE_SIMPLE_IF_SWAPPED = os.path.join(SUITE_DIR, "suite-simple-if-swapped.zip")
+SUITE_EMPTY_TESTCASE = os.path.join(SUITE_DIR, "suite-empty-test.zip")
 
 MACHINE_MODELS = (eu.MACHINE_MODEL_32, eu.MACHINE_MODEL_64)
 
@@ -353,6 +355,22 @@ class TestSuiteExecutor(TempDirExecutor):
             compute_individuals=compute_individuals,
             use_runexec=False,
         )
+
+    def test_empty_testcase(self):
+        for machine_model in MACHINE_MODELS:
+            yield self._check_run_suite_empty, machine_model
+
+    def _check_run_suite_empty(self, machine_model):
+        runner = self.get_runner()
+
+        result_obj = runner.run(
+            TEST_FILE_NO_INPUTS, SUITE_EMPTY_TESTCASE, machine_model
+        )
+        results = result_obj.results
+        branches = result_obj.coverage_total.coverage
+
+        eq_(len(results), 1, "Empty testcase not executed")
+        assert branches, f"Coverage information invalid: {branches}"
 
     def test_run_suite_valid(self):
         for machine_model in MACHINE_MODELS:
