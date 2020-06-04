@@ -123,6 +123,8 @@ REDUCTION_STRATEGIES = {
 def execute(
     strategy: str, individual_coverages: List[cov.TestCoverage]
 ) -> List[cov.TestCoverage]:
+    if not individual_coverages:
+        return list()
     if strategy in REDUCTION_STRATEGIES:
         return REDUCTION_STRATEGIES[strategy](individual_coverages)
     raise ReductionStrategyError("Reduction strategy {} is unknown".format(strategy))
