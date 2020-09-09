@@ -82,8 +82,8 @@ def get_parser():
         "--goal",
         dest="goal_file",
         action=StoreInputPath,
-        required=True,
-        help="coverage goal file",
+        required=False,
+        help="File that defines coverage goal to measure. The default goal is branch coverage.",
     )
 
     parser.add_argument(
@@ -232,7 +232,10 @@ def parse():
     parser = get_parser()
     args = parser.parse_args()
 
-    args.goal = parse_coverage_goal_file(args.goal_file)
+    if not args.goal:
+        args.goal = eu.COVER_BRANCHES
+    else:
+        args.goal = parse_coverage_goal_file(args.goal_file)
     args.check_for_error = args.goal == eu.COVER_ERRORS
     args.use_runexec = args.use_runexec and args.use_isolation
 

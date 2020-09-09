@@ -47,6 +47,10 @@ suite-2.zip
         |- t2.xml
 ```
 
+By default, TestCov measures branch coverage.
+The coverage goal to measure can be define with parameter `--goal FILE`.
+Example coverage-goal definitions can be found in [contrib/goal_files](contrib/goal_files).
+
 Upon completion,
 TestCov reports the test coverage achieved by the executed test suite
 and whether a test covered a call to an error function (currently, `__VERIFIER_error`).
