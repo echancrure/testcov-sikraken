@@ -21,6 +21,7 @@ For containerization, TestCov uses parts of [BenchExec](https://github.com/sosy-
 
 ## Details
 
+**Test Execution.**
 For test execution,
 TestCov creates a test harness (in C) that reads test values from standard input.
 TestCov compiles the original program with the test harness.
@@ -47,10 +48,11 @@ suite-2.zip
         |- t2.xml
 ```
 
-By default, TestCov measures branch coverage.
+**Coverage.** By default, TestCov measures branch coverage.
 The coverage goal to measure can be define with parameter `--goal FILE`.
 Example coverage-goal definitions can be found in [contrib/goal_files](contrib/goal_files).
 
+**Results.**
 Upon completion,
 TestCov reports the test coverage achieved by the executed test suite
 and whether a test covered a call to an error function (currently, `__VERIFIER_error`).
