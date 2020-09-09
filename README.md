@@ -12,18 +12,47 @@ SPDX-License-Identifier: Apache-2.0
 
 [![Apache 2.0 License](https://img.shields.io/badge/license-Apache--2-brightgreen.svg?style=flat)](https://www.apache.org/licenses/LICENSE-2.0)
 
-The tool `bin/testcov` creates a C harness
-that reads test values from standard input,
-compiles the original program file against this harness
-and uses it to execute a test suite specified in the test-format.
-Upon completion,
-it will report the test coverage achieved by the executed test suite
-and whether a test covered a call to `__VERIFIER_error()`.
-If the latter is the case, it also creates a directory `test-suite`
-that contains a covering test and a corresponding executable harness.
+TestCov is a robust test-suite executor for C programs.
+It uses Linux containers and namespaces to ensure robust and repeatable execution and coverage measurement of test suites.
 
-Run `bin/testcov --help` to get additional information
-about its usage.
+For coverage computation, TestCov uses [gcov](https://gcc.gnu.org/onlinedocs/gcc/Gcov.html)
+and [lcov](https://github.com/linux-test-project/lcov).
+For containerization, TestCov uses parts of [BenchExec](https://github.com/sosy-lab/benchexec/).
+
+## Details
+
+For test execution,
+TestCov creates a test harness (in C) that reads test values from standard input.
+TestCov compiles the original program with the test harness.
+This allows TestCov to efficiently feed test inputs to the program under test.
+Test inputs are read from a given test suite. Test suites must be specified in the
+exchangable [test-format](https://gitlab.com/sosy-lab/software/test-format) and given as a single zip-file (e.g., `suite.zip`).
+TestCov is agnostic about the directory structure in the test-suite zip:
+It recursively searches the zip for xml files that describe individual test cases, identified through their root element.
+That means, that TestCov sees both of the following as valid test suites:
+
+```
+suite-1.zip
+|- metadata.xml
+|- test1.xml
+|- test2.xml
+```
+
+```
+suite-2.zip
+|- suite/
+    |- metadata.xml
+    |- tests/
+        |- t1.xml
+        |- t2.xml
+```
+
+Upon completion,
+TestCov reports the test coverage achieved by the executed test suite
+and whether a test covered a call to an error function (currently, `__VERIFIER_error`).
+In addition, file `output/results.json` gives detailed information about each executed test
+(runtime of that test, individual coverage achieved by that test, etc.)
+and a reduced test suite is produced at `output/reduced-suite.zip`.
 
 ## Requirements
 
@@ -54,6 +83,17 @@ To install, you can run `pip install .`
 or `python3 setup.py install`.
 
 You can also use [`pipenv`](https://github.com/pypa/pipenv).
+
+## Usage
+
+To run test-suite `suite.zip` on program `foo.c`, call:
+
+```bash
+testcov --test-suite suite.zip foo.c
+```
+
+Run `bin/testcov --help` to get additional information
+about configuration parameters.
 
 ## Support
 
