@@ -232,7 +232,7 @@ def parse():
     parser = get_parser()
     args = parser.parse_args()
 
-    if not args.goal:
+    if not args.goal_file:
         args.goal = eu.COVER_BRANCHES
     else:
         args.goal = parse_coverage_goal_file(args.goal_file)
