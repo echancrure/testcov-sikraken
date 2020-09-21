@@ -66,8 +66,8 @@ and a reduced test suite is produced at `output/reduced-suite.zip`.
 * gcc >= 8.0
 * lcov >= 1.13
 
-The following requirements are automatically installed by `pipenv` or `setup.py` upon installation,
-but can also be installed manually (e.g., through `pip`):
+The following requirements are automatically installed by `setup.py` upon installation,
+but can also be installed with `pip install -r requirements.txt`:
 * lxml >= 4.0
 * numpy >= 1.15
 * BenchExec >= 1.20
@@ -87,8 +87,6 @@ and [`nosetest`](https://nose.readthedocs.io/en/latest/).
 
 To install, you can run `pip install .`
 or `python3 setup.py install`.
-
-You can also use [`pipenv`](https://github.com/pypa/pipenv).
 
 ## Usage
 
