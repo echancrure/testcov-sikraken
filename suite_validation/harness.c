@@ -47,6 +47,7 @@ void parse_input_from(char *inp_var, char *format, void *destination) {
   strcat(format_with_fallback, "%c%c%c%c");
   if (inp_var[0] == '0' && inp_var[1] == 'x') {
     replace_char(format_with_fallback, 'd', 'x');
+    replace_char(format_with_fallback, 'u', 'x');
   } else {
     if (inp_var[0] == '\'' || inp_var[0] == '\"') {
       int inp_length = strlen(inp_var);
