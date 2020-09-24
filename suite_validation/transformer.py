@@ -90,7 +90,7 @@ def _preprocess(input_program: str, machine_model: str) -> str:
 
 
 def instrument_program(
-    input_program: str, machine_model: str, output_program: str
+    input_program: str, machine_model: str, output_program: str, coverage_goal
 ) -> List[int]:
     if not input_program.endswith(
         ".i"
@@ -100,7 +100,10 @@ def instrument_program(
 
     ast = _parse(content)
     logging.debug("Adding program labels")
-    adder = la.LabelAdder()
+    if isinstance(coverage_goal, eu.CoverFunc):
+        adder = la.TargetFuncLabelAdder(coverage_goal.target_method)
+    else:
+        adder = la.LabelAdder()
     adder.visit(ast)
 
     c_code = _to_c(ast)
@@ -327,6 +330,7 @@ def _rewrite_cproblems(content: str) -> str:
             in_attribute = False
         # rewrite some GCC extensions
         line = re.sub(r"__extension__", "", line)
+        line = re.sub(r"void reach_error.*", "void reach_error() { exit(1); }", line)
         line = re.sub(r"__restrict", "", line)
         line = re.sub(r"__restrict__", "", line)
         line = re.sub(r"__inline__", "", line)

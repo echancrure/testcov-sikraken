@@ -28,7 +28,8 @@ MODULE_DIRECTORY = os.path.join(
 )
 TEST_DIRECTORY = os.path.join(MODULE_DIRECTORY, "test")
 TEST_FILE_WITHOUT_ERR = os.path.join(TEST_DIRECTORY, "test.c")
-TEST_FILE_WITH_ERR = os.path.join(TEST_DIRECTORY, "test_false.c")
+TEST_FILE_WITH_VERIFIER_ERR = os.path.join(TEST_DIRECTORY, "test_false_VerifierError.c")
+TEST_FILE_WITH_REACH_ERR = os.path.join(TEST_DIRECTORY, "test_false_ReachError.c")
 TEST_FILE_WITH_NO_TERMINATION = os.path.join(TEST_DIRECTORY, "test_no-termination.c")
 TEST_FILE_WITH_STRINGS = os.path.join(TEST_DIRECTORY, "test_string.c")
 TEST_FILE_COVERAGE = os.path.join(TEST_DIRECTORY, "test_coverages.c")
@@ -51,6 +52,8 @@ MACHINE_MODELS = (eu.MACHINE_MODEL_32, eu.MACHINE_MODEL_64)
 
 DUMMY_FILE = "DUMMY_FILE"
 DUMMY_TEST_VECTOR_RESULT = {eu.TestVector("dummy_tv", "dummy.xml"): eu.UNKNOWN}
+
+COVER_REACH = eu.CoverFunc("reach_error")
 
 
 # pylint: disable=protected-access
@@ -198,7 +201,7 @@ class TestExecutionRunner(TempDirExecutor):
                 yield self._check_test_execution_runs, machine_model, timelimit, TEST_FILE_WITHOUT_ERR, simple_vector, eu.UNKNOWN
 
     def _check_test_execution_runs(
-        self, machine_model, timelimit, test_file, test_vector, expected
+        self, machine_model, timelimit, test_file, test_vector, goal, expected
     ):
         if timelimit:
             timed(timelimit * 1.2)
@@ -208,25 +211,6 @@ class TestExecutionRunner(TempDirExecutor):
         run_result = runner.run(test_file, test_vector)
 
         eq_(run_result, expected)
-
-    def test_execution_run_result_known(self):
-        covering_vector = eu.TestVector("covers_test", "covers_test.c")
-        covering_vector.add("'a'")
-        covering_vector.add("5")
-        covering_vector.add("0x10")
-
-        missing_vector = eu.TestVector("misses_test", "misses_test.c")
-        missing_vector.add("'z'")
-        missing_vector.add("5")
-        missing_vector.add("0x0f")
-
-        for machine_model in MACHINE_MODELS:
-            for timelimit in (None, 5, 10):
-                yield self._check_test_execution_runs, machine_model, timelimit, TEST_FILE_WITH_ERR, covering_vector, eu.COVERS
-
-        for machine_model in MACHINE_MODELS:
-            for timelimit in (None, 5, 10):
-                yield self._check_test_execution_runs, machine_model, timelimit, TEST_FILE_WITH_ERR, missing_vector, eu.UNKNOWN
 
     def test_execution_run_non_terminating_with_timelimit(self):
         empty_vector = eu.TestVector("dummy", "dummy.xml")
@@ -331,13 +315,45 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
 
             old_condition_cov = coverage.hits
 
+    def test_function_call_coverage(self):
+        covering_vector = eu.TestVector("covers_test", "covers_test.c")
+        covering_vector.add("'a'")
+        covering_vector.add("5")
+        covering_vector.add("0x10")
+
+        missing_vector = eu.TestVector("misses_test", "misses_test.c")
+        missing_vector.add("'z'")
+        missing_vector.add("5")
+        missing_vector.add("0x0f")
+
+        for machine_model in MACHINE_MODELS:
+            for err_file, goal in (
+                (TEST_FILE_WITH_VERIFIER_ERR, eu.CoverFunc("__VERIFIER_error")),
+                (TEST_FILE_WITH_REACH_ERR, COVER_REACH),
+            ):
+                yield self._check_call_coverage, machine_model, err_file, goal, covering_vector, eu.COVERS
+
+        for machine_model in MACHINE_MODELS:
+            for err_file, goal in (
+                (TEST_FILE_WITH_VERIFIER_ERR, eu.CoverFunc("__VERIFIER_error")),
+                (TEST_FILE_WITH_REACH_ERR, COVER_REACH),
+            ):
+                yield self._check_call_coverage, machine_model, err_file, goal, missing_vector, eu.UNKNOWN
+
+    def _check_call_coverage(self, machine_model, test_file, goal, vector, expected):
+        runner = self.get_runner(machine_model, None, goal)
+
+        run_result = runner.run(test_file, vector)
+
+        eq_(run_result, expected)
+
 
 class TestSuiteExecutor(TempDirExecutor):
     """Tests for ex.SuiteExecutor."""
 
     def __init__(self):
         super().__init__()
-        self.program_file_with_err = TEST_FILE_WITH_ERR
+        self.program_file_with_err = TEST_FILE_WITH_REACH_ERR
         self.program_file_simple_if = TEST_FILE_SIMPLE_IF
 
     @staticmethod
@@ -435,7 +451,7 @@ class TestSuiteExecutor(TempDirExecutor):
             yield self._check_run_suite_with_string_inputs, machine_model, SUITE_VALID_STRINGS
 
     def _check_run_suite_with_string_inputs(self, machine_model, suite_location):
-        runner = self.get_runner(timelimit=2)
+        runner = self.get_runner(goal=COVER_REACH, timelimit=2)
 
         result_obj = runner.run(TEST_FILE_WITH_STRINGS, suite_location, machine_model)
         results = result_obj.results
@@ -566,7 +582,9 @@ class TestSuiteExecutor(TempDirExecutor):
                 else:
                     total_tc_from_reduced = total_tc_from_reduced + tc
             eq_(total_tc_from_reduced.hits_percent, 100)
-        if goal in [eu.COVER_BRANCHES, eu.COVER_CONDITIONS, eu.COVER_ERRORS]:
+        if goal in [eu.COVER_BRANCHES, eu.COVER_CONDITIONS] or isinstance(
+            goal, eu.CoverFunc
+        ):
             # test with x = 2 and x := -2 included because each test will give 50% branch coverage and 50%
             # condition coverage and merging this together a branch/condition coverage of 100% is obtained.
             assert len(result_obj.reduced_coverage_tests) == len(
@@ -635,7 +653,9 @@ class TestSuiteExecutor(TempDirExecutor):
                     else:
                         total_tc_from_reduced = total_tc_from_reduced + tc
                 eq_(total_tc_from_reduced.hits_percent, 100)
-        if goal in [eu.COVER_BRANCHES, eu.COVER_CONDITIONS, eu.COVER_ERRORS]:
+        if goal in [eu.COVER_BRANCHES, eu.COVER_CONDITIONS] or isinstance(
+            goal, eu.CoverFunc
+        ):
             # In naive and furthest diff strategy tests with x = 2 and x := -2 are included
             # because each test will give 50% branch coverage and 50% condition coverage
             # and merging this together a branch/condition coverage of 100% is obtained.
@@ -674,7 +694,7 @@ class TestSuiteExecutor(TempDirExecutor):
         eq_(coverage.hits, 2)
 
         result_obj: eu.SuiteExecutionResult = runner.run(
-            TEST_FILE_WITH_ERR, SUITE_VALID_ZIP, machine_model
+            TEST_FILE_WITH_REACH_ERR, SUITE_VALID_ZIP, machine_model
         )
         coverage = result_obj.coverage_total
         eq_(coverage.hits_percent, 100)
@@ -770,7 +790,7 @@ class TestCoverageChecker:
 
     def test_basic_test_coverage_computations(self):
         for goal in eu.COVERAGE_GOALS.values():
-            if goal is eu.COVER_ERRORS:
+            if isinstance(goal, eu.CoverFunc):
                 continue
             yield self._check_basic_test_coverage_computations, goal
 
@@ -851,7 +871,7 @@ class TestCoverageChecker:
 
     def test_coverage_stragey(self):
         for goal in eu.COVERAGE_GOALS.values():
-            if goal is eu.COVER_ERRORS:
+            if isinstance(goal, eu.CoverFunc):
                 continue
             covs1 = [cov[goal] for cov in self.test_coverage_group_one]
             reduced_tests = rs.execute(rs.FURTHEST_DIFF_REDUCTION, covs1)

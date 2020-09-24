@@ -233,9 +233,6 @@ class ExecutionRunner:
                 input_str=input_vector,
                 timelimit=self.timelimit,
             )
-            if eu.found_err(run_result.stderr):
-                logging.debug("Error found for test %s", test_vector)
-                return eu.TestResult(eu.COVERS, run_result)
             if run_result.got_aborted:
                 logging.info("Aborted execution for test %s", test_vector)
                 return eu.TestResult(eu.ABORTED, run_result)
@@ -385,7 +382,16 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
             self._goal,
             self._branch_label_line_numbers,
         )
+
+        if isinstance(self._goal, eu.CoverFunc) and self._hit_target_function(
+            result.coverage
+        ):
+            result.verdict = eu.COVERS
         return result
+
+    @staticmethod
+    def _hit_target_function(coverage: cov.TestCoverage):
+        return coverage.count_total > 0 and coverage.hits > 0
 
     def _compute_coverage(
         self,
@@ -499,11 +505,6 @@ class IsolatingRunner(LcovCoverageMeasurer):
     def run(self, program_file, test_vector: eu.TestVector) -> eu.TestResult:
         result = super().run(program_file, test_vector)
         if self._use_runexec:
-            with open(self._output_log) as outp:
-                if eu.found_err(outp.read()):
-                    logging.debug("Error found for test %s", test_vector)
-                    result.verdict = eu.COVERS
-        if self._use_runexec:
             result.execution_info.cpu_time = self._get_cputime(result.execution_info)
             result.execution_info.wall_time = self._get_walltime(result.execution_info)
             result.execution_info.memory_used = self._get_memory(result.execution_info)
@@ -579,7 +580,7 @@ class SuiteExecutor:
         stop_on_success=False,
         output_dir="output",
     ):
-        self._check_for_error = goal == eu.COVER_ERRORS
+        self._check_for_error = isinstance(goal, eu.CoverFunc)
         self._stop_on_success = stop_on_success
         self._goal = goal
         self._timelimit = timelimit_per_run
@@ -633,13 +634,12 @@ class SuiteExecutor:
 
         branch_label_line_numbers = None
 
-        if not self._use_gcov_only and self._goal in [
-            eu.COVER_BRANCHES,
-            eu.COVER_ERRORS,
-        ]:
+        if isinstance(self._goal, eu.CoverFunc) or (
+            not self._use_gcov_only and eu.uses_branch_coverage(self._goal)
+        ):
             instrumented_program_file = self._get_instrumented_file_name(program_file)
             branch_label_line_numbers = tr.instrument_program(
-                program_file, machine_model, instrumented_program_file
+                program_file, machine_model, instrumented_program_file, self._goal
             )
             # Beware! Overwrites program_file parameter
             program_file = instrumented_program_file

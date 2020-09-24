@@ -719,11 +719,11 @@ def _get_coverage_from_tracefile(
                 break
 
     coverage: _CoverageComparable
-    if coverage_goal in [eu.COVER_LINES, eu.COVER_ERRORS]:
+    if eu.uses_line_coverage(coverage_goal):
         coverage = _LinesCoverage(lines_hit_counter_dic)
         assert lines_hit is None or lines_hit == coverage.hits
         assert lines_found is None or lines_found == coverage.count_total
-    elif coverage_goal is eu.COVER_BRANCHES:
+    elif eu.uses_branch_coverage(coverage_goal):
         if branch_label_line_numbers is None:
             coverage = None
             branches_hit_counter_dic = None
@@ -731,7 +731,7 @@ def _get_coverage_from_tracefile(
             # Branch coverage is the goal. However, the line numbers with branch labels can be empty
             # when there exist no branches in the program
             coverage = _BranchesCoverage(branches_hit_counter_dic)
-    elif coverage_goal is eu.COVER_CONDITIONS:
+    elif eu.uses_condition_coverage(coverage_goal):
         coverage = _ConditionsCoverage(conditions_entries)
         assert conditions_found is None or conditions_found == coverage.count_total
         assert conditions_taken is None or conditions_taken == coverage.hits
@@ -744,7 +744,7 @@ def _get_coverage_from_tracefile(
 def _create_lcov_tracefile(coverage_goal, gcov_tool="gcov"):
     output_tracefile = "current_test.info"
     cmd = ["lcov", "--gcov-tool", gcov_tool]
-    if coverage_goal == eu.COVER_CONDITIONS:
+    if eu.uses_condition_coverage(coverage_goal):
         # add coverage information about which branch conditions were taken/evaluated.
         # This option makes lcov pretty slow, so
         # we only use this option when necessary

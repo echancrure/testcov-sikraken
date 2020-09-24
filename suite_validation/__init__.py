@@ -236,7 +236,7 @@ def parse():
         args.goal = eu.COVER_BRANCHES
     else:
         args.goal = parse_coverage_goal_file(args.goal_file)
-    args.check_for_error = args.goal == eu.COVER_ERRORS
+    args.check_for_error = isinstance(args.goal, eu.CoverFunc)
     args.use_runexec = args.use_runexec and args.use_isolation
 
     if args.use_gcov:
@@ -286,7 +286,7 @@ def _decide_execution_result(
         results_output.append("Coverage: {}%".format(coverage.hits_percent))
         results_output.append("Number of goals: {}".format(coverage.count_total))
 
-    if goal != eu.COVER_ERRORS:
+    if not isinstance(goal, eu.CoverFunc):
         if any(r == eu.ABORTED for r in exec_results.results):
             verdict = VERDICT_UNKNOWN
         else:

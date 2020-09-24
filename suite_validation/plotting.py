@@ -20,11 +20,11 @@ BAR_WIDTH = 0.3
 
 
 def _prepare_axis_for_plot(coverage_goal: str, total_coverage: float, test_count: int):
-    if coverage_goal in [eu.COVER_BRANCHES, eu.COVER_ERRORS]:
+    if eu.uses_branch_coverage(coverage_goal):
         ylabel = "Branch Coverage (%)"
-    elif coverage_goal == eu.COVER_CONDITIONS:
+    elif eu.uses_condition_coverage(coverage_goal):
         ylabel = "Condition Coverage (%)"
-    elif coverage_goal == eu.COVER_LINES:
+    elif eu.uses_line_coverage(coverage_goal):
         ylabel = "Line Coverage (%)"
 
     ax = plt.figure().gca()

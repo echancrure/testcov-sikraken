@@ -20,13 +20,9 @@ LABEL_PREFIX = "BRANCH_"
 GOTO_PREFIX = "goto " + LABEL_PREFIX
 
 
-class LabelAdder(pycparser.c_ast.NodeVisitor):
-    """Add labels at each branch on the visited AST, in-situ."""
-
-    def __init__(self, optimize_labels=True):
-        # del args  # not used at the moment
+class AbstractLabelAdder(pycparser.c_ast.NodeVisitor):
+    def __init__(self):
         self._labels = 0
-        self._optimize = optimize_labels
 
     def _get_label(self) -> pycparser.c_ast.Label:
         name = LABEL_PREFIX + str(self._labels)
@@ -34,24 +30,53 @@ class LabelAdder(pycparser.c_ast.NodeVisitor):
         label = pycparser.c_ast.Label(name, stmt=pycparser.c_ast.EmptyStatement())
         return label
 
-    def _add_label_at_start(
+    def insert_label(self, node: pycparser.c_ast.Compound, i: int):
+        label = self._get_label()
+        goto = pycparser.c_ast.Goto(label.name)
+
+        node.block_items.insert(i, label)
+        # make sure that goto is first element of block_items,
+        # to avoid endless loop between label and goto
+        node.block_items.insert(i, goto)
+        return node
+
+    def add_label_at_start(
         self, node: Optional[pycparser.c_ast.Node]
     ) -> pycparser.c_ast.Node:
         if isinstance(node, pycparser.c_ast.Compound):
             if node.block_items is None:
                 node.block_items = list()
-            label = self._get_label()
-            goto = pycparser.c_ast.Goto(label.name)
+            return self.insert_label(node, i=0)
 
-            node.block_items.insert(0, label)
-            # make sure that goto is first element of block_items,
-            # to avoid endless loop between label and goto
-            node.block_items.insert(0, goto)
-            return node
+        return self.add_label_at_start(pycparser.c_ast.Compound([node] if node else []))
 
-        return self._add_label_at_start(
-            pycparser.c_ast.Compound([node] if node else [])
-        )
+
+class TargetFuncLabelAdder(AbstractLabelAdder):
+    def __init__(self, func_name):
+        super().__init__()
+        self._func_name = func_name
+
+    def visit_Compound(self, node):
+        self.generic_visit(node)
+        if not node.block_items:
+            return
+
+        for i, stmt in enumerate(node.block_items):
+            if isinstance(stmt, pycparser.c_ast.FuncCall):
+                try:
+                    if stmt.name.name == self._func_name:
+                        self.insert_label(node, i)
+                        break
+                except AttributeError:
+                    pass
+
+
+class LabelAdder(AbstractLabelAdder):
+    """Add labels at each branch on the visited AST, in-situ."""
+
+    def __init__(self, optimize_labels=True):
+        super().__init__()
+        self._optimize = optimize_labels
 
     def visit_If(self, node):
         # Visit children before adding labels to work on original AST
@@ -60,12 +85,12 @@ class LabelAdder(pycparser.c_ast.NodeVisitor):
         if self._optimize and self._followed_by_if(node.iftrue):
             pass
         else:
-            node.iftrue = self._add_label_at_start(node.iftrue)
+            node.iftrue = self.add_label_at_start(node.iftrue)
 
         if self._optimize and self._followed_by_if(node.iffalse):
             pass
         else:
-            node.iffalse = self._add_label_at_start(node.iffalse)
+            node.iffalse = self.add_label_at_start(node.iffalse)
 
     @staticmethod
     def _followed_by_if(node) -> bool:
@@ -95,25 +120,25 @@ class LabelAdder(pycparser.c_ast.NodeVisitor):
 
     def visit_While(self, node):
         self.generic_visit(node)
-        node.stmt = self._add_label_at_start(node.stmt)
+        node.stmt = self.add_label_at_start(node.stmt)
 
     def visit_DoWhile(self, node):
         self.generic_visit(node)
-        node.stmt = self._add_label_at_start(node.stmt)
+        node.stmt = self.add_label_at_start(node.stmt)
 
     def visit_For(self, node):
         self.generic_visit(node)
-        node.stmt = self._add_label_at_start(node.stmt)
+        node.stmt = self.add_label_at_start(node.stmt)
 
     def visit_Case(self, node):
         self.generic_visit(node)
         if node.stmts:
-            node.stmts[0] = self._add_label_at_start(node.stmts[0])
+            node.stmts[0] = self.add_label_at_start(node.stmts[0])
         # we don't add a label if the case has no own content but 'falls through'
 
     def visit_Default(self, node):
         self.generic_visit(node)
-        node.stmts[0] = self._add_label_at_start(node.stmts[0])
+        node.stmts[0] = self.add_label_at_start(node.stmts[0])
 
     def visit_FuncDef(self, node):
         self.generic_visit(node)

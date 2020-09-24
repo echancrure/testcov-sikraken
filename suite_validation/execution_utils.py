@@ -14,16 +14,28 @@ from typing import List
 
 ERROR_STRING = "Error found."
 
+
+class CoverFunc:
+    def __init__(self, target_method):
+        self.target_method = target_method
+
+    def __str__(self):
+        return f"{type(self).__name__}({self.target_method})"
+
+    def __repr__(self):
+        return str(self)
+
+
 COVER_LINES = "COVER( init(main()), FQL(COVER EDGES(@BASICBLOCKENTRY)) )"
 COVER_BRANCHES = "COVER( init(main()), FQL(COVER EDGES(@DECISIONEDGE)) )"
 COVER_CONDITIONS = "COVER( init(main()), FQL(COVER EDGES(@CONDITIONEDGE)) )"
-COVER_ERRORS = "COVER( init(main()), FQL(COVER EDGES(@CALL(__VERIFIER_error))) )"
 
 COVERAGE_GOALS = {
     "@DECISIONEDGE": COVER_BRANCHES,
     "@CONDITIONEDGE": COVER_CONDITIONS,
     "@BASICBLOCKENTRY": COVER_LINES,
-    "@CALL(__VERIFIER_error)": COVER_ERRORS,
+    "@CALL(__VERIFIER_error)": CoverFunc("__VERIFIER_error"),
+    "@CALL(reach_error)": CoverFunc("reach_error"),
 }
 
 MACHINE_MODEL_32 = "-m32"
@@ -252,3 +264,15 @@ def execute(command, quiet=False, input_str=None, timelimit=None):
 
 def found_err(output):
     return output and ERROR_STRING in str(output)
+
+
+def uses_line_coverage(goal):
+    return goal == COVER_LINES
+
+
+def uses_branch_coverage(goal):
+    return goal == COVER_BRANCHES or isinstance(goal, CoverFunc)
+
+
+def uses_condition_coverage(goal):
+    return goal == COVER_CONDITIONS

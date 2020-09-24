@@ -25,10 +25,7 @@ void __VERIFIER_assume(int cond) {
   }
 }
 
-void __VERIFIER_error() {
-  fprintf(stderr, "Error found.\n");
-  exit(1);
-}
+void __VERIFIER_error() {}
 
 char *get_input();
 
