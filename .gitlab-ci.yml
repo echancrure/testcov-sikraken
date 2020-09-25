@@ -29,7 +29,7 @@ variables:
     script:
         - bin/testcov --verbose --test-suite test/suites/suite-invalid-unicode.zip test/test_invalid_unicode.c --goal contrib/goal_files/coverage-branches.prp --no-isolation
         - bin/testcov --verbose --test-suite test/suites/suite-invalid-unicode-test.zip test/test_invalid_unicode.c --goal contrib/goal_files/coverage-branches.prp --no-isolation
-        - 'rm -rf output ; bin/testcov --verbose --test-suite test/suites/suite-valid.zip test/test_false.c --goal contrib/goal_files/coverage-error-call.prp --no-isolation --no-stop-on-success && test $(ls output/info_files | wc -l) -eq 2'
+        - 'rm -rf output ; bin/testcov --verbose --test-suite test/suites/suite-valid.zip test/test_false_ReachError.c --goal contrib/goal_files/coverage-error-call.prp --no-isolation --no-stop-on-success && test $(ls output/info_files | wc -l) -eq 2'
 
 pylint:
   stage: test
@@ -55,7 +55,7 @@ check-archive:
     script:
         - "./contrib/create_archive_testcov.sh"
         - cd /tmp && unzip "$CI_PROJECT_DIR/testcov.zip" && cd -
-        - cd /tmp/testcov && ./bin/testcov --no-isolation --verbose --test-suite "$CI_PROJECT_DIR/test/suites/suite-valid.zip" --goal "$CI_PROJECT_DIR/contrib/goal_files/coverage-error-call.prp" "$CI_PROJECT_DIR/test/test_false.c"
+        - cd /tmp/testcov && ./bin/testcov --no-isolation --verbose --test-suite "$CI_PROJECT_DIR/test/suites/suite-valid.zip" --goal "$CI_PROJECT_DIR/contrib/goal_files/coverage-error-call.prp" "$CI_PROJECT_DIR/test/test_false_ReachError.c"
     artifacts:
         paths:
             - testcov.zip
