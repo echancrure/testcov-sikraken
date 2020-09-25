@@ -94,7 +94,7 @@ class _CoverageComparable:
     @property
     def hits_percent(self) -> float:
         if self.count_total == 0:
-            return 1
+            return 100
         return round(self.hits / self.count_total * 100, 2)
 
     @abstractmethod
