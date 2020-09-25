@@ -690,7 +690,7 @@ class SuiteExecutor:
         try:
             metadata = mu.get_metadata(test_suite)
         except etree.ParseError as e:
-            raise ExecutionError("Test-suite metadata not valid: {}".format(e.msg))
+            raise ExecutionError("Test-suite metadata not valid") from e
         self._check_metadata(metadata, machine_model)
 
         # this method call raises an ExecutionError if the given test suite is invalid
