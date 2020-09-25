@@ -201,7 +201,7 @@ class TestExecutionRunner(TempDirExecutor):
                 yield self._check_test_execution_runs, machine_model, timelimit, TEST_FILE_WITHOUT_ERR, simple_vector, eu.UNKNOWN
 
     def _check_test_execution_runs(
-        self, machine_model, timelimit, test_file, test_vector, goal, expected
+        self, machine_model, timelimit, test_file, test_vector, expected
     ):
         if timelimit:
             timed(timelimit * 1.2)
@@ -231,7 +231,6 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
             machine_model,
             timelimit,
             goal,
-            dict(),
             harness_file,
             compile_output_file,
             individual_runs=False,
@@ -397,7 +396,7 @@ class TestSuiteExecutor(TempDirExecutor):
             yield self._check_run_suite_valid, machine_model, SUITE_VALID_NESTED_ZIP
 
     def _check_run_suite_valid(self, machine_model, suite_location):
-        runner = self.get_runner()
+        runner = self.get_runner(goal=COVER_REACH)
 
         result_obj = runner.run(
             self.program_file_with_err, suite_location, machine_model
@@ -582,9 +581,7 @@ class TestSuiteExecutor(TempDirExecutor):
                 else:
                     total_tc_from_reduced = total_tc_from_reduced + tc
             eq_(total_tc_from_reduced.hits_percent, 100)
-        if goal in [eu.COVER_BRANCHES, eu.COVER_CONDITIONS] or isinstance(
-            goal, eu.CoverFunc
-        ):
+        if goal in [eu.COVER_BRANCHES, eu.COVER_CONDITIONS]:
             # test with x = 2 and x := -2 included because each test will give 50% branch coverage and 50%
             # condition coverage and merging this together a branch/condition coverage of 100% is obtained.
             assert len(result_obj.reduced_coverage_tests) == len(
@@ -653,9 +650,7 @@ class TestSuiteExecutor(TempDirExecutor):
                     else:
                         total_tc_from_reduced = total_tc_from_reduced + tc
                 eq_(total_tc_from_reduced.hits_percent, 100)
-        if goal in [eu.COVER_BRANCHES, eu.COVER_CONDITIONS] or isinstance(
-            goal, eu.CoverFunc
-        ):
+        if goal in [eu.COVER_BRANCHES, eu.COVER_CONDITIONS]:
             # In naive and furthest diff strategy tests with x = 2 and x := -2 are included
             # because each test will give 50% branch coverage and 50% condition coverage
             # and merging this together a branch/condition coverage of 100% is obtained.

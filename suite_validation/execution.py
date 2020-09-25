@@ -340,7 +340,6 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
         machine_model,
         timelimit_per_run,
         goal,
-        branch_label_line_numbers,
         harness_file_target="harness.c",
         compile_target="a.out",
         compiler="gcc",
@@ -357,10 +356,10 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
             compiler,
         )
         self._goal = goal
-        self._branch_label_line_numbers = branch_label_line_numbers
         self._output_dir_info = os.path.join(output_dir, info_files_dir)
         self.harness_file = None
         self._individual_runs = individual_runs
+        self._instrumented_programs_cache = dict()
         os.makedirs(self._output_dir_info, exist_ok=True)
 
     @staticmethod
@@ -373,14 +372,39 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
         info_file = self._get_info_file(harness_file)
         os.remove(info_file)
 
+    @staticmethod
+    def _get_instrumented_file_name(original_file) -> str:
+        filename = os.path.basename(original_file)
+        tmp_dir = tempfile.mkdtemp(prefix="testcov-")
+        return os.path.join(tmp_dir, "instrumented_" + filename)
+
+    def _prepare_program(self, program_file):
+        if isinstance(self._goal, eu.CoverFunc) or eu.uses_branch_coverage(self._goal):
+            if program_file not in self._instrumented_programs_cache:
+                prepared_program = self._get_instrumented_file_name(program_file)
+
+                label_lines = tr.instrument_program(
+                    program_file, self.machine_model, prepared_program, self._goal
+                )
+                self._instrumented_programs_cache[program_file] = (
+                    prepared_program,
+                    label_lines,
+                )
+
+            # Beware! Overwrites program_file parameter
+            program_file, label_line_numbers = self._instrumented_programs_cache[
+                program_file
+            ]
+        else:
+            label_line_numbers = None
+        return program_file, label_line_numbers
+
     def run(self, program_file, test_vector: eu.TestVector) -> eu.TestResult:
+        program_file, label_line_numbers = self._prepare_program(program_file)
+
         result = super().run(program_file, test_vector)
         result.coverage = self._compute_coverage(
-            program_file,
-            test_vector,
-            result,
-            self._goal,
-            self._branch_label_line_numbers,
+            program_file, test_vector, result, self._goal, label_line_numbers,
         )
 
         if isinstance(self._goal, eu.CoverFunc) and self._hit_target_function(
@@ -438,7 +462,6 @@ class IsolatingRunner(LcovCoverageMeasurer):
         machine_model,
         timelimit_per_run,
         goal,
-        branch_label_line_numbers,
         harness_file_target="harness.c",
         compile_target="a.out",
         memlimit=None,
@@ -452,7 +475,6 @@ class IsolatingRunner(LcovCoverageMeasurer):
             machine_model,
             timelimit_per_run if not use_runexec else None,
             goal,
-            branch_label_line_numbers,
             harness_file_target,
             compile_target,
             output_dir=output_dir,
@@ -632,24 +654,11 @@ class SuiteExecutor:
         if result_target is None:
             result_target = eu.SuiteExecutionResult()
 
-        branch_label_line_numbers = None
-
-        if isinstance(self._goal, eu.CoverFunc) or (
-            not self._use_gcov_only and eu.uses_branch_coverage(self._goal)
-        ):
-            instrumented_program_file = self._get_instrumented_file_name(program_file)
-            branch_label_line_numbers = tr.instrument_program(
-                program_file, machine_model, instrumented_program_file, self._goal
-            )
-            # Beware! Overwrites program_file parameter
-            program_file = instrumented_program_file
-
         if self._isolate_tests:
             executor = IsolatingRunner(
                 machine_model,
                 self._timelimit,
                 self._goal,
-                branch_label_line_numbers,
                 self._harness_file_target,
                 self._compile_target,
                 self._memlimit,
@@ -672,7 +681,6 @@ class SuiteExecutor:
                 machine_model,
                 self._timelimit,
                 self._goal,
-                branch_label_line_numbers,
                 self._harness_file_target,
                 self._compile_target,
                 output_dir=self._output_dir,
@@ -691,12 +699,6 @@ class SuiteExecutor:
         self._execute_tests(program_file, test_vectors, executor, result_target)
 
         return result_target
-
-    @staticmethod
-    def _get_instrumented_file_name(original_file) -> str:
-        filename = os.path.basename(original_file)
-        tmp_dir = tempfile.mkdtemp(prefix="testcov-")
-        return os.path.join(tmp_dir, "instrumented_" + filename)
 
     @staticmethod
     def _check_metadata(metadata, machine_model) -> None:
