@@ -2,8 +2,7 @@
 # a robust test executor with reliable coverage measurement:
 # https://gitlab.com/sosy-lab/software/test-suite-validator/
 #
-# Copyright (C) 2018 - 2020  Dirk Beyer
-# SPDX-FileCopyrightText: 2019 Dirk Beyer <https://www.sosy-lab.org>
+# SPDX-FileCopyrightText: 2019-2020 Dirk Beyer <https://www.sosy-lab.org>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -13,6 +12,7 @@ import argparse
 import logging
 import os
 import re
+import sys
 import zipfile
 from typing import Tuple
 from suite_validation import execution
@@ -228,9 +228,9 @@ def get_parser():
     return parser
 
 
-def parse():
+def parse(argv):
     parser = get_parser()
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if not args.goal_file:
         args.goal = eu.COVER_BRANCHES
@@ -330,8 +330,10 @@ def reduce_testsuite(execution_results, reduction_strategy) -> None:
     ]
 
 
-def main():
-    args = parse()
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+    args = parse(argv)
 
     if not os.path.exists(args.output_dir):
         os.mkdir(args.output_dir)
