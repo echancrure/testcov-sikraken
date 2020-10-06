@@ -2,8 +2,7 @@
 # a robust test executor with reliable coverage measurement:
 # https://gitlab.com/sosy-lab/software/test-suite-validator/
 #
-# Copyright (C) 2018 - 2020  Dirk Beyer
-# SPDX-FileCopyrightText: 2019 Dirk Beyer <https://www.sosy-lab.org>
+# SPDX-FileCopyrightText: 2019-2020 Dirk Beyer <https://www.sosy-lab.org>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -643,6 +642,8 @@ def _append_to_conditions_entries(
 def _get_coverage_from_tracefile(
     program_name, trace_file, coverage_goal, branch_label_line_numbers=None,
 ) -> Optional[_CoverageComparable]:
+    logging.debug("Extracting coverage from created tracefile")
+
     # Variables are filled by reading the trace file. After reading is finished these variables are
     # used to build the test coverage
     lines_hit_counter_dic = {}
@@ -738,6 +739,7 @@ def _get_coverage_from_tracefile(
     else:
         raise AssertionError("Unhandled coverage goal " + coverage_goal)
 
+    logging.debug("Done extracting coverage from created tracefile")
     return coverage
 
 

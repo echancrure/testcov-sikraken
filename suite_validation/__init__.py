@@ -338,11 +338,15 @@ def main(argv=None):
     if not os.path.exists(args.output_dir):
         os.mkdir(args.output_dir)
 
-    logger = logging.getLogger()
     if args.verbose:
-        logger.setLevel(logging.DEBUG)
+        log_level = logging.DEBUG
     else:
-        logger.setLevel(logging.INFO)
+        log_level = logging.INFO
+    logging.basicConfig(
+        format="%(asctime)s %(levelname)-8s %(message)s",
+        level=log_level,
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
 
     exec_results = eu.SuiteExecutionResult()
     harness_file = os.path.join(args.output_dir, "harness.c")
