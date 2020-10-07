@@ -9,7 +9,6 @@
 
 """Module for creation and execution of test harnesses from test-format XML files."""
 
-import logging
 import re
 import os
 import sys
@@ -24,6 +23,7 @@ from suite_validation import execution_utils as eu
 from suite_validation import coverage as cov
 from suite_validation import metadata_utils as mu
 from suite_validation import transformer as tr
+from suite_validation import _logger as logging
 
 HARNESS_FILE_NAME = "harness.c"
 

@@ -11,7 +11,6 @@
 
 import csv
 import json
-import logging
 import os
 import zipfile
 import shutil
@@ -19,6 +18,7 @@ from typing import List
 from suite_validation import _tool_info
 from suite_validation import metadata_utils
 from suite_validation import execution
+from suite_validation import _logger as logging
 
 # Constants for csv output
 DELIMITER_TEST_COVERAGES = ";"

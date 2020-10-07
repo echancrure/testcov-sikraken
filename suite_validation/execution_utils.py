@@ -7,10 +7,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import logging
 import subprocess
 import time
 from typing import List
+
+from suite_validation import _logger as logging
 
 ERROR_STRING = "Error found."
 

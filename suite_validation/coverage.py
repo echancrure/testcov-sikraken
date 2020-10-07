@@ -10,7 +10,6 @@
 
 from functools import reduce
 import os
-import logging
 import shutil
 
 from typing import Dict, Tuple, List, Optional, Sequence
@@ -18,6 +17,7 @@ from abc import ABCMeta, abstractmethod
 
 import numpy as np
 from suite_validation import execution_utils as eu
+from suite_validation import _logger as logging
 
 
 MODULE_DIRECTORY = os.path.join(os.path.dirname(__file__), os.path.pardir)

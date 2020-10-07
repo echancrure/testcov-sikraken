@@ -16,7 +16,6 @@ Reducer of C program. Create a residual program from an input program and a set 
 
 from contextlib import contextmanager
 import itertools
-import logging
 import re
 from typing import List, Dict, Tuple, Set, Iterable, Optional
 import pycparser
@@ -24,6 +23,7 @@ from pycparser import c_generator
 
 from suite_validation import label_adding as la
 from suite_validation import execution_utils as eu
+from suite_validation import _logger as logging
 
 
 class ParseError(Exception):

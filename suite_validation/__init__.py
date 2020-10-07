@@ -9,7 +9,6 @@
 """Main module of testcov."""
 
 import argparse
-import logging
 import os
 import re
 import sys
@@ -20,6 +19,7 @@ from suite_validation import execution_utils as eu
 from suite_validation import reduction_strategy as rs
 from suite_validation import writer as suite_writer
 from suite_validation import _tool_info
+from suite_validation import _logger as logging
 
 RESULTS_NAME = "results"
 REDUCED_TESTSUITE_NAME = "reduced-suite.zip"
@@ -338,15 +338,11 @@ def main(argv=None):
     if not os.path.exists(args.output_dir):
         os.mkdir(args.output_dir)
 
+    logfile = os.path.join(args.output_dir, "testcov.log")
     if args.verbose:
-        log_level = logging.DEBUG
+        logging.init(logging.DEBUG, logfile=logfile)
     else:
-        log_level = logging.INFO
-    logging.basicConfig(
-        format="%(asctime)s %(levelname)-8s %(message)s",
-        level=log_level,
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
+        logging.init(logging.INFO, logfile=logfile)
 
     exec_results = eu.SuiteExecutionResult()
     harness_file = os.path.join(args.output_dir, "harness.c")
