@@ -16,7 +16,7 @@ ERROR = logging.ERROR
 CRITICAL = logging.CRITICAL
 
 
-LOGGER = None
+LOGGER = logging.getLogger()
 
 
 def init(level, logfile):
