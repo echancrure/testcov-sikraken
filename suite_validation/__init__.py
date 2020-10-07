@@ -280,7 +280,7 @@ def _decide_execution_result(
         "Tests run: {}".format(len(exec_results.results)),
     ]
     coverage = exec_results.coverage_total
-    if not coverage:
+    if not coverage or not coverage.count_total:
         results_output.append("No coverage information available")
     else:
         results_output.append("Coverage: {}%".format(coverage.hits_percent))
@@ -317,7 +317,11 @@ def reduce_testsuite(execution_results, reduction_strategy) -> None:
     Puts the reduced test suite into execution_results.reduced_coverage_tests.
     Also replaces the set of successful tests with this reduced suite.
     """
-    if not (execution_results.coverage_tests and execution_results.coverage_total):
+    if not (
+        execution_results.coverage_tests
+        and execution_results.coverage_total
+        and any(c.coverage for c in execution_results.coverage_tests)
+    ):
         logging.debug("Can't reduce test suite because of missing coverage information")
         return
     execution_results.reduced_coverage_tests = rs.execute(
