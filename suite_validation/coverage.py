@@ -8,31 +8,26 @@
 
 """Module for coverage of individual tests"""
 
-from enum import Enum
 from functools import reduce
 import os
 import logging
 import shutil
 
-from typing import Dict, Tuple, List, Optional
+from typing import Dict, Tuple, List, Optional, Sequence
 from abc import ABCMeta, abstractmethod
 
+import numpy as np
 from suite_validation import execution_utils as eu
+
 
 MODULE_DIRECTORY = os.path.join(os.path.dirname(__file__), os.path.pardir)
 LLVM_GCOV_BINARY = os.path.join(MODULE_DIRECTORY, "bin/llvm-gcov")
 TRACE_FILE_CONDITION_NOT_VISITED = "-"
 
-
-class LcovPrefix(Enum):
-    FILEPATH = "SF:"
-    BRANCH_LINE_CONDITION_HIT_COUNTER = "BRDA:"
-    CONDITIONS_FOUND = "BRF:"
-    CONDITIONS_TAKEN = "BRH:"
-    LINE_HIT_COUNTER = "DA:"
-    LINES_NONZERO_HIT_COUNTER = "LH:"
-    LINES_FOUND = "LF:"
-    END_OF_RECORD = "end_of_record"
+_FILEPATH = "SF:"
+_LINE_HIT_COUNTER = "DA"
+_END_OF_RECORD = "end_of_record"
+_BRANCH_LINE_CONDITION_HIT_COUNTER = "BRDA:"
 
 
 class _CoverageComparable:
@@ -353,7 +348,7 @@ class _LinesCoverage(_CoverageComparable):
         )
 
     def is_program_line_covered(self, pl) -> bool:
-        return self._lines_hit_counter[pl] > 0
+        return self.hit_counter[pl] > 0
 
     def is_coverage_for_program_line_extended(
         self, other: "_LinesCoverage", pl
@@ -479,12 +474,6 @@ def remove_prefix(line, prefix):
     return line[len(prefix) :]
 
 
-def _examine_line_with_counter(line):
-    line_and_count = remove_prefix(line, LcovPrefix.LINE_HIT_COUNTER.value)
-    program_line, hit_counter = line_and_count.split(",")
-    return int(program_line), int(hit_counter)
-
-
 def _examine_line_with_condition(
     line_with_condition_info, conditions_entries: List[ConditionsEntry]
 ):
@@ -544,12 +533,12 @@ def _get_lcov_body(lcov_lines: List[str], relevant_program_name: str):
     start = None
     stop = None
     for idx, line in enumerate(lcov_lines):
-        if line.startswith(LcovPrefix.FILEPATH.value):
-            absolute_file_path = remove_prefix(line, LcovPrefix.FILEPATH.value).strip()
+        if line.startswith(_FILEPATH):
+            absolute_file_path = remove_prefix(line, _FILEPATH).strip()
             if os.path.basename(absolute_file_path) == relevant_program_name:
                 start = idx
 
-        elif start is not None and line.startswith(LcovPrefix.END_OF_RECORD.value):
+        elif start is not None and line.startswith(_END_OF_RECORD):
             stop = idx + 1
             break
     assert start is not None
@@ -560,9 +549,9 @@ def _get_lcov_body(lcov_lines: List[str], relevant_program_name: str):
 def _parse_for_condition_coverage(
     single_lcov_line, conditions_entries
 ) -> Tuple[int, int]:
-    if single_lcov_line.startswith(LcovPrefix.BRANCH_LINE_CONDITION_HIT_COUNTER.value):
+    if single_lcov_line.startswith(_BRANCH_LINE_CONDITION_HIT_COUNTER):
         line_with_condition_information = remove_prefix(
-            single_lcov_line, LcovPrefix.BRANCH_LINE_CONDITION_HIT_COUNTER.value
+            single_lcov_line, _BRANCH_LINE_CONDITION_HIT_COUNTER
         )
         _examine_line_with_condition(
             line_with_condition_information, conditions_entries
@@ -577,28 +566,25 @@ def _get_condition_coverage(lcov_lines):
     return _ConditionsCoverage(conditions_entries)
 
 
-def _parse_for_line_coverage(
-    single_lcov_line, relevant_line_numbers
-) -> Optional[Tuple[int, int]]:
-    if single_lcov_line.startswith(LcovPrefix.LINE_HIT_COUNTER.value):
-        program_line, hit_count = _examine_line_with_counter(single_lcov_line)
-        if not relevant_line_numbers or program_line in relevant_line_numbers:
-            return program_line, hit_count
-    return None
+def _get_line_hits(
+    lcov_lines: Sequence[str], relevant_line_numbers: Optional[Sequence[int]]
+) -> Dict[int, int]:
+    lines = np.array(lcov_lines)
+    table = np.char.partition(lines, ":")
+    line_entries = table[table[:, 0] == _LINE_HIT_COUNTER][:, 2]
+    pairs = np.char.partition(line_entries, ",")[:, [0, 2]].astype(int)
+    if relevant_line_numbers is not None:
+        pairs = pairs[np.isin(pairs[:, 0], relevant_line_numbers)]
+    return dict(pairs)
 
 
-def _get_line_coverage(lcov_lines, relevant_line_numbers, goal):
+def _get_line_coverage(
+    lcov_lines: Sequence[str], relevant_line_numbers: Optional[Sequence[int]], goal
+) -> Dict[int, int]:
     if eu.uses_branch_coverage(goal) and relevant_line_numbers is None:
         return None
 
-    hits = {}
-    for line in lcov_lines:
-        line_and_count = _parse_for_line_coverage(line, relevant_line_numbers)
-        if line_and_count is not None:
-            program_line, hit_count = line_and_count
-            assert program_line not in hits
-            hits[program_line] = hit_count
-
+    hits = _get_line_hits(lcov_lines, relevant_line_numbers)
     if eu.uses_line_coverage(goal):
         return _LinesCoverage(hits)
     if eu.uses_branch_coverage(goal):
