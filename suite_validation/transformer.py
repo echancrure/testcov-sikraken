@@ -26,13 +26,6 @@ from suite_validation import execution_utils as eu
 from suite_validation import _logger as logging
 
 
-class ParseError(Exception):
-    def __init__(self, msg=None, cause=None):
-        super().__init__(msg, cause)
-        self.msg = msg
-        self.cause = cause
-
-
 class CfgNode:
     counter = 0
 
@@ -206,7 +199,7 @@ def _build_cfg(
     builder = _CfgBuilder(args)
     builder.visit(ast)
     if entryfunction not in builder.functions or not builder.functions[entryfunction]:
-        raise ParseError(
+        raise eu.ParseError(
             "Entry function {} not found in program under test".format(entryfunction)
         )
 
@@ -300,6 +293,8 @@ def _parse(content_original: str) -> pycparser.c_ast.FileAST:
 
         parser = _get_parser()
         return parser.parse(content)
+    except pycparser.plyparser.ParseError as e:
+        raise eu.ParseError("Parsing failed") from e
     finally:
         logging.debug("Finished parsing program")
 

@@ -16,6 +16,13 @@ from suite_validation import _logger as logging
 ERROR_STRING = "Error found."
 
 
+class ParseError(Exception):
+    def __init__(self, msg=None, cause=None):
+        super().__init__(msg, cause)
+        self.msg = msg
+        self.cause = cause
+
+
 class CoverFunc:
     def __init__(self, target_method):
         self.target_method = target_method

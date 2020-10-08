@@ -370,7 +370,24 @@ def main(argv=None):
             stop_on_success=args.stop_on_success,
         )
 
-        executor.run(args.file, args.test_suite, args.machine_model, exec_results)
+        try:
+            executor.run(args.file, args.test_suite, args.machine_model, exec_results)
+        except eu.ParseError as e:
+            if args.use_gcov:
+                raise e
+            logging.error(
+                "💥 Preparing program for coverage measurement with lcov failed: %s", e
+            )
+            logging.info("Retrying executing with gcov measurement")
+            executor = execution.SuiteExecutor(
+                args.goal,
+                args.timelimit_per_run,
+                harness_file_target=harness_file,
+                compile_target=executable,
+                use_gcov_only=True,
+                stop_on_success=args.stop_on_success,
+            )
+            executor.run(args.file, args.test_suite, args.machine_model, exec_results)
 
         if not exec_results.results:
             logging.warning(

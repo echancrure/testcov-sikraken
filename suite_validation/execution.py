@@ -609,11 +609,13 @@ class SuiteExecutor:
 
         self._harness_file_target = harness_file_target
         self._compile_target = compile_target
-        self._isolate_tests = isolate_tests
-        self._compute_individual_test_coverages = compute_individuals
+        self._isolate_tests = isolate_tests and not use_gcov_only
+        self._compute_individual_test_coverages = (
+            compute_individuals and not use_gcov_only
+        )
         self._memlimit = memlimit
         self._cpu_cores = cores
-        self._use_runexec = use_runexec
+        self._use_runexec = use_runexec and not use_gcov_only
         self._use_gcov_only = use_gcov_only
         assert (
             not self._use_gcov_only or not self._isolate_tests
@@ -787,27 +789,25 @@ class SuiteExecutor:
         """Executes all test vectors on the given program using the given executor
         and puts the results into result_target."""
 
-        try:
-            print("⏳ Executing tests.", file=self._info_target, end="", flush=True)
+        print("⏳ Executing tests.", file=self._info_target, end="", flush=True)
 
-            for tv in test_vectors:
-                result_target.tests.append(tv)
-                next_result = executor.run(program_file, tv)
-                result_target.results.append(next_result)
+        for tv in test_vectors:
+            result_target.tests.append(tv)
+            next_result = executor.run(program_file, tv)
+            result_target.results.append(next_result)
 
-                self._record_coverage(result_target, next_result, program_file, tv)
+            self._record_coverage(result_target, next_result, program_file, tv)
 
-                if not self._check_for_error:
-                    # if we do not try to reach an error, every test is successful, by default
-                    result_target.successful_tests.append(tv)
-                if self._check_for_error and next_result == eu.COVERS:
-                    result_target.successful_tests.append(tv)
-                    if self._stop_on_success:
-                        logging.info("Stopping. Error found for test %s", tv)
-                        break
-                print(".", file=self._info_target, end="", flush=True)
-        finally:
-            print("\n✔️  Done!", file=self._info_target, flush=True)  # print newline
+            if not self._check_for_error:
+                # if we do not try to reach an error, every test is successful, by default
+                result_target.successful_tests.append(tv)
+            if self._check_for_error and next_result == eu.COVERS:
+                result_target.successful_tests.append(tv)
+                if self._stop_on_success:
+                    logging.info("Stopping. Error found for test %s", tv)
+                    break
+            print(".", file=self._info_target, end="", flush=True)
+        print("\n✔️  Done!", file=self._info_target, flush=True)  # print newline
 
 
 def _parse_xml_if_testcase(xml_lines):

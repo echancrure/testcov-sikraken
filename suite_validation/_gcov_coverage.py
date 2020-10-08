@@ -42,9 +42,9 @@ def _run_gcov(data_file, gcov_tool="gcov"):
 
 
 def parse_gcov_output(program_name, gcov_output, goal) -> Coverage:
-    if eu.uses_line_coverage(goal) or eu.uses_branch_coverage(goal):
+    if eu.uses_line_coverage(goal):
         match = "Lines executed:"
-    elif eu.uses_condition_coverage(goal):
+    elif eu.uses_condition_coverage(goal) or eu.uses_branch_coverage(goal):
         # this is actually condition coverage, but use it for backwards-compatibility
         match = "Taken at least once:"
     else:
