@@ -404,7 +404,11 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
 
         result = super().run(program_file, test_vector)
         result.coverage = self._compute_coverage(
-            program_file, test_vector, result, self._goal, label_line_numbers,
+            program_file,
+            test_vector,
+            result,
+            self._goal,
+            label_line_numbers,
         )
 
         if isinstance(self._goal, eu.CoverFunc) and self._hit_target_function(
@@ -717,7 +721,7 @@ class SuiteExecutor:
     def _get_described_vectors(test_suite):
         """Return a generator that produces the test vectors described by the given test suite.
 
-            :raises ExecutionError: if given test suite is invalid.
+        :raises ExecutionError: if given test suite is invalid.
         """
         logging.debug("Looking for tests in %s", test_suite)
         with zipfile.ZipFile(test_suite) as zip_inp:

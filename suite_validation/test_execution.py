@@ -357,7 +357,9 @@ class TestSuiteExecutor(TempDirExecutor):
 
     @staticmethod
     def get_runner(
-        goal=eu.COVER_BRANCHES, timelimit=None, compute_individuals=True,
+        goal=eu.COVER_BRANCHES,
+        timelimit=None,
+        compute_individuals=True,
     ):
         harness_file = _get_harness_file_target()
         compile_output_file = _get_compile_target()
@@ -405,9 +407,12 @@ class TestSuiteExecutor(TempDirExecutor):
         branches = result_obj.coverage_total.coverage
 
         eq_(len(results), 2, "Not both tests executed")
-        assert results.count(eu.COVERS) == 1 and results.count(eu.UNKNOWN) == 1, (
-            "Expected exactly one result to be %s and one to be %s: %s"
-            % (eu.COVERS, eu.UNKNOWN, results)
+        assert (
+            results.count(eu.COVERS) == 1 and results.count(eu.UNKNOWN) == 1
+        ), "Expected exactly one result to be %s and one to be %s: %s" % (
+            eu.COVERS,
+            eu.UNKNOWN,
+            results,
         )
         assert branches, "Coverage information invalid: %s" % branches
 
@@ -459,9 +464,10 @@ class TestSuiteExecutor(TempDirExecutor):
             len(results) == 2
             and any(r == eu.COVERS for r in results)
             and any(r == eu.UNKNOWN for r in results)
-        ), (
-            "Expected results '%s' and '%s', but got: %s"
-            % (eu.COVERS, eu.UNKNOWN, results)
+        ), "Expected results '%s' and '%s', but got: %s" % (
+            eu.COVERS,
+            eu.UNKNOWN,
+            results,
         )
 
     def test_compute_individuals_produces_same_coverage(self):
@@ -565,9 +571,9 @@ class TestSuiteExecutor(TempDirExecutor):
         if goal in [eu.COVER_LINES]:
             assert len(result_obj.reduced_coverage_tests) < len(
                 result_obj.coverage_tests
-            ), (
-                "Inconsistent sequences: %s and %s"
-                % (result_obj.reduced_coverage_tests, result_obj.coverage_tests)
+            ), "Inconsistent sequences: %s and %s" % (
+                result_obj.reduced_coverage_tests,
+                result_obj.coverage_tests,
             )
             # only test with x = 2 included because this test executes the line in the if body and
             # gives 100% line coverage. The DIFF approach find this "better" test. The naive reduction approach
@@ -586,9 +592,9 @@ class TestSuiteExecutor(TempDirExecutor):
             # condition coverage and merging this together a branch/condition coverage of 100% is obtained.
             assert len(result_obj.reduced_coverage_tests) == len(
                 result_obj.coverage_tests
-            ), (
-                "Inconsistent sequences: %s and %s"
-                % (result_obj.reduced_coverage_tests, result_obj.coverage_tests)
+            ), "Inconsistent sequences: %s and %s" % (
+                result_obj.reduced_coverage_tests,
+                result_obj.coverage_tests,
             )
             eq_(len(result_obj.reduced_coverage_tests), 2)
             total_tc_from_reduced = None
@@ -615,9 +621,9 @@ class TestSuiteExecutor(TempDirExecutor):
             if strategy == rs.FURTHEST_DIFF_REDUCTION:
                 assert len(result_obj.reduced_coverage_tests) < len(
                     result_obj.coverage_tests
-                ), (
-                    "Inconsistent sequences: %s and %s"
-                    % (result_obj.reduced_coverage_tests, result_obj.coverage_tests)
+                ), "Inconsistent sequences: %s and %s" % (
+                    result_obj.reduced_coverage_tests,
+                    result_obj.coverage_tests,
                 )
                 # only test with x = 2 included because this test executes the line in the if body and
                 # gives 100% line coverage. The DIFF approach finds this "better" test.
@@ -633,9 +639,9 @@ class TestSuiteExecutor(TempDirExecutor):
             if strategy == rs.BYORDER_REDUCTION:
                 assert len(result_obj.reduced_coverage_tests) == len(
                     result_obj.coverage_tests
-                ), (
-                    "Inconsistent sequences: %s and %s"
-                    % (result_obj.reduced_coverage_tests, result_obj.coverage_tests)
+                ), "Inconsistent sequences: %s and %s" % (
+                    result_obj.reduced_coverage_tests,
+                    result_obj.coverage_tests,
                 )
                 # Both test vectors included because the naive approach works sequentially when looking
                 # at the test coverages.
@@ -656,9 +662,9 @@ class TestSuiteExecutor(TempDirExecutor):
             # and merging this together a branch/condition coverage of 100% is obtained.
             assert len(result_obj.reduced_coverage_tests) == len(
                 result_obj.coverage_tests
-            ), (
-                "Inconsistent sequences: %s and %s"
-                % (result_obj.reduced_coverage_tests, result_obj.coverage_tests)
+            ), "Inconsistent sequences: %s and %s" % (
+                result_obj.reduced_coverage_tests,
+                result_obj.coverage_tests,
             )
             eq_(len(result_obj.reduced_coverage_tests), 2)
             total_tc_from_reduced = None

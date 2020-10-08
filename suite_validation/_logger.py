@@ -33,7 +33,8 @@ def _create_logger(level, logfile):
     logger.addHandler(stdout_handler)
     logfile_handler = logging.FileHandler(logfile)
     logfile_formatter = logging.Formatter(
-        fmt="%(asctime)s %(levelname)-8s %(message)s", datefmt="%Y-%m-%d %H:%M:%S",
+        fmt="%(asctime)s %(levelname)-8s %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
     logfile_handler.setFormatter(logfile_formatter)
     logger.addHandler(logfile_handler)

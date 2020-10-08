@@ -593,7 +593,10 @@ def _get_line_coverage(
 
 
 def _get_coverage_from_tracefile(
-    program_name, trace_file, coverage_goal, relevant_line_numbers=None,
+    program_name,
+    trace_file,
+    coverage_goal,
+    relevant_line_numbers=None,
 ) -> Optional[_CoverageComparable]:
     logging.debug("Extracting coverage from created tracefile")
 
@@ -649,7 +652,10 @@ def _compute_test_coverage_lcov(
     return (
         [tracefile],
         _get_coverage_from_tracefile(
-            program_name, tracefile, coverage_goal, branch_label_line_numbers,
+            program_name,
+            tracefile,
+            coverage_goal,
+            branch_label_line_numbers,
         ),
     )
 
@@ -665,7 +671,11 @@ def compute_test_coverage(
     output_dir="output/info_files",
 ) -> TestCoverage:
     created_files, coverage = _compute_test_coverage_lcov(
-        program_name, data_file, coverage_goal, branch_label_line_numbers, gcov_tool,
+        program_name,
+        data_file,
+        coverage_goal,
+        branch_label_line_numbers,
+        gcov_tool,
     )
     for f in created_files:
         _archive_file(f, test_vector.name, output_dir)
