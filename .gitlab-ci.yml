@@ -36,7 +36,7 @@ pylint:
   script:
     - pylint suite_validation
   variables:
-    PYTHON_VERSION: '3.7'
+    PYTHON_VERSION: '3.8'
 
 check-format:
   stage: test
@@ -44,7 +44,7 @@ check-format:
       - "black suite_validation && git diff -s --exit-code"
       - "clang-format -i suite_validation/harness.c && git diff -s --exit-code"
   variables:
-    PYTHON_VERSION: '3.7'
+    PYTHON_VERSION: '3.8'
 
 check-archive:
     stage: test
@@ -70,6 +70,11 @@ unit-tests:python-3.7:
   variables:
     PYTHON_VERSION: '3.7'
 
+unit-tests:python-3.8:
+  <<: *unit-tests
+  variables:
+    PYTHON_VERSION: '3.8'
+
 integration-tests:python-3.6:
   <<: *integration-tests
   variables:
@@ -80,17 +85,22 @@ integration-tests:python-3.7:
   variables:
     PYTHON_VERSION: '3.7'
 
+integration-tests:python-3.8:
+  <<: *integration-tests
+  variables:
+    PYTHON_VERSION: '3.8'
+
 # 
 # deploy-coverage:
 #   stage: deploy
 #   variables:
-#     PYTHON_VERSION: '3.7'
+#     PYTHON_VERSION: '3.8'
 #   before_script:
 #     - pip install -e git+https://github.com/codacy/python-codacy-coverage.git#egg=codacy
 #   script:
 #     - python-codacy-coverage -r coverage.xml
 #   dependencies:
-#     - unit-tests:python-3.7
+#     - unit-tests:python-3.8
 #   only:
 #     refs:
 #       - master

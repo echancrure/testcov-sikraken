@@ -2,7 +2,7 @@
 # a robust test executor with reliable coverage measurement:
 # https://gitlab.com/sosy-lab/software/test-suite-validator/
 #
-# SPDX-FileCopyrightText: 2019-2020 Dirk Beyer <https://www.sosy-lab.org>
+# SPDX-FileCopyrightText: 2020 Dirk Beyer <https://www.sosy-lab.org>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -11,12 +11,12 @@
 # and will be used by CI as declared in .gitlab-ci.yml.
 #
 # Commands for updating the image:
-# docker build -t registry.gitlab.com/sosy-lab/software/test-suite-validator/test:python-3.6 - < test/Dockerfile.python-3.6
+# docker build -t registry.gitlab.com/sosy-lab/software/test-suite-validator/test:python-3.8 - < test/Dockerfile.python-3.6
 # docker push registry.gitlab.com/sosy-lab/software/test-suite-validator/test
 
-FROM python:3.6-buster
+FROM python:3.8-buster
 
-RUN apt-get update && apt-get install -y gcc-multilib g++-multilib lcov clang llvm \
+RUN apt-get update && apt-get install -y gcc-multilib g++-multilib lcov clang clang-format llvm git \
   && rm -rf /var/lib/apt/lists/*
 
 RUN pip install -U pip && pip install \
@@ -26,4 +26,7 @@ RUN pip install -U pip && pip install \
   benchexec \
   matplotlib \
   numpy \
-  pycparser
+  pycparser \
+  pylint \
+  black
+

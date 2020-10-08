@@ -2,7 +2,7 @@
 # a robust test executor with reliable coverage measurement:
 # https://gitlab.com/sosy-lab/software/test-suite-validator/
 #
-# SPDX-FileCopyrightText: 2019 Dirk Beyer <https://www.sosy-lab.org>
+# SPDX-FileCopyrightText: 2019-2020 Dirk Beyer <https://www.sosy-lab.org>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -14,19 +14,16 @@
 # docker build -t registry.gitlab.com/sosy-lab/software/test-suite-validator/test:python-3.7 - < test/Dockerfile.python-3.7
 # docker push registry.gitlab.com/sosy-lab/software/test-suite-validator/test
 
-FROM ubuntu:18.04
+FROM python:3.7-buster
 
-RUN apt update && apt install -y gcc-multilib g++-multilib lcov clang clang-format llvm python3.7 python3.7-dev python3-pip git
+RUN apt-get update && apt-get install -y gcc-multilib g++-multilib lcov clang llvm \
+  && rm -rf /var/lib/apt/lists/*
 
-RUN python3.7 -m pip install -U pip && python3.7 -m pip install \
+RUN pip install -U pip && pip install \
   coverage \
   lxml \
   nose \
-  pylint \
-  black \
   benchexec \
   matplotlib \
   numpy \
   pycparser
-
-RUN rm -f /usr/bin/python3 /usr/bin/python && ln -s /usr/bin/python3.7 /usr/bin/python3 && ln -s /usr/bin/python3 /usr/bin/python
