@@ -12,9 +12,9 @@
 # pylint: disable=C0103
 # to disable snake_case error
 
-import logging
 from typing import Optional, Iterable
 import pycparser
+from suite_validation import _logger as logging
 
 LABEL_PREFIX = "BRANCH_"
 GOTO_PREFIX = "goto " + LABEL_PREFIX
