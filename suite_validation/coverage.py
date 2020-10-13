@@ -431,7 +431,9 @@ class TestCoverage:
         if not isinstance(other, TestCoverage):
             raise ValueError()
         if not self.filename == other.filename:
-            raise ValueError()
+            raise ValueError(
+                f"Filenames between coverages do not match: {self.filename} and {other.filename}"
+            )
 
         summarized_test_vector_results = {
             **other.test_vector_results,
