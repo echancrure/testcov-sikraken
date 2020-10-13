@@ -400,6 +400,7 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
         return program_file, label_line_numbers
 
     def run(self, program_file, test_vector: eu.TestVector) -> eu.TestResult:
+        original_program = program_file
         program_file, label_line_numbers = self._prepare_program(program_file)
 
         result = super().run(program_file, test_vector)
@@ -410,6 +411,10 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
             self._goal,
             label_line_numbers,
         )
+        if result.coverage:
+            # To hide the information that lcov measurement actually works on an instrumented program,
+            # set the filename to the original program before returning the coverage
+            result.coverage.filename = _get_program_name(original_program)
 
         if isinstance(self._goal, eu.CoverFunc) and self._hit_target_function(
             result.coverage
