@@ -38,7 +38,7 @@ cp $(which geninfo) "${DIRNAME}"/lib/bin
 )
 # Set version number
 find testcov/suite_validation -name '*.py' -exec sed -i "s/\(__VERSION__\s*=\s*\).*/\1\"$VERSION\"/" '{}' +
-zip --exclude="*/lib/PyYAML-*.dist-info/*" --exclude="*/lib/yaml*" --exclude="*/test/*" --exclude="*/a.out" --exclude="*/.idea/*" --exclude="*/__pycache__/*" -r testcov.zip testcov/{bin,suite_validation,lib,LICENSE.txt,README.md}
+zip --exclude="*/lib/PyYAML-*.dist-info/*" --exclude="*/lib/yaml*" --exclude="*/test/*" --exclude="*/a.out" --exclude="*/.idea/*" --exclude="*/__pycache__/*" -r testcov.zip testcov/{bin,suite_validation,lib,LICENSE,LICENSES,README.md}
 popd
 mv "$TMPDIR/testcov.zip" ./
 echo "Wrote testcov.zip, version $VERSION"
