@@ -19,6 +19,75 @@ For coverage computation, TestCov uses [gcov](https://gcc.gnu.org/onlinedocs/gcc
 and [lcov](https://github.com/linux-test-project/lcov).
 For containerization, TestCov uses parts of [BenchExec](https://github.com/sosy-lab/benchexec/).
 
+## Requirements
+
+* Python >= 3.6
+* gcc >= 8.0
+* lcov >= 1.13
+
+The following requirements are automatically installed by `setup.py` upon installation,
+but can also be installed with `pip install -r requirements.txt`:
+* lxml >= 4.0
+* numpy >= 1.15
+* BenchExec >= 1.20
+* pycparser >= 2.19
+
+Older versions of GCC can be used, but may mistakenly mark the last else-branch of a program
+as covered, even it if wasn't. We thus recommend to use gcc version 8.0 or later.
+
+Optional, for plotting (if not available, run `testcov` with argument `--no-plots`):
+* matplotlib >= 3.1.0
+
+For development, we use the [`black`](https://github.com/python/black) formatter,
+[`pylint`](https://www.pylint.org/)
+and [`nosetest`](https://nose.readthedocs.io/en/latest/).
+
+## Installation
+
+To install, you can run `pip install .`
+or `python3 setup.py install`.
+
+
+## Usage
+
+To check that TestCov is working as expected, run from the repository root:
+
+```bash
+bin/testcov --no-isolation --test-suite "test/suites/suite-simple-if.zip" "test/test_simple-if.c"
+```
+
+This should output the following:
+```
+⏳ Executing tests...
+✔️  Done!
+
+---Results---
+Tests run: 2
+Coverage: 100.0%
+Number of goals: 2
+Result: DONE
+```
+
+The output tells you:
+- the number of test-cases that were executed ("Tests run: 2")
+- the coverage achieved by these test executions ("Coverage: 100.0%")
+- the number of test goals in the program ("Number of goals: 2")
+- the result of TestCov (Result: DONE).
+
+The above command-line uses parameter `--no-isolation` to turn of isolation of test execution.
+We use this parameter to make sure that if the command fails it is some issue with your installation of TestCov,
+and not some issue with BenchExec or your cgroups configuration.
+
+If above command works, but the following command fails, it is very likely that your system is not configured
+as [required by BenchExec](https://github.com/sosy-lab/benchexec/blob/master/doc/INSTALL.md).
+
+```bash
+bin/testcov --test-suite "test/suites/suite-simple-if.zip" "test/test_simple-if.c"
+```
+
+Run `bin/testcov --help` to get additional information
+about configuration parameters.
+
 ## Details
 
 **Test Execution.**
@@ -60,44 +129,6 @@ In addition, file `output/results.json` gives detailed information about each ex
 (runtime of that test, individual coverage achieved by that test, etc.)
 and a reduced test suite is produced at `output/reduced-suite.zip`.
 
-## Requirements
-
-* Python >= 3.6
-* gcc >= 8.0
-* lcov >= 1.13
-
-The following requirements are automatically installed by `setup.py` upon installation,
-but can also be installed with `pip install -r requirements.txt`:
-* lxml >= 4.0
-* numpy >= 1.15
-* BenchExec >= 1.20
-* pycparser >= 2.19
-
-Older versions of GCC can be used, but may mistakenly mark the last else-branch of a program
-as covered, even it if wasn't. We thus recommend to use gcc version 8.0 or later.
-
-Optional, for plotting (if not available, run `testcov` with argument `--no-plots`):
-* matplotlib >= 3.1.0
-
-For development, we use the [`black`](https://github.com/python/black) formatter,
-[`pylint`](https://www.pylint.org/)
-and [`nosetest`](https://nose.readthedocs.io/en/latest/).
-
-## Installation
-
-To install, you can run `pip install .`
-or `python3 setup.py install`.
-
-## Usage
-
-To run test-suite `suite.zip` on program `foo.c`, call:
-
-```bash
-testcov --test-suite suite.zip foo.c
-```
-
-Run `bin/testcov --help` to get additional information
-about configuration parameters.
 
 ## Support
 
