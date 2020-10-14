@@ -424,7 +424,7 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
 
     @staticmethod
     def _hit_target_function(coverage: cov.TestCoverage):
-        return coverage.count_total > 0 and coverage.hits > 0
+        return coverage and coverage.count_total > 0 and coverage.hits > 0
 
     def _compute_coverage(
         self,
