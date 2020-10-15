@@ -106,6 +106,29 @@ class _CoverageComparable:
         _, only_covered_by_other = self.compute_coverage_relation(other)
         return only_covered_by_other > 0
 
+    def __eq__(self, other):
+        try:
+            cov = float(other)
+            return self.hits_percent == cov
+        except TypeError:
+            return False
+
+    def __lt__(self, other):
+        try:
+            cov = float(other)
+            return self.hits_percent < cov
+        except TypeError:
+            return False
+
+    def __le__(self, other):
+        return self < other or self == other
+
+    def __gt__(self, other):
+        return not self <= other
+
+    def __ge__(self, other):
+        return self > other or self == other
+
 
 class ConditionsEntry:
     """
@@ -290,6 +313,8 @@ class _ConditionsCoverage(_CoverageComparable):
         return this_entry.is_coverage_for_program_line_extended(other_entry)
 
     def __eq__(self, other):
+        if super().__eq__(other):
+            return True
         if not isinstance(other, _ConditionsCoverage):
             return False
         return self.conditions_entries == other.conditions_entries
@@ -358,6 +383,8 @@ class _LinesCoverage(_CoverageComparable):
         )
 
     def __eq__(self, other):
+        if super().__eq__(other):
+            return True
         if not isinstance(other, _LinesCoverage):
             return False
         return self.hit_counter == other.hit_counter
@@ -469,7 +496,7 @@ class TestCoverage:
         )
 
     def __str__(self):
-        return "%s: %s" % (self.filename, self.coverage)
+        return f"{[v.name for v in self.test_vector_results]} on {self.filename}: {self.coverage}"
 
 
 def remove_prefix(line, prefix):
