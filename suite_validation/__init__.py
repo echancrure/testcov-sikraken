@@ -388,7 +388,7 @@ def main(argv=None):
                 stop_on_success=args.stop_on_success,
             )
             executor.run(args.file, args.test_suite, args.machine_model, exec_results)
-
+            assert not exec_results.successful_tests or exec_results.coverage_total
         if not exec_results.results:
             logging.warning(
                 "No test case in exchange format found in '%s'", args.test_suite
