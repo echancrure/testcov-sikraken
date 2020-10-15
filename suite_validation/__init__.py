@@ -280,7 +280,7 @@ def _decide_execution_result(
         "Tests run: {}".format(len(exec_results.results)),
     ]
     coverage = exec_results.coverage_total
-    if not coverage or not coverage.count_total:
+    if not coverage or coverage.count_total is None:
         results_output.append("No coverage information available")
     else:
         results_output.append("Coverage: {}%".format(coverage.hits_percent))
