@@ -892,9 +892,15 @@ class TestCoverageChecker:
 
             # for naive reduction the test coverage positions in the list is crucial
             reduced_tests = rs.execute(rs.BYORDER_REDUCTION, covs1)
-            assert self.bad_test_coverages[goal] in reduced_tests
-            assert self.perfect_test_coverages[goal] in reduced_tests
-            assert self.half_perfect_test_coverages[goal] not in reduced_tests
+            assert (
+                self.bad_test_coverages[goal] not in reduced_tests
+            ), r"Test coverage with 0% coverage in reduced test suite"
+            assert (
+                self.perfect_test_coverages[goal] in reduced_tests
+            ), r"Test coverage with 100% coverage not in reduced test suite"
+            assert (
+                self.half_perfect_test_coverages[goal] not in reduced_tests
+            ), r"Test coverage not increasing total coverage in reduced test suite"
             assert (
                 self.half_perfect_test_coverages_complementary[goal]
                 not in reduced_tests

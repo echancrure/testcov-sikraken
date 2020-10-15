@@ -11,6 +11,7 @@
 
 from typing import List
 import copy
+from suite_validation import _logger as logging
 from suite_validation import coverage as cov
 
 NO_REDUCTION = "NONE"
@@ -49,18 +50,21 @@ def naive_reduction(
     """
     # copy the list but not the contained objects
     individual_coverages = individual_coverages[:]
-    total_tc = next(cov for cov in individual_coverages if cov.coverage)
-    individual_coverages.remove(total_tc)
-    reduced_coverages = [total_tc]
+    reduced_coverages = []
+    total_tc = None
     # make a deep copy because coverage gets overwritten
-    total_tc = copy.deepcopy(total_tc)
     for tc in individual_coverages:
-        if not tc.coverage:
+        assert not total_tc or total_tc.coverage
+        if not tc.coverage or tc.coverage == 0:
             continue
-        assert total_tc.coverage
-        if total_tc.coverage.is_coverage_extended(tc.coverage):
+        if not total_tc or total_tc.coverage.is_coverage_extended(tc.coverage):
+            logging.debug(f"Adding {tc} to reduced coverages")
+            assert tc.coverage > 0
             reduced_coverages.append(tc)
-            total_tc = total_tc + tc
+            if not total_tc:
+                total_tc = tc
+            else:
+                total_tc = total_tc + tc
     return reduced_coverages
 
 
