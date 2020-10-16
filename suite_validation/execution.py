@@ -520,8 +520,12 @@ class IsolatingRunner(LcovCoverageMeasurer):
         else:
             cmd = ["containerexec"]
         isolation_cmd = cmd + [
+            "--read-only-dir",
+            "/",
             "--overlay-dir",
             os.getcwd(),
+            "--hidden-dir",
+            "/home",
             "--hidden-dir",
             "/sys/kernel/debug",
             "--result-files",
