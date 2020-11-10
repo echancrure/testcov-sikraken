@@ -44,9 +44,7 @@ and [`nosetest`](https://nose.readthedocs.io/en/latest/).
 
 ## Installation
 
-To install, you can run `pip install .`
-or `python3 setup.py install`.
-
+Because of additionally shipped libraries, we recommend to run TestCov from its repository.
 
 ## Usage
 
