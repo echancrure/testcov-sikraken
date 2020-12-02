@@ -370,25 +370,7 @@ def main(argv=None):
             stop_on_success=args.stop_on_success,
         )
 
-        try:
-            executor.run(args.file, args.test_suite, args.machine_model, exec_results)
-        except eu.ParseError as e:
-            if args.use_gcov:
-                raise e
-            logging.error(
-                "💥 Preparing program for coverage measurement with lcov failed: %s", e
-            )
-            logging.info("Retrying executing with gcov measurement")
-            executor = execution.SuiteExecutor(
-                args.goal,
-                args.timelimit_per_run,
-                harness_file_target=harness_file,
-                compile_target=executable,
-                use_gcov_only=True,
-                stop_on_success=args.stop_on_success,
-            )
-            executor.run(args.file, args.test_suite, args.machine_model, exec_results)
-            assert not exec_results.successful_tests or exec_results.coverage_total
+        executor.run(args.file, args.test_suite, args.machine_model, exec_results)
         if not exec_results.results:
             logging.warning(
                 "No test case in exchange format found in '%s'", args.test_suite
