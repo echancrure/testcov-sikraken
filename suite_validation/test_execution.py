@@ -26,10 +26,19 @@ import suite_validation
 MODULE_DIRECTORY = os.path.join(
     os.path.dirname(suite_validation.__file__), os.path.pardir
 )
+
+COVER_REACH = eu.CoverFunc("reach_error")
+
 TEST_DIRECTORY = os.path.join(MODULE_DIRECTORY, "test")
 TEST_FILE_WITHOUT_ERR = os.path.join(TEST_DIRECTORY, "test.c")
-TEST_FILE_WITH_VERIFIER_ERR = os.path.join(TEST_DIRECTORY, "test_false_VerifierError.c")
-TEST_FILE_WITH_REACH_ERR = os.path.join(TEST_DIRECTORY, "test_false_ReachError.c")
+TEST_FILES_WITH_ERR = [
+    (os.path.join(TEST_DIRECTORY, f), v)
+    for f, v in (
+        ("test_false_VerifierError.c", eu.CoverFunc("__VERIFIER_error")),
+        ("test_false_ReachError.c", COVER_REACH),
+        ("test_false_ReachErrorMultiline.c", COVER_REACH),
+    )
+]
 TEST_FILE_WITH_NO_TERMINATION = os.path.join(TEST_DIRECTORY, "test_no-termination.c")
 TEST_FILE_WITH_STRINGS = os.path.join(TEST_DIRECTORY, "test_string.c")
 TEST_FILE_COVERAGE = os.path.join(TEST_DIRECTORY, "test_coverages.c")
@@ -52,8 +61,6 @@ MACHINE_MODELS = (eu.MACHINE_MODEL_32, eu.MACHINE_MODEL_64)
 
 DUMMY_FILE = "DUMMY_FILE"
 DUMMY_TEST_VECTOR_RESULT = {eu.TestVector("dummy_tv", "dummy.xml"): eu.UNKNOWN}
-
-COVER_REACH = eu.CoverFunc("reach_error")
 
 
 # pylint: disable=protected-access
@@ -326,17 +333,11 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
         missing_vector.add("0x0f")
 
         for machine_model in MACHINE_MODELS:
-            for err_file, goal in (
-                (TEST_FILE_WITH_VERIFIER_ERR, eu.CoverFunc("__VERIFIER_error")),
-                (TEST_FILE_WITH_REACH_ERR, COVER_REACH),
-            ):
+            for err_file, goal in TEST_FILES_WITH_ERR:
                 yield self._check_call_coverage, machine_model, err_file, goal, covering_vector, eu.COVERS
 
         for machine_model in MACHINE_MODELS:
-            for err_file, goal in (
-                (TEST_FILE_WITH_VERIFIER_ERR, eu.CoverFunc("__VERIFIER_error")),
-                (TEST_FILE_WITH_REACH_ERR, COVER_REACH),
-            ):
+            for err_file, goal in TEST_FILES_WITH_ERR:
                 yield self._check_call_coverage, machine_model, err_file, goal, missing_vector, eu.UNKNOWN
 
     def _check_call_coverage(self, machine_model, test_file, goal, vector, expected):
@@ -352,7 +353,7 @@ class TestSuiteExecutor(TempDirExecutor):
 
     def __init__(self):
         super().__init__()
-        self.program_file_with_err = TEST_FILE_WITH_REACH_ERR
+        self.program_file_with_err = TEST_FILES_WITH_ERR[-1][0]
         self.program_file_simple_if = TEST_FILE_SIMPLE_IF
 
     @staticmethod
@@ -682,10 +683,11 @@ class TestSuiteExecutor(TempDirExecutor):
     def test_branch_coverage_instrumented_programs(self):
         for machine_model in MACHINE_MODELS:
             runner = self.get_runner(eu.COVER_BRANCHES)
-            yield self.check_coverage_instrumented_program, runner, machine_model
+            for program, _ in TEST_FILES_WITH_ERR:
+                yield self.check_coverage_instrumented_program, runner, machine_model, program
 
     @staticmethod
-    def check_coverage_instrumented_program(runner, machine_model):
+    def check_coverage_instrumented_program(runner, machine_model, program):
         result_obj: eu.SuiteExecutionResult = runner.run(
             TEST_FILE_SIMPLE_IF, SUITE_SIMPLE_IF, machine_model
         )
@@ -695,7 +697,7 @@ class TestSuiteExecutor(TempDirExecutor):
         eq_(coverage.hits, 2)
 
         result_obj: eu.SuiteExecutionResult = runner.run(
-            TEST_FILE_WITH_REACH_ERR, SUITE_VALID_ZIP, machine_model
+            program, SUITE_VALID_ZIP, machine_model
         )
         coverage = result_obj.coverage_total
         eq_(coverage.hits_percent, 100)

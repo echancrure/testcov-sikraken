@@ -143,3 +143,5 @@ dmypy.json
 
 # Coverage data of tests
 /cover 
+
+test/test*.i

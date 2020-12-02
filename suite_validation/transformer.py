@@ -325,7 +325,6 @@ def _rewrite_cproblems(content: str) -> str:
             in_attribute = False
         # rewrite some GCC extensions
         line = re.sub(r"__extension__", "", line)
-        line = re.sub(r"void reach_error.*", "void reach_error() { exit(1); }", line)
         line = re.sub(r"__restrict", "", line)
         line = re.sub(r"__restrict__", "", line)
         line = re.sub(r"__inline__", "", line)
@@ -355,6 +354,8 @@ def _rewrite_cproblems(content: str) -> str:
         line = re.sub(r'__asm__\s*\(""\s+"[a-zA-Z0-9_]+"\)', "", line)
         prepared_content += line
 
+    prepared_content = replace_reach_error(prepared_content)
+
     def replacer(match):
         s = match.group(0)
         if s.startswith("/"):
@@ -366,6 +367,35 @@ def _rewrite_cproblems(content: str) -> str:
         re.DOTALL | re.MULTILINE,
     )
     return re.sub(pattern, replacer, prepared_content)
+
+
+def replace_reach_error(content: str) -> str:
+    new_content = []
+    in_reach_error = False
+    lines = content.split("\n")
+    contains_reach_error = re.compile(r".*void reach_error.*")
+    single_line_reach_error = re.compile(r"^\s*void reach_error\s*\(.*\)\s*{.*}\s*$")
+    multiline_reach_error = re.compile(r"^\s*void reach_error.*{\s*$")
+    idx = None
+    for idx, line in enumerate(lines):
+        if in_reach_error:
+            if re.match(r"^\s*}\s*$", line):
+                break
+        elif contains_reach_error.match(line):
+            new_content.append("void reach_error() { exit(1); }")
+            if single_line_reach_error.match(line):
+                break
+            if multiline_reach_error.match(line):
+                in_reach_error = True
+            else:
+                logging.warning(f"Unmatched occurence of reach_error: {line}")
+        else:
+            new_content.append(line)
+
+    if idx is not None:
+        new_content += lines[(idx + 1) :]
+
+    return "\n".join(new_content)
 
 
 StartAndEnd = Tuple[Optional[CfgNode], Optional[CfgNode]]
