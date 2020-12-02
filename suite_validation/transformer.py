@@ -341,6 +341,9 @@ def _rewrite_cproblems(content: str) -> str:
         elif re.match(r"^\s*struct\s+[a-zA-Z0-9_]+\s*{\s*$", line):
             need_struct_body = True
         # remove inline asm
+        line = re.sub(
+            r'(^|\s)\s*__asm__(\s+volatile)?\s*\("([^"]|\\")*"[^;]*\);$', ";", line
+        )
         if re.match(r'^\s*__asm__(\s+volatile)?\s*\("([^"]|\\")*"[^;]*$', line):
             skip_asm = True
         elif skip_asm and re.search(r"\)\s*;\s*$", line):
