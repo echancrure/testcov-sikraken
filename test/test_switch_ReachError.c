@@ -24,6 +24,13 @@ int main() {
   char b = __VERIFIER_nondet_char();
   char c = __VERIFIER_nondet_char();
 
-  if (a == 'a' && b == 5 && c == 16)
-    reach_error();
+  switch (a) {
+       case 'a':
+       switch (b) {
+          case 5:
+          switch (c) {
+               case 16: reach_error();
+          }
+       }
+  }
 }

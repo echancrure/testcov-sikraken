@@ -30,10 +30,16 @@ class AbstractLabelAdder(pycparser.c_ast.NodeVisitor):
         label = pycparser.c_ast.Label(name, stmt=pycparser.c_ast.EmptyStatement())
         return label
 
-    def insert_label(self, node: pycparser.c_ast.Compound, i: int):
+    def insert_label(self, node: Optional[pycparser.c_ast.Node], i: int):
+        if not isinstance(node, pycparser.c_ast.Compound):
+            return self.insert_label(
+                pycparser.c_ast.Compound([node] if node else []), i
+            )
         label = self._get_label()
         goto = pycparser.c_ast.Goto(label.name)
 
+        if node.block_items is None:
+            node.block_items = list()
         node.block_items.insert(i, label)
         # make sure that goto is first element of block_items,
         # to avoid endless loop between label and goto
@@ -43,12 +49,7 @@ class AbstractLabelAdder(pycparser.c_ast.NodeVisitor):
     def add_label_at_start(
         self, node: Optional[pycparser.c_ast.Node]
     ) -> pycparser.c_ast.Node:
-        if isinstance(node, pycparser.c_ast.Compound):
-            if node.block_items is None:
-                node.block_items = list()
-            return self.insert_label(node, i=0)
-
-        return self.add_label_at_start(pycparser.c_ast.Compound([node] if node else []))
+        return self.insert_label(node, i=0)
 
 
 class TargetFuncLabelAdder(AbstractLabelAdder):
@@ -69,6 +70,42 @@ class TargetFuncLabelAdder(AbstractLabelAdder):
                         break
                 except AttributeError:
                     pass
+
+    def visit_If(self, node):
+        self.generic_visit(node)
+        if self.is_target_call(node.iftrue):
+            node.iftrue = self.add_label_at_start(node.iftrue)
+        if self.is_target_call(node.iffalse):
+            node.iffalse = self.add_label_at_start(node.iffalse)
+
+    def visit_TernaryOp(self, node):
+        self.generic_visit(node)
+        if self.is_target_call(node.iftrue):
+            node.iftrue = self.add_label_at_start(node.iftrue)
+        if self.is_target_call(node.iffalse):
+            node.iffalse = self.add_label_at_start(node.iffalse)
+
+    def visit_Case(self, node):
+        print(f"Visiting {node}")
+        self.generic_visit(node)
+        for idx, stmt in enumerate(node.stmts):
+            if self.is_target_call(stmt):
+                node.stmts[idx] = self.add_label_at_start(stmt)
+                break
+
+    def visit_While(self, node):
+        self.generic_visit(node)
+        # ignoring node.cond for now
+        if self.is_target_call(node.stmt):
+            node.stmt = self.add_label_at_start(node.stmt)
+
+    def is_target_call(self, i):
+        if isinstance(i, pycparser.c_ast.FuncCall):
+            try:
+                return i.name.name == self._func_name
+            except AttributeError:
+                pass
+        return False
 
 
 class LabelAdder(AbstractLabelAdder):

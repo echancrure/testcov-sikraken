@@ -37,6 +37,10 @@ TEST_FILES_WITH_ERR = [
         ("test_false_VerifierError.c", eu.CoverFunc("__VERIFIER_error")),
         ("test_false_ReachError.c", COVER_REACH),
         ("test_false_ReachErrorMultiline.c", COVER_REACH),
+        ("test_ifWithoutBraces_ReachError.c", COVER_REACH),
+        ("test_ternary_ReachError.c", COVER_REACH),
+        ("test_while_ReachError.c", COVER_REACH),
+        ("test_switch_ReachError.c", COVER_REACH),
     )
 ]
 TEST_FILE_WITH_NO_TERMINATION = os.path.join(TEST_DIRECTORY, "test_no-termination.c")
@@ -343,21 +347,6 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
     def test_function_call_coverage_incomplete_input(self):
         runner = self.get_runner(eu.MACHINE_MODEL_32, None, COVER_REACH)
         err_file = os.path.join(TEST_DIRECTORY, "test_multiple_branches_ReachError.c")
-
-        incomplete_vector = eu.TestVector("incomplete input", "incomplete_input.c")
-        incomplete_vector.add("'a'")
-        incomplete_vector.add("5")
-        incomplete_vector.add("0x10")
-        # file #test_multiple_branches_ReachError requires four inputs, so this vector is missing one (on purpose)
-        # let's see what happens.
-
-        run_result = runner.run(err_file, incomplete_vector)
-
-        eq_(run_result, eu.UNKNOWN)
-
-    def test_function_call_coverage_incomplete_input_if_without_braces(self):
-        runner = self.get_runner(eu.MACHINE_MODEL_32, None, COVER_REACH)
-        err_file = os.path.join(TEST_DIRECTORY, "test_ifWithoutBraces_ReachError.c")
 
         incomplete_vector = eu.TestVector("incomplete input", "incomplete_input.c")
         incomplete_vector.add("'a'")
@@ -728,7 +717,14 @@ class TestSuiteExecutor(TempDirExecutor):
     def test_branch_coverage_instrumented_programs(self):
         for machine_model in MACHINE_MODELS:
             runner = self.get_runner(eu.COVER_BRANCHES)
-            for program, _ in TEST_FILES_WITH_ERR:
+            for program in (
+                os.path.join(TEST_DIRECTORY, t)
+                for t in (
+                    "test_false_VerifierError.c",
+                    "test_false_ReachError.c",
+                    "test_false_ReachErrorMultiline.c",
+                )
+            ):
                 yield self.check_coverage_instrumented_program, runner, machine_model, program
 
     @staticmethod
