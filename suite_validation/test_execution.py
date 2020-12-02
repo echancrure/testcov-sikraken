@@ -340,6 +340,51 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
             for err_file, goal in TEST_FILES_WITH_ERR:
                 yield self._check_call_coverage, machine_model, err_file, goal, missing_vector, eu.UNKNOWN
 
+    def test_function_call_coverage_incomplete_input(self):
+        runner = self.get_runner(eu.MACHINE_MODEL_32, None, COVER_REACH)
+        err_file = os.path.join(TEST_DIRECTORY, "test_multiple_branches_ReachError.c")
+
+        incomplete_vector = eu.TestVector("incomplete input", "incomplete_input.c")
+        incomplete_vector.add("'a'")
+        incomplete_vector.add("5")
+        incomplete_vector.add("0x10")
+        # file #test_multiple_branches_ReachError requires four inputs, so this vector is missing one (on purpose)
+        # let's see what happens.
+
+        run_result = runner.run(err_file, incomplete_vector)
+
+        eq_(run_result, eu.UNKNOWN)
+
+    def test_function_call_coverage_incomplete_input_if_without_braces(self):
+        runner = self.get_runner(eu.MACHINE_MODEL_32, None, COVER_REACH)
+        err_file = os.path.join(TEST_DIRECTORY, "test_ifWithoutBraces_ReachError.c")
+
+        incomplete_vector = eu.TestVector("incomplete input", "incomplete_input.c")
+        incomplete_vector.add("'a'")
+        incomplete_vector.add("5")
+        incomplete_vector.add("0x10")
+        # file #test_multiple_branches_ReachError requires four inputs, so this vector is missing one (on purpose)
+        # let's see what happens.
+
+        run_result = runner.run(err_file, incomplete_vector)
+
+        eq_(run_result, eu.UNKNOWN)
+
+    def test_function_call_coverage_complete_input_if_without_braces(self):
+        runner = self.get_runner(eu.MACHINE_MODEL_32, None, COVER_REACH)
+        err_file = os.path.join(TEST_DIRECTORY, "test_ifWithoutBraces_ReachError.c")
+
+        incomplete_vector = eu.TestVector("incomplete input", "incomplete_input.c")
+        incomplete_vector.add("'a'")
+        incomplete_vector.add("5")
+        incomplete_vector.add("0x10")
+        incomplete_vector.add("0x10")
+        # file #test_multiple_branches_ReachError requires four inputs, so this vector is complete
+
+        run_result = runner.run(err_file, incomplete_vector)
+
+        eq_(run_result, eu.COVERS)
+
     def _check_call_coverage(self, machine_model, test_file, goal, vector, expected):
         runner = self.get_runner(machine_model, None, goal)
 
