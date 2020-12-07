@@ -100,6 +100,9 @@ def instrument_program(
     adder.visit(ast)
 
     c_code = _to_c(ast)
+    lines = c_code.split("\n")
+    lines = add_gcov_flushes(lines)
+    c_code = "\n".join(lines)
 
     branch_label_line_numbers = collect_branch_label_line_numbers(c_code)
 
@@ -325,6 +328,7 @@ def _rewrite_cproblems(content: str) -> str:
             in_attribute = False
         # rewrite some GCC extensions
         line = re.sub(r"__extension__", "", line)
+        line = re.sub(r"__PRETTY_FUNCTION__", '"func_name"', line)
         line = re.sub(r"__restrict", "", line)
         line = re.sub(r"__restrict__", "", line)
         line = re.sub(r"__inline__", "", line)
@@ -400,6 +404,26 @@ def replace_reach_error(content: Sequence[str]) -> Sequence[str]:
     if idx is not None:
         new_content += content[(idx + 1) :]
 
+    return new_content
+
+
+def add_gcov_flushes(content: Sequence[str]) -> Sequence[str]:
+    new_content = []
+    for line in content:
+        if " abort();" in line:
+            line = re.sub(
+                r"(\s+)abort\(\);",
+                r"\1#ifdef GCOV\n\1__gcov_flush();\n\1#endif\n\1abort();",
+                line,
+            )
+        if " __assert_fail" in line and not re.search(r"void.*__assert_fail", line):
+            line = re.sub(
+                r"(\s+)__assert_fail",
+                r"\1#ifdef GCOV\n\1__gcov_flush();\n\1#endif\n\1__assert_fail",
+                line,
+            )
+
+        new_content.append(line)
     return new_content
 
 

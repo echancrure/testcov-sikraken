@@ -42,6 +42,8 @@ TEST_FILES_WITH_ERR = [
         ("test_while_ReachError.c", COVER_REACH),
         ("test_switch_ReachError.c", COVER_REACH),
         ("test_required_declarations.c", COVER_REACH),
+        ("test_assume.c", COVER_REACH),
+        ("test_assertFail.c", COVER_REACH),
     )
 ]
 TEST_FILE_WITH_NO_TERMINATION = os.path.join(TEST_DIRECTORY, "test_no-termination.c")
