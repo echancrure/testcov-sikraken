@@ -97,8 +97,11 @@ class HarnessCreator:
                     break
                 for name, _, _ in eu.EXTERNAL_DECLARATIONS:
                     if name in to_declare and re.search(
-                        r"\s+" + name + r"([^a-zA-Z]+|$)", line
+                        r"\s+" + name + r"([^a-zA-Z0-9_]+|$)", line
                     ):
+                        logging.debug(
+                            f"Removing {name} from explicit declaration. Exists in line: {line}"
+                        )
                         to_declare.remove(name)
         if preprocessed:
             return "\n".join(
