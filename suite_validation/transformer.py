@@ -17,7 +17,7 @@ Reducer of C program. Create a residual program from an input program and a set 
 from contextlib import contextmanager
 import itertools
 import re
-from typing import List, Dict, Tuple, Set, Iterable, Optional
+from typing import List, Dict, Tuple, Set, Iterable, Optional, Sequence
 import pycparser
 from pycparser import c_generator
 
@@ -308,7 +308,7 @@ def _rewrite_cproblems(content: str) -> str:
     need_struct_body = False
     skip_asm = False
     in_attribute = False
-    prepared_content = ""
+    prepared_content = list()
     for line in [c + "\n" for c in content.split("\n")]:
         line = re.sub(r"/\*.*?\*/", "", line)
         # remove __attribute__
@@ -355,9 +355,11 @@ def _rewrite_cproblems(content: str) -> str:
             line = "\n"
         # remove asm renaming
         line = re.sub(r'__asm__\s*\(""\s+"[a-zA-Z0-9_]+"\)', "", line)
-        prepared_content += line
+        prepared_content.append(line)
 
     prepared_content = replace_reach_error(prepared_content)
+
+    prepared_content = "\n".join(prepared_content)
 
     def replacer(match):
         s = match.group(0)
@@ -372,15 +374,14 @@ def _rewrite_cproblems(content: str) -> str:
     return re.sub(pattern, replacer, prepared_content)
 
 
-def replace_reach_error(content: str) -> str:
+def replace_reach_error(content: Sequence[str]) -> Sequence[str]:
     new_content = []
     in_reach_error = False
-    lines = content.split("\n")
     contains_reach_error = re.compile(r".*void reach_error.*")
     single_line_reach_error = re.compile(r"^\s*void reach_error\s*\(.*\)\s*{.*}\s*$")
     multiline_reach_error = re.compile(r"^\s*void reach_error.*{\s*$")
     idx = None
-    for idx, line in enumerate(lines):
+    for idx, line in enumerate(content):
         if in_reach_error:
             if re.match(r"^\s*}\s*$", line):
                 break
@@ -397,9 +398,9 @@ def replace_reach_error(content: str) -> str:
             new_content.append(line)
 
     if idx is not None:
-        new_content += lines[(idx + 1) :]
+        new_content += content[(idx + 1) :]
 
-    return "\n".join(new_content)
+    return new_content
 
 
 StartAndEnd = Tuple[Optional[CfgNode], Optional[CfgNode]]
