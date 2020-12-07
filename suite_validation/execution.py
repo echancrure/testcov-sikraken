@@ -176,6 +176,7 @@ class ExecutionRunner:
         cmd += [
             "-std={}".format(c_version),
             mm_arg,
+            "-Wno-attributes",
             "-D__alias__(x)=",
             "-o",
             output_file,

@@ -130,7 +130,15 @@ class TestHarness(TempDirExecutor):
 
     @staticmethod
     def _check_compilable(test_vector=None):
-        compile_cmd = ["gcc", "-x", "c", "-include", TEST_FILE_WITHOUT_ERR, "-"]
+        compile_cmd = [
+            "gcc",
+            "-Wno-attributes",
+            "-x",
+            "c",
+            "-include",
+            TEST_FILE_WITHOUT_ERR,
+            "-",
+        ]
 
         harness = ex.HarnessCreator().convert(TEST_FILE_WITHOUT_ERR, test_vector)
 
