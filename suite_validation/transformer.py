@@ -385,6 +385,7 @@ def replace_reach_error(content: str) -> str:
             if re.match(r"^\s*}\s*$", line):
                 break
         elif contains_reach_error.match(line):
+            new_content.append("extern void exit (int __status);")
             new_content.append("void reach_error() { exit(1); }")
             if single_line_reach_error.match(line):
                 break
