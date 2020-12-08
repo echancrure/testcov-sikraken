@@ -139,9 +139,7 @@ class LabelAdder(AbstractLabelAdder):
 
     def visit_Compound(self, node):
         self.generic_visit(node)
-        if not node.block_items:
-            return
-
+        self.add_label_at_start(node)
         i = 0
         while i < len(node.block_items):
             stmt = node.block_items[i]
@@ -149,7 +147,7 @@ class LabelAdder(AbstractLabelAdder):
                 stmt,
                 (pycparser.c_ast.While, pycparser.c_ast.For, pycparser.c_ast.DoWhile),
             ):
-                node.block_items.insert(i + 1, self._get_label())
+                self.insert_label(node, i + 1)
                 i = i + 2
             else:
                 i = i + 1
