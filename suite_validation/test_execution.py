@@ -42,7 +42,8 @@ TEST_FILES_WITH_ERR = [
         ("test_while_ReachError.c", COVER_REACH),
         ("test_switch_ReachError.c", COVER_REACH),
         ("test_required_declarations.c", COVER_REACH),
-        ("test_assume.c", COVER_REACH),
+        ("test_assume_block.c", COVER_REACH),
+        ("test_assume_singleline.c", COVER_REACH),
         ("test_assertFail.c", COVER_REACH),
     )
 ]

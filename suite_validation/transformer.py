@@ -408,12 +408,12 @@ def replace_reach_error(content: Sequence[str]) -> Sequence[str]:
 
 
 def add_gcov_flushes(content: Sequence[str]) -> Sequence[str]:
-    new_content = []
+    new_content = ["#ifdef GCOV", "extern void __gcov_flush(void);", "#endif"]
     for line in content:
         if " abort();" in line:
             line = re.sub(
                 r"(\s+)abort\(\);",
-                r"\n\1#ifdef GCOV\n\1__gcov_flush();\n\1#endif\n\1abort();",
+                r"\1{\n\1#ifdef GCOV\n\1__gcov_flush();\n\1#endif\n\1abort();\n\1}",
                 line,
             )
         if " __assert_fail" in line and not re.search(r"void.*__assert_fail", line):
