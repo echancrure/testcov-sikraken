@@ -607,6 +607,28 @@ class TestSuiteExecutor(TempDirExecutor):
                     yield self._check_reduction_correct_suite_simple_if, runner, strategy, machine_model, goal
                     yield self._check_reduction_correct_suite_simple_if_inverted, runner, strategy, machine_model, goal
 
+    # pylint: disable=invalid-name
+    def test_function_call_coverage_xcsp_AllInterval013(self):
+        program = os.path.join(TEST_DIRECTORY, "AllInterval-013.c")
+        test_suite = os.path.join(SUITE_DIR, "suite-xcsp-AllInterval-013.zip")
+        runner = self.get_runner(COVER_REACH)
+
+        result_obj = runner.run(program, test_suite, eu.MACHINE_MODEL_32)
+        test_coverage = result_obj.coverage_total
+
+        eq_(test_coverage.hits_percent, 100)
+
+    def test_function_call_coverage_heap_sll_to_dll_rev1(self):
+        program = os.path.join(TEST_DIRECTORY, "sll_to_dll_rev-1.i")
+        # we use this test suite on purpose: it finds the function call
+        test_suite = os.path.join(SUITE_DIR, "suite-xcsp-AllInterval-013.zip")
+        runner = self.get_runner(COVER_REACH)
+
+        result_obj = runner.run(program, test_suite, eu.MACHINE_MODEL_32)
+        test_coverage = result_obj.coverage_total
+
+        eq_(test_coverage.hits_percent, 100)
+
     @staticmethod
     def _check_reduction_correct_suite_simple_if(runner, strategy, machine_model, goal):
         # the program has only one if statement (x > 0) and is fed by two different test vectors
