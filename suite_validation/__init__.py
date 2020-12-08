@@ -392,12 +392,20 @@ def main(argv=None):
         error_occurred = False
     finally:
         # Output data
-        if args.check_for_error and exec_results.successful_tests:
-            # If at least one test covered an error,
-            # make the first one into an executable harness
-            suite_writer.write_harness(
-                args.file, exec_results.successful_tests[0], args.output_dir
+        if exec_results.successful_tests:
+            suite_writer.write_tests_to_suite(
+                args.file,
+                args.test_suite,
+                exec_results.successful_tests,
+                args.goal,
+                os.path.join(args.output_dir, args.reduced_suite_name),
             )
+            if args.check_for_error:
+                # If at least one test covered an error,
+                # make the first one into an executable harness
+                suite_writer.write_harness(
+                    args.file, exec_results.successful_tests[0], args.output_dir
+                )
 
         results_file_name = RESULTS_NAME + "." + args.results_format
         suite_writer.write_results(

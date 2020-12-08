@@ -13,6 +13,7 @@ import csv
 import json
 import os
 import zipfile
+import shutil
 from typing import List
 from suite_validation import _tool_info
 from suite_validation import metadata_utils
@@ -37,6 +38,40 @@ SUCCESSFUL_TEST_NAME = "covering-test.xml"
 """Name of the file a successful test will be written to."""
 SUCCESSFUL_HARNESS_NAME = "covering-test.c"
 """Name of the file the executable harness of a successful test will be written to."""
+
+
+def write_tests_to_suite(
+    program_file, origin_suite, tests, coverage_goal, output_suite
+):
+    """
+    Writes the given tests from the given test suite to a new suite.
+
+    :param str origin_suite: Path to the zip-file that contains the original test suite
+    :param List[utils.TestVector] tests: Test vector to create files for.
+    :param str output_suite: Zip-file or directory to write to.
+    """
+    if os.path.exists(output_suite):
+        logging.debug("File %s already exists - removing it.", output_suite)
+        if os.path.isdir(output_suite):
+            shutil.rmtree(output_suite, ignore_errors=True)
+        else:
+            os.remove(output_suite)
+
+    output_metadata = _create_metadata(origin_suite, program_file, coverage_goal)
+    if output_suite.endswith(".zip"):
+        with zipfile.ZipFile(output_suite, "a") as outp_zip:
+            outp_zip.writestr(metadata_utils.METADATA_XML_NAME, output_metadata)
+    else:
+        os.makedirs(output_suite, exist_ok=True)
+        metadata_file = os.path.join(output_suite, metadata_utils.METADATA_XML_NAME)
+        with open(metadata_file, "bw") as metadata_outp:
+            metadata_outp.write(output_metadata)
+
+    test_names = [t.origin for t in tests]
+    with zipfile.ZipFile(origin_suite) as inp_zip:
+        for test in inp_zip.namelist():
+            if test in test_names:
+                _copy_file(test, origin_suite, output_suite, test)
 
 
 def _create_metadata(origin_suite: str, program_file: str, coverage_goal: str) -> str:
