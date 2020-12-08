@@ -413,7 +413,7 @@ def add_gcov_flushes(content: Sequence[str]) -> Sequence[str]:
         if " abort();" in line:
             line = re.sub(
                 r"(\s+)abort\(\);",
-                r"\1#ifdef GCOV\n\1__gcov_flush();\n\1#endif\n\1abort();",
+                r"\n\1#ifdef GCOV\n\1__gcov_flush();\n\1#endif\n\1abort();",
                 line,
             )
         if " __assert_fail" in line and not re.search(r"void.*__assert_fail", line):
