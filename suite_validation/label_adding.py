@@ -151,9 +151,22 @@ class LabelAdder(AbstractLabelAdder):
             and isinstance(node.block_items[0], pycparser.c_ast.If)
         )
 
+    @staticmethod
+    def _is_terminating_call(node) -> bool:
+        try:
+            return isinstance(node, pycparser.c_ast.FuncCall) and node.name.name in [
+                "abort",
+                "exit",
+                "__assert_fail",
+            ]
+        except NameError:
+            return False
+
     def visit_Compound(self, node):
         self.generic_visit(node)
-        self.add_label_at_start(node)
+        if node.block_items is None:
+            node.block_items = []
+
         i = 0
         while i < len(node.block_items):
             stmt = node.block_items[i]
@@ -163,6 +176,9 @@ class LabelAdder(AbstractLabelAdder):
             ):
                 self.insert_label(node, i + 1)
                 i = i + 2
+            elif self._is_terminating_call(stmt):
+                self.insert_label(node, i)
+                i = i + 3
             else:
                 i = i + 1
 

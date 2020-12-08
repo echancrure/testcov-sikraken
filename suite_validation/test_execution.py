@@ -585,9 +585,9 @@ class TestSuiteExecutor(TempDirExecutor):
         result_obj = runner.run(TEST_FILE_COVERAGE, SUITE_COVERAGE, machine_model)
         test_coverage = result_obj.coverage_total
 
-        eq_(test_coverage.hits, 5)
-        eq_(test_coverage.hits_percent, 55.56)
-        eq_(test_coverage.count_total, 9)
+        eq_(test_coverage.hits, 4)
+        eq_(test_coverage.hits_percent, 50)
+        eq_(test_coverage.count_total, 8)
 
     @staticmethod
     def _check_condition_coverage(runner, machine_model):
@@ -767,16 +767,16 @@ class TestSuiteExecutor(TempDirExecutor):
         )
         coverage: cov.TestCoverage = result_obj.coverage_total
         eq_(coverage.hits_percent, 100)
-        eq_(coverage.count_total, 3)
-        eq_(coverage.hits, 3)
+        eq_(coverage.count_total, 2)
+        eq_(coverage.hits, 2)
 
         result_obj: eu.SuiteExecutionResult = runner.run(
             program, SUITE_VALID_ZIP, machine_model
         )
         coverage = result_obj.coverage_total
         eq_(coverage.hits_percent, 100)
-        eq_(coverage.count_total, 4)
-        eq_(coverage.hits, 4)
+        eq_(coverage.count_total, 3)
+        eq_(coverage.hits, 3)
 
 
 def _get_cov(coverage):
