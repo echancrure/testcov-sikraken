@@ -22,6 +22,7 @@ GENINFO_LOC=$(which geninfo)
 
 DIRNAME="$(dirname "$(readlink -f "$0")")/.."
 VERSION=$(git describe --always --dirty)
+ARCHIVE_NAME=testcov-$VERSION.zip
 TMPDIR=$(mktemp -d)
 pushd "$TMPDIR" > /dev/null
 ln -s "$DIRNAME" testcov
@@ -38,8 +39,8 @@ cp $(which geninfo) "${DIRNAME}"/lib/bin
 )
 # Set version number
 find testcov/suite_validation -name '*.py' -exec sed -i "s/\(__VERSION__\s*=\s*\).*/\1\"$VERSION\"/" '{}' +
-zip --exclude="*/lib/PyYAML-*.dist-info/*" --exclude="*/lib/yaml*" --exclude="*/test/*" --exclude="*/a.out" --exclude="*/.idea/*" --exclude="*/__pycache__/*" -r testcov.zip testcov/{bin,suite_validation,lib,LICENSE,LICENSES,README.md}
+zip --exclude="*/lib/PyYAML-*.dist-info/*" --exclude="*/lib/yaml*" --exclude="*/test/*" --exclude="*/a.out" --exclude="*/.idea/*" --exclude="*/__pycache__/*" -r "$ARCHIVE_NAME" testcov/{bin,suite_validation,lib,LICENSE,LICENSES,README.md}
 popd
-mv "$TMPDIR/testcov.zip" ./
-echo "Wrote testcov.zip, version $VERSION"
+mv "$TMPDIR/$ARCHIVE_NAME" ./
+echo "Wrote $ARCHIVE_NAME"
 git reset --hard
