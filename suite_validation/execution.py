@@ -838,6 +838,12 @@ class SuiteExecutor:
                 if self._stop_on_success:
                     logging.info("Stopping. Error found for test %s", tv)
                     break
+            if (
+                self._stop_on_success
+                and float(result_target.coverage_total.hits_percent) >= 100
+            ):
+                logging.info("Stopping. Achieved full coverage")
+                break
             print(".", file=self._info_target, end="", flush=True)
         print("\n✔️  Done!", file=self._info_target, flush=True)  # print newline
 
