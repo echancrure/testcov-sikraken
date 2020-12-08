@@ -240,7 +240,7 @@ def replace_reach_error(content: Sequence[str]) -> Sequence[str]:
             if multiline_reach_error.match(line):
                 in_reach_error = True
             else:
-                logging.warning(f"Unmatched occurence of reach_error: {line}")
+                logging.warning("Unmatched occurence of reach_error: %s", line)
         else:
             new_content.append(line)
 

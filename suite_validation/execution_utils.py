@@ -28,7 +28,7 @@ class CoverFunc:
         self.target_method = target_method
 
     def __str__(self):
-        return f"{type(self).__name__}({self.target_method})"
+        return "%s(%s)" % (type(self).__name__, self.target_method)
 
     def __repr__(self):
         return str(self)

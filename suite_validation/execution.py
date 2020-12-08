@@ -100,7 +100,9 @@ class HarnessCreator:
                         r"\s+" + name + r"([^a-zA-Z0-9_]+|$)", line
                     ):
                         logging.debug(
-                            f"Removing {name} from explicit declaration. Exists in line: {line.strip()}"
+                            "Removing %s from explicit declaration. Exists in line: %s",
+                            name,
+                            line.strip(),
                         )
                         to_declare.remove(name)
         if preprocessed:

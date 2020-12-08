@@ -58,7 +58,7 @@ def naive_reduction(
         if not tc.coverage or tc.coverage == 0:
             continue
         if not total_tc or total_tc.coverage.is_coverage_extended(tc.coverage):
-            logging.debug(f"Adding {tc} to reduced coverages")
+            logging.debug("Adding %s to reduced coverages", tc)
             assert tc.coverage > 0
             reduced_coverages.append(tc)
             if not total_tc:

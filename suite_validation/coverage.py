@@ -459,7 +459,8 @@ class TestCoverage:
             raise ValueError()
         if not self.filename == other.filename:
             raise ValueError(
-                f"Filenames between coverages do not match: {self.filename} and {other.filename}"
+                "Filenames between coverages do not match: %s and %s"
+                % (self.filename, other.filename)
             )
 
         summarized_test_vector_results = {
@@ -496,7 +497,8 @@ class TestCoverage:
         )
 
     def __str__(self):
-        return f"{[v.name for v in self.test_vector_results]} on {self.filename}: {self.coverage}"
+        results = [v.name for v in self.test_vector_results]
+        return str(results) + " on " + str(self.filename) + ": " + str(self.coverage)
 
 
 def remove_prefix(line, prefix):
@@ -618,7 +620,7 @@ def _get_line_coverage(
         return _LinesCoverage(hits)
     if eu.uses_branch_coverage(goal):
         return _BranchesCoverage(hits)
-    raise AssertionError(f"Unhandled goal {goal}")
+    raise AssertionError("Unhandled goal %s" % goal)
 
 
 def _get_coverage_from_tracefile(

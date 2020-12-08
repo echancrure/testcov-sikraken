@@ -96,7 +96,7 @@ def write_harness(program_file, test_vector, output_dir):
         harness_content = progr_inp.read() + harness_content
     with open(test_c_file, "w+") as outp:
         outp.write(harness_content)
-    logging.info(f"Function-covering test case written to {test_c_file}")
+    logging.info("Function-covering test case written to %s", test_c_file)
 
 
 def _copy_file(relative_file_path, origin_container, dest_container, dest_name):

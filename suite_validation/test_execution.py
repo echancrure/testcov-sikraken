@@ -434,7 +434,7 @@ class TestSuiteExecutor(TempDirExecutor):
         branches = result_obj.coverage_total.coverage
 
         eq_(len(results), 1, "Empty testcase not executed")
-        assert branches, f"Coverage information invalid: {branches}"
+        assert branches, "Coverage information invalid: %s" % branches
 
     def test_run_suite_valid(self):
         for machine_model in MACHINE_MODELS:
