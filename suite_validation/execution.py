@@ -257,10 +257,25 @@ class ExecutionRunner:
             newline = "\\n"
         else:
             newline = "\n"
-            input_vector = newline.join([i["value"] for i in test_vector.vector])
+        input_vector = newline.join([i["value"] for i in test_vector.vector])
 
-        logging.debug("Input for %s:", test_vector.name)
-        logging.debug(input_vector)
+        def get_log_repr(test_vec):
+            input_values = [i["value"] for i in test_vec.vector]
+            number_inputs = len(input_values)
+            threshold = 12  # random number for snipping the output
+            if number_inputs > threshold:
+                number_snipped = number_inputs - threshold
+                head_stop = int(threshold / 2) + 1  # int() always rounds down
+                tail_start = threshold - head_stop
+                input_values = (
+                    input_values[:head_stop]
+                    + ["..(snip %s values).." % number_snipped]
+                    + input_values[-tail_start:]
+                )
+
+            return ", ".join(input_values)
+
+        logging.debug("Input for %s: %s", test_vector.name, get_log_repr(test_vector))
         return input_vector
 
 
