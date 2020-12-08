@@ -86,7 +86,6 @@ class TargetFuncLabelAdder(AbstractLabelAdder):
             node.iffalse = self.add_label_at_start(node.iffalse)
 
     def visit_Case(self, node):
-        print(f"Visiting {node}")
         self.generic_visit(node)
         for idx, stmt in enumerate(node.stmts):
             if self.is_target_call(stmt):
