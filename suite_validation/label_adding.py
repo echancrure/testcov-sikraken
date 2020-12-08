@@ -40,6 +40,20 @@ class AbstractLabelAdder(pycparser.c_ast.NodeVisitor):
 
         if node.block_items is None:
             node.block_items = list()
+        else:
+            try:
+                curr_stmt, next_stmt = node.block_items[i], node.block_items[i + 1]
+                if (
+                    isinstance(curr_stmt, pycparser.c_ast.Goto)
+                    and isinstance(next_stmt, pycparser.c_ast.Label)
+                    and next_stmt.name.startswith(LABEL_PREFIX)
+                ):
+                    # Skip adding label, there already seems to be one
+                    return node
+            except IndexError:
+                # There's no i+1, so there can't be a goto-label construct yet
+                pass
+
         node.block_items.insert(i, label)
         # make sure that goto is first element of block_items,
         # to avoid endless loop between label and goto
