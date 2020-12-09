@@ -154,11 +154,15 @@ class LabelAdder(AbstractLabelAdder):
     @staticmethod
     def _is_terminating_call(node) -> bool:
         try:
-            return isinstance(node, pycparser.c_ast.FuncCall) and node.name.name in [
-                "abort",
-                "exit",
-                "__assert_fail",
-            ]
+            return isinstance(node, pycparser.c_ast.FuncCall) and (
+                isinstance(node.name, pycparser.c_ast.ID)
+                and node.name.name
+                in [
+                    "abort",
+                    "exit",
+                    "__assert_fail",
+                ]
+            )
         except NameError:
             return False
 
