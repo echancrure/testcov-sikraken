@@ -98,6 +98,7 @@ def _parse(content_original: str) -> pycparser.c_ast.FileAST:
         parser = _get_parser()
         return parser.parse(content)
     except pycparser.plyparser.ParseError as e:
+        print(content)
         raise eu.ParseError("Parsing failed") from e
     finally:
         logging.debug("Finished parsing program")
@@ -164,7 +165,7 @@ def _rewrite_cproblems(content: str) -> str:
 
     prepared_content = replace_reach_error(prepared_content)
 
-    prepared_content = "\n".join(prepared_content)
+    prepared_content = "".join(prepared_content)
 
     def replacer(match):
         s = match.group(0)
@@ -191,8 +192,8 @@ def replace_reach_error(content: Sequence[str]) -> Sequence[str]:
             if re.match(r"^\s*}\s*$", line):
                 break
         elif contains_reach_error.match(line):
-            new_content.append("extern void exit (int __status);")
-            new_content.append("void reach_error() { exit(1); }")
+            new_content.append("extern void exit (int __status);\n")
+            new_content.append("void reach_error() { exit(1); }\n")
             if single_line_reach_error.match(line):
                 break
             if multiline_reach_error.match(line):
