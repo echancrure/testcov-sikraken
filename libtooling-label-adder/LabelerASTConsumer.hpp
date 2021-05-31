@@ -1,0 +1,21 @@
+#include "Includes.hpp"
+#include "LabelerASTVisitor.hpp"
+
+#ifndef LABELER_AST_CONSUMER_HPP
+#define LABELER_AST_CONSUMER_HPP
+
+// Implementation of the ASTConsumer interface for reading an AST produced
+// by the Clang parser.
+class LabelerASTConsumer : public ASTConsumer {
+public:
+  LabelerASTConsumer(Rewriter &R);
+
+  // Override the method that gets called for each parsed top-level
+  // declaration.
+  bool HandleTopLevelDecl(DeclGroupRef DR) override;
+
+private:
+  LabelerASTVisitor Visitor;
+};
+
+#endif
