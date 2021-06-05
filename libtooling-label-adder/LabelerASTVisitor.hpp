@@ -39,6 +39,7 @@ public:
 
   bool VisitCaseStmt(CaseStmt *S);
   bool VisitBinaryOperator(BinaryOperator *S);
+//  bool VisitConditionalOperator(ConditionalOperator *S);
   bool VisitDefaultStmt(DefaultStmt *S);
   bool VisitFunctionDecl(FunctionDecl *f);
 
@@ -75,7 +76,7 @@ private:
 
   // Refactors a ternary Statement to an if-statements and adds requested Labels
   // Currently in progress...
-  void LabelTernaryStmt(ConditionalOperator *ternaryStatement);
+  void LabelTernaryStmt(ConditionalOperator *ternaryStatement, std::string leftHandString);
 };
 
 #endif
