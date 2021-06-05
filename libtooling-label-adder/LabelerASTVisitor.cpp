@@ -76,29 +76,36 @@ bool LabelerASTVisitor::VisitIfStmt(IfStmt *S) {
 }
 
 bool LabelerASTVisitor::VisitCaseStmt(CaseStmt *S) {
-  for (Stmt *child : S->children()) {
-    if (isa<ConstantExpr>(child)) {
-      labelAddRewriter.InsertText(GetTrueEndLocation(child), getNextLabel(),
-                                  true, true);
+  if (options.caseLabel)
+    for (Stmt *child : S->children()) {
+      if (isa<ConstantExpr>(child)) {
+        labelAddRewriter.InsertText(GetTrueEndLocation(child), getNextLabel(),
+                                    true, true);
+      }
     }
-  }
   return true;
 }
 
 bool LabelerASTVisitor::VisitBinaryOperator(BinaryOperator *S) {
+  if(!(options.ternaryTrueLabel || options.ternaryFalseLabel)) return true;
   Stmt *rightHandSide = S->getRHS();
   Stmt *leftHandSide = S->getLHS();
-  std::string leftHandString = Lexer::getSourceText(
-      CharSourceRange::getCharRange(leftHandSide->getBeginLoc(), GetTrueEndLocation(leftHandSide)),
-      labelAddRewriter.getSourceMgr(), labelAddRewriter.getLangOpts()).str();
+  std::string leftHandString =
+      Lexer::getSourceText(
+          CharSourceRange::getCharRange(leftHandSide->getBeginLoc(),
+                                        GetTrueEndLocation(leftHandSide)),
+          labelAddRewriter.getSourceMgr(), labelAddRewriter.getLangOpts())
+          .str();
   llvm::outs() << "** String Var: " << leftHandString << "\n";
   if (isa<ConditionalOperator>(rightHandSide)) {
-    labelAddRewriter.RemoveText(SourceRange(leftHandSide->getBeginLoc(), GetTrueEndLocation(leftHandSide)));
+    labelAddRewriter.RemoveText(SourceRange(leftHandSide->getBeginLoc(),
+                                            GetTrueEndLocation(leftHandSide)));
     LabelTernaryStmt(cast<ConditionalOperator>(rightHandSide), leftHandString);
   } else if (isa<ImplicitCastExpr>(rightHandSide)) {
     for (Stmt *child : rightHandSide->children()) {
       if (isa<ConditionalOperator>(child)) {
-        labelAddRewriter.RemoveText(SourceRange(leftHandSide->getBeginLoc(), GetTrueEndLocation(leftHandSide)));
+        labelAddRewriter.RemoveText(SourceRange(
+            leftHandSide->getBeginLoc(), GetTrueEndLocation(leftHandSide)));
         LabelTernaryStmt(cast<ConditionalOperator>(child), leftHandString);
       }
     }
@@ -112,13 +119,14 @@ bool LabelerASTVisitor::VisitBinaryOperator(BinaryOperator *S) {
 // }
 
 bool LabelerASTVisitor::VisitDefaultStmt(DefaultStmt *S) {
-  labelAddRewriter.InsertText(GetTrueEndLocation(S), getNextLabel(), true,
-                              true);
+  if (options.defaultLabel)
+    labelAddRewriter.InsertText(GetTrueEndLocation(S), getNextLabel(), true,
+                                true);
   return true;
 }
 
-void LabelerASTVisitor::LabelTernaryStmt(
-    ConditionalOperator *ternaryStatement, std::string leftHandString) {
+void LabelerASTVisitor::LabelTernaryStmt(ConditionalOperator *ternaryStatement,
+                                         std::string leftHandString) {
   // TODO
   // Expr *condition = ternaryStatement->getCond();
   labelAddRewriter.InsertText(ternaryStatement->getBeginLoc(), "if(", true,
@@ -126,10 +134,12 @@ void LabelerASTVisitor::LabelTernaryStmt(
   // labelAddRewriter.ReplaceText( "){\n" + getNextLabel());
   labelAddRewriter.RemoveText(ternaryStatement->getQuestionLoc(), 1);
   labelAddRewriter.InsertText(ternaryStatement->getQuestionLoc(),
-                              "){" + getNextLabel() + leftHandString, true, true);
+                              "){" + getNextLabel() + leftHandString, true,
+                              true);
   labelAddRewriter.RemoveText(ternaryStatement->getColonLoc(), 1);
   labelAddRewriter.InsertText(ternaryStatement->getColonLoc(),
-                              "\n}else{" + getNextLabel() + leftHandString, true, true);
+                              "\n}else{" + getNextLabel() + leftHandString,
+                              true, true);
   labelAddRewriter.InsertText(GetTrueEndLocation(ternaryStatement), "\n}", true,
                               true);
 
