@@ -6,12 +6,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-
-
-#include "Includes.hpp"
 #include "LabelerASTConsumer.hpp"
+#include "Includes.hpp"
 
-LabelerASTConsumer::LabelerASTConsumer(Rewriter &R) : Visitor(R) {}
+LabelerASTConsumer::LabelerASTConsumer(Rewriter &R, LabelOptions labelOptions)
+    : Visitor(R, labelOptions) {}
 
 bool LabelerASTConsumer::HandleTopLevelDecl(DeclGroupRef DR) {
   for (DeclGroupRef::iterator b = DR.begin(), e = DR.end(); b != e; ++b) {

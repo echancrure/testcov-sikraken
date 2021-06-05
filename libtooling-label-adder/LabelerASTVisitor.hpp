@@ -18,10 +18,7 @@ private:
   int goalCounter = 0;
 
 public:
-  LabelerASTVisitor(Rewriter &R);
-
-  bool ternaryTrueLabel, ternaryFalseLabel, functionStartLabel,
-      functionEndLabel, caseLabel, ifLabel, elseLabel = true;
+  LabelerASTVisitor(Rewriter &R, LabelOptions labelOptions);
 
   std::string getNextLabel();
 
@@ -56,6 +53,7 @@ public:
 
 private:
   Rewriter &labelAddRewriter;
+  LabelOptions options;
 };
 
 #endif

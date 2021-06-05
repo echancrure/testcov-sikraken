@@ -11,7 +11,7 @@
 #include "LabelerFrontendAction.hpp"
 #include "LabelerASTConsumer.hpp"
 
-LabelerFrontendAction::LabelerFrontendAction(std::string options) {}
+LabelerFrontendAction::LabelerFrontendAction(LabelOptions labelOptions) : options(labelOptions) {}
 void LabelerFrontendAction::EndSourceFileAction() {
   SourceManager &SM = labelAddRewriter.getSourceMgr();
   llvm::errs() << "** EndSourceFileAction for: "
@@ -25,5 +25,5 @@ std::unique_ptr<ASTConsumer> LabelerFrontendAction::CreateASTConsumer(CompilerIn
                                                StringRef file) {
   llvm::errs() << "** Creating AST consumer for: " << file << "\n";
   labelAddRewriter.setSourceMgr(CI.getSourceManager(), CI.getLangOpts());
-  return std::make_unique<LabelerASTConsumer>(labelAddRewriter);
+  return std::make_unique<LabelerASTConsumer>(labelAddRewriter, options);
 }

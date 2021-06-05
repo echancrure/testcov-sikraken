@@ -13,7 +13,7 @@
 // For each source file provided to the tool, a new FrontendAction is created.
 class LabelerFrontendAction : public ASTFrontendAction {
 public:
-  LabelerFrontendAction(std::string options);
+  LabelerFrontendAction(LabelOptions labelOptions);
   void EndSourceFileAction() override;
 
   std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI,
@@ -21,5 +21,6 @@ public:
 
 private:
   Rewriter labelAddRewriter;
+  LabelOptions options;
 };
 #endif

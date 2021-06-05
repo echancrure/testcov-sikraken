@@ -24,11 +24,14 @@
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/CommandLine.h"
+
+#include "OptionsStruct.hpp"
 
 using namespace clang;
 using namespace clang::driver;
 using namespace clang::tooling;
 
-static llvm::cl::OptionCategory ToolingSampleCategory("Tooling Sample");
+
 
 #endif

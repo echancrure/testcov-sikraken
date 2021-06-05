@@ -6,26 +6,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-
-
-#include "Includes.hpp"
 #include "LabelerFrontendActionFactory.hpp"
+#include "Includes.hpp"
 #include "LabelerFrontendAction.hpp"
 
-std::unique_ptr<FrontendActionFactory> newLabelerFrontendActionFactory(std::string options) {
-  class LabelerFrontendActionFactory : public FrontendActionFactory {
-  public:
-    LabelerFrontendActionFactory(std::string optionstring) : mOptions(optionstring) {}
+LabelerFrontendActionFactory::LabelerFrontendActionFactory(
+    LabelOptions labelOptions)
+    : options(labelOptions) {}
 
-    std::unique_ptr<FrontendAction> create() override {
-      llvm::errs() << "** Options: " << mOptions << "\n";
-      return std::make_unique<LabelerFrontendAction>(mOptions);
-    }
+std::unique_ptr<FrontendAction> LabelerFrontendActionFactory::create() {
+  return std::make_unique<LabelerFrontendAction>(options);
+}
 
-  private:
-    std::string mOptions;
-  };
-
+std::unique_ptr<FrontendActionFactory>
+newLabelerFrontendActionFactory(LabelOptions labelOptions) {
   return std::unique_ptr<FrontendActionFactory>(
-      new LabelerFrontendActionFactory(options));
+      new LabelerFrontendActionFactory(labelOptions));
 }

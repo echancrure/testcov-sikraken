@@ -6,12 +6,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-
-
 #include "LabelerASTVisitor.hpp"
 #include "Includes.hpp"
 
-LabelerASTVisitor::LabelerASTVisitor(Rewriter &R) : labelAddRewriter(R) {}
+LabelerASTVisitor::LabelerASTVisitor(Rewriter &R, LabelOptions labelOptions)
+    : labelAddRewriter(R), options(labelOptions) {}
 
 std::string LabelerASTVisitor::getNextLabel() {
   goalCounter++;
@@ -64,10 +63,11 @@ void LabelerASTVisitor::LabelStatementAndAddBracesIfMissing(
 
 void LabelerASTVisitor::LabelIfStmt(IfStmt *processedStatement) {
   Stmt *thenStatement = processedStatement->getThen();
-  LabelStatementAndAddBracesIfMissing(thenStatement, ifLabel, false);
+  LabelStatementAndAddBracesIfMissing(thenStatement, options.ifLabel, false);
   Stmt *elseStatement = processedStatement->getElse();
   if (elseStatement) {
-    LabelStatementAndAddBracesIfMissing(elseStatement, elseLabel, false);
+    LabelStatementAndAddBracesIfMissing(elseStatement, options.elseLabel,
+                                        false);
   }
 }
 
@@ -101,7 +101,12 @@ bool LabelerASTVisitor::VisitStmt(Stmt *s) {
       LabelTernaryStmt(cast<ConditionalOperator>(s));
     }
   } else if (isa<CaseStmt>(s)) {
-    LabelCaseStmt(cast<CaseStmt>(s));
+    if (options.caseLabel)
+      LabelCaseStmt(cast<CaseStmt>(s));
+  } else if (isa<DefaultStmt>(s)) {
+    llvm::outs() << "** default Statement visited!\n";
+    labelAddRewriter.InsertText(GetTrueEndLocation(s), getNextLabel(),
+                                true, true);
   }
 
   return true;
@@ -110,8 +115,8 @@ bool LabelerASTVisitor::VisitStmt(Stmt *s) {
 bool LabelerASTVisitor::VisitFunctionDecl(FunctionDecl *f) {
   // Only function definitions (with bodies), not declarations.
   if (f->hasBody()) {
-    LabelStatementAndAddBracesIfMissing(f->getBody(), functionStartLabel,
-                                        functionEndLabel);
+    LabelStatementAndAddBracesIfMissing(
+        f->getBody(), options.functionStartLabel, options.functionEndLabel);
   }
 
   return true;

@@ -11,6 +11,17 @@
 #ifndef LABELER_FRONTEND_ACTION_FACTORY_HPP
 #define LABELER_FRONTEND_ACTION_FACTORY_HPP
 
-std::unique_ptr<FrontendActionFactory> newLabelerFrontendActionFactory(std::string options);
+std::unique_ptr<FrontendActionFactory> newLabelerFrontendActionFactory(LabelOptions labelOptions);
+
+class LabelerFrontendActionFactory : public FrontendActionFactory {
+public:
+  LabelerFrontendActionFactory(LabelOptions labelOptions);
+  std::unique_ptr<FrontendAction> create() override;
+
+private:
+  LabelOptions options;
+};
+
+std::unique_ptr<FrontendActionFactory> newLabelerFrontendActionFactory(LabelOptions labelOptions);
 
 #endif
