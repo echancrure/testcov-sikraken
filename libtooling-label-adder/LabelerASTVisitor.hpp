@@ -36,11 +36,22 @@ public:
   //   else{}
   // }
   bool VisitIfStmt(IfStmt *S);
-
+  // Traverse Switch-Cases and add Labels to them
   bool VisitCaseStmt(CaseStmt *S);
-  bool VisitBinaryOperator(BinaryOperator *S);
-//  bool VisitConditionalOperator(ConditionalOperator *S);
+  // Traverse Switch-Default-Caes and add Labels to them
   bool VisitDefaultStmt(DefaultStmt *S);
+  // Traverse Binary Operators, check if they contain a ternary statement, and
+  // refactor them if so. Add Labels to the true and false case.
+  // a = (a<2) ? 1 : 2;
+  // becomes
+  // if(a<2){
+  //   a = 1
+  // } else {
+  //   a = 2
+  // }
+  bool VisitBinaryOperator(BinaryOperator *S);
+  // Traverse Functions, check if they are declarations or functions with
+  // bodies. If they are functions with bodies, add Labels to them.
   bool VisitFunctionDecl(FunctionDecl *f);
 
 private:
@@ -76,7 +87,8 @@ private:
 
   // Refactors a ternary Statement to an if-statements and adds requested Labels
   // Currently in progress...
-  void LabelTernaryStmt(ConditionalOperator *ternaryStatement, std::string leftHandString);
+  void LabelTernaryStmt(ConditionalOperator *ternaryStatement,
+                        std::string leftHandString);
 };
 
 #endif

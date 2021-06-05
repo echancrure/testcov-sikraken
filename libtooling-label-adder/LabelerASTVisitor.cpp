@@ -113,11 +113,6 @@ bool LabelerASTVisitor::VisitBinaryOperator(BinaryOperator *S) {
   return true;
 }
 
-// bool LabelerASTVisitor::VisitConditionalOperator(ConditionalOperator *S) {
-//   LabelTernaryStmt(S);
-//   return true;
-// }
-
 bool LabelerASTVisitor::VisitDefaultStmt(DefaultStmt *S) {
   if (options.defaultLabel)
     labelAddRewriter.InsertText(GetTrueEndLocation(S), getNextLabel(), true,
@@ -127,27 +122,22 @@ bool LabelerASTVisitor::VisitDefaultStmt(DefaultStmt *S) {
 
 void LabelerASTVisitor::LabelTernaryStmt(ConditionalOperator *ternaryStatement,
                                          std::string leftHandString) {
-  // TODO
-  // Expr *condition = ternaryStatement->getCond();
   labelAddRewriter.InsertText(ternaryStatement->getBeginLoc(), "if(", true,
                               true);
-  // labelAddRewriter.ReplaceText( "){\n" + getNextLabel());
   labelAddRewriter.RemoveText(ternaryStatement->getQuestionLoc(), 1);
   labelAddRewriter.InsertText(ternaryStatement->getQuestionLoc(),
                               "){" + getNextLabel() + leftHandString, true,
                               true);
   labelAddRewriter.RemoveText(ternaryStatement->getColonLoc(), 1);
   labelAddRewriter.InsertText(ternaryStatement->getColonLoc(),
-                              "\n}else{" + getNextLabel() + leftHandString,
+                              ";\n}else{" + getNextLabel() + leftHandString,
                               true, true);
   labelAddRewriter.InsertText(GetTrueEndLocation(ternaryStatement), "\n}", true,
                               true);
-
-  // Expr *truePart = ternaryStatement->getTrueExpr();
 }
 
 bool LabelerASTVisitor::VisitFunctionDecl(FunctionDecl *f) {
-  // Only function definitions (with bodies), not declarations.
+  // Only function with bodies should get labeled, not declarations.
   if (f->hasBody()) {
     LabelStatementAndAddBracesIfMissing(
         f->getBody(), options.functionStartLabel, options.functionEndLabel);
