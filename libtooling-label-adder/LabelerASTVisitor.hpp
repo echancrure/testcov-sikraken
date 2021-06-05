@@ -6,20 +6,53 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-
-
 #include "Includes.hpp"
 
 #ifndef LABELER_AST_VISITOR_HPP
 #define LABELER_AST_VISITOR_HPP
 
+// Class where the actual magic of the refactoring is happening
+// Statements get visited with the Visit..Stmt Methods and get refactored by the
+// Rewriter.
 class LabelerASTVisitor : public RecursiveASTVisitor<LabelerASTVisitor> {
-private:
-  int goalCounter = 0;
-
 public:
+  // Just a generic constructor.
   LabelerASTVisitor(Rewriter &R, LabelOptions labelOptions);
 
+  // Methods called, while the AST is traversed, need to be public, as they are
+  // accessed from outside.
+
+  // Traverses If-Statements and adds Labels to every if and else case.
+  // If braces are missing, as the body of an if or else case is a one-liner
+  // instead of a compound statement, braces are added. else-ifs get split.
+  // Example:
+  // if(a){}
+  // else if(b){}
+  // else{}
+  // becomes
+  // if(a){}
+  // else{
+  //   if(b){}
+  //   else{}
+  // }
+  bool VisitIfStmt(IfStmt *S);
+
+  bool VisitCaseStmt(CaseStmt *S);
+  bool VisitBinaryOperator(BinaryOperator *S);
+  bool VisitDefaultStmt(DefaultStmt *S);
+  bool VisitFunctionDecl(FunctionDecl *f);
+
+private:
+  // The Rewriter is storing our refactoring of the code
+  Rewriter &labelAddRewriter;
+  // A struct, where all options are stored in
+  LabelOptions options;
+  // A counter, for the value of the current label
+  int goalCounter = 0;
+
+  // Returns the next Label of the currently visited file, increases a counter
+  // variable by one, so the next call of this method returns a label of higher
+  // order.
   std::string getNextLabel();
 
   // The getEndLoc Method leaves us with the position of the first character
@@ -40,20 +73,9 @@ public:
   void LabelStatementAndAddBracesIfMissing(Stmt *processedStatement,
                                            bool beginLabel, bool endLabel);
 
-
-  void LabelIfStmt(IfStmt *processedStatement);
-
-  void LabelCaseStmt(CaseStmt *processedStatement);
-
+  // Refactors a ternary Statement to an if-statements and adds requested Labels
+  // Currently in progress...
   void LabelTernaryStmt(ConditionalOperator *ternaryStatement);
-
-  bool VisitStmt(Stmt *s);
-
-  bool VisitFunctionDecl(FunctionDecl *f);
-
-private:
-  Rewriter &labelAddRewriter;
-  LabelOptions options;
 };
 
 #endif

@@ -37,6 +37,8 @@ void LabelerASTVisitor::AddBracesAroundStatement(Stmt *processedStatement) {
 
 void LabelerASTVisitor::LabelStatementAndAddBracesIfMissing(
     Stmt *processedStatement, bool beginLabel, bool endLabel) {
+  // Return instantly, if no labels to add
+  if(!(beginLabel || endLabel)) return;
   SourceLocation beginPos;
   SourceLocation endPos;
   // Check if Braces are missing
@@ -61,23 +63,39 @@ void LabelerASTVisitor::LabelStatementAndAddBracesIfMissing(
   }
 }
 
-void LabelerASTVisitor::LabelIfStmt(IfStmt *processedStatement) {
-  Stmt *thenStatement = processedStatement->getThen();
+bool LabelerASTVisitor::VisitIfStmt(IfStmt *S) {
+  Stmt *thenStatement = S->getThen();
   LabelStatementAndAddBracesIfMissing(thenStatement, options.ifLabel, false);
-  Stmt *elseStatement = processedStatement->getElse();
+  Stmt *elseStatement = S->getElse();
   if (elseStatement) {
     LabelStatementAndAddBracesIfMissing(elseStatement, options.elseLabel,
                                         false);
   }
+  return true;
 }
 
-void LabelerASTVisitor::LabelCaseStmt(CaseStmt *processedStatement) {
-  for (Stmt *child : processedStatement->children()) {
+bool LabelerASTVisitor::VisitCaseStmt(CaseStmt *S) {
+  for (Stmt *child : S->children()) {
     if (isa<ConstantExpr>(child)) {
       labelAddRewriter.InsertText(GetTrueEndLocation(child), getNextLabel(),
                                   true, true);
     }
   }
+  return true;
+}
+
+bool LabelerASTVisitor::VisitBinaryOperator(BinaryOperator *S) {
+  Stmt *rightHandSide = cast<BinaryOperator>(S)->getRHS();
+  if (isa<ConditionalOperator>(rightHandSide)) {
+    LabelTernaryStmt(cast<ConditionalOperator>(S));
+  }
+  return true;
+}
+
+bool LabelerASTVisitor::VisitDefaultStmt(DefaultStmt *S) {
+  labelAddRewriter.InsertText(GetTrueEndLocation(S), getNextLabel(),
+                              true, true);
+  return true;
 }
 
 void LabelerASTVisitor::LabelTernaryStmt(
@@ -90,26 +108,6 @@ void LabelerASTVisitor::LabelTernaryStmt(
                               true, true);
 
   Expr *truePart = ternaryStatement->getTrueExpr();
-}
-
-bool LabelerASTVisitor::VisitStmt(Stmt *s) {
-  if (isa<IfStmt>(s)) {
-    LabelIfStmt(cast<IfStmt>(s));
-  } else if (isa<BinaryOperator>(s)) {
-    Stmt *rightHandSide = cast<BinaryOperator>(s)->getRHS();
-    if (isa<ConditionalOperator>(rightHandSide)) {
-      LabelTernaryStmt(cast<ConditionalOperator>(s));
-    }
-  } else if (isa<CaseStmt>(s)) {
-    if (options.caseLabel)
-      LabelCaseStmt(cast<CaseStmt>(s));
-  } else if (isa<DefaultStmt>(s)) {
-    llvm::outs() << "** default Statement visited!\n";
-    labelAddRewriter.InsertText(GetTrueEndLocation(s), getNextLabel(),
-                                true, true);
-  }
-
-  return true;
 }
 
 bool LabelerASTVisitor::VisitFunctionDecl(FunctionDecl *f) {
