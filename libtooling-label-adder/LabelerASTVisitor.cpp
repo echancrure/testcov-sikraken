@@ -130,7 +130,7 @@ bool LabelerASTVisitor::VisitCompoundStmt(CompoundStmt *S) {
 
 bool LabelerASTVisitor::VisitDefaultStmt(DefaultStmt *S) {
   if (options.defaultLabel)
-    labelAddRewriter.InsertText(GetTrueEndLocation(S), getNextLabel(), true,
+    labelAddRewriter.InsertText(S->getSubStmt()->getBeginLoc(), getNextLabel(), true,
                                 true);
   return true;
 }
