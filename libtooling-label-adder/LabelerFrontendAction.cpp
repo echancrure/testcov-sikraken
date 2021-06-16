@@ -19,6 +19,7 @@ void LabelerFrontendAction::EndSourceFileAction() {
 
   // Now emit the rewritten buffer.
   labelAddRewriter.getEditBuffer(SM.getMainFileID()).write(llvm::outs());
+  SM.getMainFileID();
 }
 
 std::unique_ptr<ASTConsumer> LabelerFrontendAction::CreateASTConsumer(CompilerInstance &CI,

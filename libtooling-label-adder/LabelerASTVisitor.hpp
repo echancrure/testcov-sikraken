@@ -50,6 +50,7 @@ public:
   //   a = 2
   // }
   bool VisitBinaryOperator(BinaryOperator *S);
+  bool VisitCompoundStmt(CompoundStmt *S);
   // Traverse Functions, check if they are declarations or functions with
   // bodies. If they are functions with bodies, add Labels to them.
   bool VisitFunctionDecl(FunctionDecl *f);

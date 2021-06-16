@@ -113,6 +113,16 @@ bool LabelerASTVisitor::VisitBinaryOperator(BinaryOperator *S) {
   return true;
 }
 
+bool LabelerASTVisitor::VisitCompoundStmt(CompoundStmt *S) {
+  if(!(options.ternaryTrueLabel || options.ternaryFalseLabel)) return true;
+  for (Stmt *child : S->children()){
+    if(isa<ConditionalOperator>(child)){
+      LabelTernaryStmt(cast<ConditionalOperator>(child), std::string(""));
+    }
+  }
+  return true;
+}
+
 bool LabelerASTVisitor::VisitDefaultStmt(DefaultStmt *S) {
   if (options.defaultLabel)
     labelAddRewriter.InsertText(GetTrueEndLocation(S), getNextLabel(), true,
