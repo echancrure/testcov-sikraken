@@ -40,6 +40,12 @@ void LabelerASTVisitor::LabelStatementAndAddBracesIfMissing(
   // Return instantly, if no labels to add
   if (!(beginLabel || endLabel))
     return;
+  // If there is no code (a Null-Statement), remove semicolon and add brackets and Label
+  if(isa<NullStmt>(processedStatement)){
+    labelAddRewriter.RemoveText(processedStatement->getBeginLoc(), 1);
+    labelAddRewriter.InsertText(processedStatement->getBeginLoc(), "{" + getNextLabel() + "}", true, true);
+    return;
+  }
   SourceLocation beginPos;
   SourceLocation endPos;
   // Check if Braces are missing
