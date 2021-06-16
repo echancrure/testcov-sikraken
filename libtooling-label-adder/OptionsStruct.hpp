@@ -13,7 +13,8 @@ typedef struct LabelOptions {
   bool ternaryTrueLabel, ternaryFalseLabel,
       functionStartLabel, functionEndLabel,
       caseLabel, defaultLabel,
-      ifLabel, elseLabel;
+      ifLabel, elseLabel,
+      inPlace, noInfo;
 } LabelOptions;
 
 #endif

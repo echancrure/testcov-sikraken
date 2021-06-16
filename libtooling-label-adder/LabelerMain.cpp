@@ -29,18 +29,18 @@ static llvm::cl::opt<bool>
                 llvm::cl::desc("Do not create Labels in else-branches"),
                 llvm::cl::cat(InstrumentationOptions));
 // Switch Options
-static llvm::cl::opt<bool>
-    NoSwitchLabel("no-labels-switch",
-                  llvm::cl::desc("Do not create Labels in switch cases and default case"),
-                  llvm::cl::cat(InstrumentationOptions));
+static llvm::cl::opt<bool> NoSwitchLabel(
+    "no-labels-switch",
+    llvm::cl::desc("Do not create Labels in switch cases and default case"),
+    llvm::cl::cat(InstrumentationOptions));
 static llvm::cl::opt<bool>
     NoSwitchCaseLabel("no-labels-switch-case",
-                  llvm::cl::desc("Do not create Labels in switch cases"),
-                  llvm::cl::cat(InstrumentationOptions));
-static llvm::cl::opt<bool>
-    NoSwitchDefaultLabel("no-labels-switch-default",
-                  llvm::cl::desc("Do not create Labels in default cases"),
-                  llvm::cl::cat(InstrumentationOptions));
+                      llvm::cl::desc("Do not create Labels in switch cases"),
+                      llvm::cl::cat(InstrumentationOptions));
+static llvm::cl::opt<bool> NoSwitchDefaultLabel(
+    "no-labels-switch-default",
+    llvm::cl::desc("Do not create Labels in default cases"),
+    llvm::cl::cat(InstrumentationOptions));
 // Function Options
 static llvm::cl::opt<bool> NoFunctionLabel(
     "no-labels-function",
@@ -68,6 +68,15 @@ static llvm::cl::opt<bool> NoTernaryFalseLabel(
     "no-labels-ternary-false",
     llvm::cl::desc("Do not add labels to refactored ternary false cases"),
     llvm::cl::cat(InstrumentationOptions));
+// Output Options
+static llvm::cl::opt<bool> InPlace(
+    "in-place",
+     llvm::cl::desc("Overwrite files"),
+     llvm::cl::cat(InstrumentationOptions));
+static llvm::cl::opt<bool> NoInfo(
+    "no-info",
+    llvm::cl::desc("Do not print information to stderr"),
+    llvm::cl::cat(InstrumentationOptions));
 
 LabelOptions generateLabelOptions() {
   LabelOptions labelOptions;
@@ -79,7 +88,7 @@ LabelOptions generateLabelOptions() {
     labelOptions.elseLabel = !NoElseLabel.getValue();
   }
 
-  if(NoSwitchLabel){
+  if (NoSwitchLabel) {
     labelOptions.caseLabel = false;
     labelOptions.defaultLabel = false;
   } else {
@@ -87,7 +96,7 @@ LabelOptions generateLabelOptions() {
     labelOptions.defaultLabel = !NoSwitchDefaultLabel.getValue();
   }
 
-  if(NoFunctionLabel){
+  if (NoFunctionLabel) {
     labelOptions.functionStartLabel = false;
     labelOptions.functionEndLabel = false;
   } else {
@@ -95,13 +104,16 @@ LabelOptions generateLabelOptions() {
     labelOptions.functionEndLabel = !NoFunctionEndLabel.getValue();
   }
 
-  if(NoTernaryLabel){
+  if (NoTernaryLabel) {
     labelOptions.ternaryTrueLabel = false;
     labelOptions.ternaryFalseLabel = false;
   } else {
     labelOptions.ternaryTrueLabel = !NoTernaryTrueLabel.getValue();
     labelOptions.ternaryFalseLabel = !NoTernaryFalseLabel.getValue();
   }
+
+  labelOptions.inPlace = InPlace.getValue();
+  labelOptions.noInfo = NoInfo.getValue();
 
   return labelOptions;
 }

@@ -96,7 +96,6 @@ bool LabelerASTVisitor::VisitBinaryOperator(BinaryOperator *S) {
                                         GetTrueEndLocation(leftHandSide)),
           labelAddRewriter.getSourceMgr(), labelAddRewriter.getLangOpts())
           .str();
-  llvm::outs() << "** String Var: " << leftHandString << "\n";
   if (isa<ConditionalOperator>(rightHandSide)) {
     labelAddRewriter.RemoveText(SourceRange(leftHandSide->getBeginLoc(),
                                             GetTrueEndLocation(leftHandSide)));

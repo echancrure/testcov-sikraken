@@ -26,6 +26,8 @@ public:
 
 private:
   LabelerASTVisitor Visitor;
+  // A struct, where all options are stored in
+  LabelOptions options;
 };
 
 #endif
