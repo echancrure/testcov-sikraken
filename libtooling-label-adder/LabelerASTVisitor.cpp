@@ -42,8 +42,7 @@ void LabelerASTVisitor::LabelStatementAndAddBracesIfMissing(
     return;
   // If there is no code (a Null-Statement), remove semicolon and add brackets and Label
   if(isa<NullStmt>(processedStatement)){
-    labelAddRewriter.RemoveText(processedStatement->getBeginLoc(), 1);
-    labelAddRewriter.InsertText(processedStatement->getBeginLoc(), "{" + getNextLabel() + "}", true, true);
+    labelAddRewriter.ReplaceText(processedStatement->getSourceRange(), "{" + getNextLabel() + "}");
     return;
   }
   SourceLocation beginPos;
@@ -54,6 +53,10 @@ void LabelerASTVisitor::LabelStatementAndAddBracesIfMissing(
     beginPos = processedStatement->getBeginLoc();
     endPos = processedStatement->getEndLoc();
   } else {
+    if(cast<CompoundStmt>(processedStatement)->body_empty()){
+      labelAddRewriter.ReplaceText(processedStatement->getSourceRange(), "{" + getNextLabel() + "}");
+      return;
+    }
     // If braces are already there, beginLoc leaves us with the position
     // before the brace, so we have to offset by 1
     // The reverse applies to the closing brace, so we offset by -1
