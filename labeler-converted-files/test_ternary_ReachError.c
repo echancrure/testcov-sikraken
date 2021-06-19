@@ -41,7 +41,7 @@ Goal_5:;
    reach_error() ;
   }else{
   Goal_8:;
-   0;
+   (void) 0;
   Goal_6:;
   
   }

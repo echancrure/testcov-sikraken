@@ -10,7 +10,7 @@ extern const char * __VERIFIER_nondet_string();
 
 void reach_error() {
 Goal_1:;
- exit(1)
+ exit(1);
 Goal_2:;
  }
 
