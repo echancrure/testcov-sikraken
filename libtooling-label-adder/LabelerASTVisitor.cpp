@@ -150,7 +150,7 @@ void LabelerASTVisitor::LabelTernaryStmt(ConditionalOperator *ternaryStatement,
   labelAddRewriter.InsertText(ternaryStatement->getColonLoc(),
                               ";\n}else{" + getNextLabel() + leftHandString,
                               true, true);
-  labelAddRewriter.InsertText(GetTrueEndLocation(ternaryStatement), "\n}", true,
+  labelAddRewriter.InsertText(GetTrueEndLocation(ternaryStatement), "\n}", false,
                               true);
 }
 
