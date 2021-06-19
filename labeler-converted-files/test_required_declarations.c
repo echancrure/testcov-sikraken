@@ -11,62 +11,50 @@ extern char __VERIFIER_nondet_char();
 typedef int FILE_example;
 typedef int _FILE;
 typedef int FILE0 ;
-void reach_error() 
-Goal_2:;
-{
+void reach_error() {
 Goal_1:;
 }
 char reach_error0() {
-Goal_3:;
+Goal_2:;
 
   reach_error();
-  Goal_4:;
+  Goal_3:;
   
 }
 
 void exit_ () {
-Goal_5:;
-
-Goal_6:;
- }
+Goal_4:;
+}
 void exit0 () {
+Goal_5:;
+}
+
+void
+strcpy0 () {
+Goal_6:;
+}
+void
+strcpy_ () {
 Goal_7:;
-
+}
+void
+_strcpy () {
 Goal_8:;
- }
-
-void
-strcpy0 () 
-Goal_10:;
-{
-Goal_9:;
-}
-void
-strcpy_ () 
-Goal_12:;
-{
-Goal_11:;
-}
-void
-_strcpy () 
-Goal_14:;
-{
-Goal_13:;
 }
 
 
 
 int main() {
-Goal_15:;
+Goal_9:;
 
   char a = __VERIFIER_nondet_char();
   char b = __VERIFIER_nondet_char();
   char c = __VERIFIER_nondet_char();
   if (c == 16 && a == 'a' && b == 5) {
-  Goal_17:;
+  Goal_11:;
   
       reach_error0();
   }
-  Goal_16:;
+  Goal_10:;
   
 }

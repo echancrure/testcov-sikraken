@@ -27,9 +27,9 @@ Goal_3:;
     {
     Goal_5:;
     abort();
-    Goal_4:;
-    
     }
+    
+    Goal_4:;
     
 }
 int main() {

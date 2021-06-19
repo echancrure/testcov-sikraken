@@ -40,8 +40,8 @@ Goal_5:;
     {
     Goal_7:;
     reach_error();
-    Goal_6:;
-    
     }
+    
+    Goal_6:;
     
 }

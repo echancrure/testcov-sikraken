@@ -22,8 +22,8 @@ Goal_1:;
 
   ((void) sizeof ((0) ? 1 : 0),
     __extension__ ({ if (0) {
-    Goal_3:;
-    }
+Goal_3:;
+}
     else {
     Goal_4:;
     __assert_fail ("0", "byte_add-1.c", 3, __extension__ __PRETTY_FUNCTION__);

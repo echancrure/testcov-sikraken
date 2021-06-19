@@ -8,29 +8,27 @@
 
 extern char __VERIFIER_nondet_char();
 
-void reach_error() 
-Goal_2:;
-{
+void reach_error() {
 Goal_1:;
 }
 
 int main() {
-Goal_3:;
+Goal_2:;
 
   char a = __VERIFIER_nondet_char();
   char b = __VERIFIER_nondet_char();
   char c = __VERIFIER_nondet_char();
   if (c == 16) {
-  Goal_5:;
+  Goal_4:;
   
     c = __VERIFIER_nondet_char();
     if (a == 'a' && b == 5) {
-    Goal_6:;
+    Goal_5:;
     
         reach_error();
     }
   }
 
-Goal_4:;
+Goal_3:;
 
 }
