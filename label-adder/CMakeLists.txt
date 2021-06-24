@@ -1,6 +1,6 @@
 set(LLVM_LINK_COMPONENTS support)
 
-add_clang_executable(labeler
+add_clang_tool(labeler
     LabelerMain.cpp
 
     LabelerASTConsumer.cpp
