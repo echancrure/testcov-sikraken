@@ -1,5 +1,24 @@
-# Labeler auf Basis von LLVM-Clang-Libtooling
-## Build-Anleitung
+<!--
+This file is part of TestCov,
+a robust test executor with reliable coverage measurement:
+https://gitlab.com/sosy-lab/software/test-suite-validator/
+
+SPDX-FileCopyrightText: 2021 Dirk Beyer <https://www.sosy-lab.org>
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
+# Program transformation to add GOAL labels
+
+Based on [clang libtooling](https://clang.llvm.org/docs/LibTooling.html)
+
+## Build requirements
+
+- git
+- ninja >= 1.10
+- cmake >= 3.16
+
+## Build
 
 Als erstes wird ein Verzeichnis benötigt, in dem alles heruntergeladen und gebaut werden soll.
 
