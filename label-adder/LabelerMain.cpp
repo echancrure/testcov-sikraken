@@ -120,7 +120,7 @@ LabelOptions generateLabelOptions() {
 
 int main(int argc, const char **argv) {
   auto ExpectedParser =
-      CommonOptionsParser::create(argc, argv, InstrumentationOptions);
+      CommonOptionsParser::create(argc, argv, InstrumentationOptions, llvm::cl::NumOccurrencesFlag(llvm::cl::OneOrMore), NULL);
   if (!ExpectedParser) {
     // Fail gracefully for unsupported options.
     llvm::errs() << ExpectedParser.takeError();
