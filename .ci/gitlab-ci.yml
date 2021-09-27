@@ -12,6 +12,11 @@
 
 image: ${CI_REGISTRY_IMAGE}/test:python-${PYTHON_VERSION}
 
+stages:
+  - ci-images
+  - test
+  - deploy
+
 variables:
     PYTHONPATH: "lib/"
 
