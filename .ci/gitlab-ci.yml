@@ -135,16 +135,16 @@ build-docker:python:3.9:
   extends: .build-docker
   variables:
     DOCKERFILE: .ci/Dockerfile.python-3.9
-    IMAGE: test/python:3.9
+    IMAGE: test:python-3.9
 
 build-docker:python:3.6:
   extends: .build-docker
   variables:
     DOCKERFILE: .ci/Dockerfile.python-3.6
-    IMAGE: test/python:3.6
+    IMAGE: test:python-3.6
 
 build-docker:plain:
   extends: .build-docker
   variables:
     DOCKERFILE: .ci/Dockerfile.plain
-    IMAGE: test/plain
+    IMAGE: test:plain
