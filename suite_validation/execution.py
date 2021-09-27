@@ -86,7 +86,7 @@ class HarnessCreator:
     def _get_declarations(program_file):
         to_declare = set(l[0] for l in eu.EXTERNAL_DECLARATIONS)
         preprocessed = True
-        with open(program_file) as inp:
+        with open(program_file, encoding="UTF-8") as inp:
             for line in inp.readlines():
                 # This loop may produce strange results if an include-statement
                 # comes after the declaration of one of the required declarations;
@@ -110,7 +110,7 @@ class HarnessCreator:
                 l[1] for l in eu.EXTERNAL_DECLARATIONS if l[0] in to_declare
             )
         to_declare = set(l[2] for l in eu.EXTERNAL_DECLARATIONS)
-        with open(program_file) as inp:
+        with open(program_file, encoding="UTF-8") as inp:
             for line in inp.readlines():
                 for _, _, decl in eu.EXTERNAL_DECLARATIONS:
                     if line.startswith(decl):
@@ -120,7 +120,7 @@ class HarnessCreator:
     @staticmethod
     def _get_harness_skeleton():
         harness_skeleton = os.path.join(os.path.dirname(__file__), HARNESS_FILE_NAME)
-        with open(harness_skeleton) as inp:
+        with open(harness_skeleton, encoding="UTF-8") as inp:
             return inp.read()
 
     def convert(self, program_file, test_vector=None) -> str:
@@ -176,7 +176,7 @@ class ExecutionRunner:
         mm_arg = "-m64" if self.machine_model == eu.MACHINE_MODEL_64 else "-m32"
         cmd = [self._compiler]
         cmd += [
-            "-std={}".format(c_version),
+            f"-std={c_version}",
             mm_arg,
             "-Wno-attributes",
             "-D__alias__(x)=",
@@ -199,7 +199,7 @@ class ExecutionRunner:
 
         if compile_result.returncode != 0:
             raise ExecutionError(
-                "Compilation failed for harness {}:\n".format(harness_file)
+                f"Compilation failed for harness {harness_file}:\n"
                 + "\n".join(
                     "    " + l for l in compile_result.stderr.decode().split("\n")
                 )
@@ -218,7 +218,7 @@ class ExecutionRunner:
         harness_file = self._harness_file_target
         harness_content = self.harness_generator.convert(program_file)
 
-        with open(harness_file, "w+") as outp:
+        with open(harness_file, "w+", encoding="UTF-8") as outp:
             outp.write(harness_content)
         self.harness_file = (
             harness_file  # set this only after successfully writing the harness
@@ -271,7 +271,7 @@ class ExecutionRunner:
                 tail_start = threshold - head_stop
                 input_values = (
                     input_values[:head_stop]
-                    + ["..(snip %s values).." % number_snipped]
+                    + [f"..(snip {number_snipped} values).."]
                     + input_values[-tail_start:]
                 )
 
@@ -380,7 +380,7 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
         self._output_dir_info = os.path.join(output_dir, info_files_dir)
         self.harness_file = None
         self._individual_runs = individual_runs
-        self._instrumented_programs_cache = dict()
+        self._instrumented_programs_cache = {}
         os.makedirs(self._output_dir_info, exist_ok=True)
 
     @staticmethod
@@ -758,7 +758,7 @@ class SuiteExecutor:
             if not any(
                 os.path.basename(f) == mu.METADATA_XML_NAME for f in zip_inp.namelist()
             ):
-                raise ExecutionError("No %s in %s" % (mu.METADATA_XML_NAME, test_suite))
+                raise ExecutionError(f"No {mu.METADATA_XML_NAME} in {test_suite}")
 
             for xml_file in (
                 l
@@ -816,7 +816,7 @@ class SuiteExecutor:
         else:
             logging.debug("Accumulated coverage: %s%%", accumulated_coverage_in_percent)
             if not result_target.coverage_sequence:
-                result_target.coverage_sequence = list()
+                result_target.coverage_sequence = []
             result_target.coverage_sequence.append(accumulated_coverage_in_percent)
 
     def _execute_tests(self, program_file, test_vectors, executor, result_target):

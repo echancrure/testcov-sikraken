@@ -128,10 +128,10 @@ def execute(
     strategy: str, individual_coverages: List[cov.TestCoverage]
 ) -> List[cov.TestCoverage]:
     if not individual_coverages:
-        return list()
+        return []
     if strategy in REDUCTION_STRATEGIES:
         return REDUCTION_STRATEGIES[strategy](individual_coverages)
-    raise ReductionStrategyError("Reduction strategy {} is unknown".format(strategy))
+    raise ReductionStrategyError(f"Reduction strategy {strategy} is unknown")
 
 
 def compute_test_coverage_with_highest_extension(

@@ -49,7 +49,7 @@ def get_metadata(test_suite: str) -> Optional[dict]:
     def get_field_text(field_name: str) -> Optional[str]:
         field = meta_root.find(field_name)
         if field is None:
-            raise ET.ParseError("Undefined field '<{}>'".format(field_name))
+            raise ET.ParseError(f"Undefined field '<{field_name}>'")
         return field.text
 
     metadata = {

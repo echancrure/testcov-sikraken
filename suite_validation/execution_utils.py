@@ -28,7 +28,7 @@ class CoverFunc:
         self.target_method = target_method
 
     def __str__(self):
-        return "%s(%s)" % (type(self).__name__, self.target_method)
+        return f"{type(self).__name__}({self.target_method})"
 
     def __repr__(self):
         return str(self)
@@ -137,7 +137,7 @@ class TestVector:
     def __init__(self, name, origin_file):
         self.name = name
         self.origin = origin_file
-        self._vector = list()
+        self._vector = []
 
     def add(self, value, method=None):
         self._vector.append({"value": value, "name": method})
@@ -159,7 +159,7 @@ class TestVector:
         return len(self.vector)
 
     def __repr__(self):
-        return "%s: %s" % (self.origin, self._vector)
+        return f"{self.origin}: {self._vector}"
 
     def __str__(self):
         return self.origin
@@ -179,7 +179,7 @@ class TestResult:
         return self.verdict
 
     def __repr__(self):
-        return "(%s, %s, %s)" % (self.verdict, self.execution_info, self.coverage)
+        return f"({self._verdict}, {self.execution_info}, {self.coverage})"
 
 
 COVERS = "false"
@@ -192,13 +192,13 @@ class SuiteExecutionResult:
     """Results of a full test suite execution."""
 
     def __init__(self):
-        self.results: List[ExecutionResult] = list()
+        self.results: List[ExecutionResult] = []
         self.coverage_total = None
-        self.successful_tests = list()
-        self.coverage_sequence: List[float] = list()
-        self.coverage_tests = list()
-        self.reduced_coverage_tests = list()
-        self.tests = list()
+        self.successful_tests = []
+        self.coverage_sequence: List[float] = []
+        self.coverage_tests = []
+        self.reduced_coverage_tests = []
+        self.tests = []
 
 
 class ExecutionResult:
@@ -216,10 +216,10 @@ class ExecutionResult:
         self.memory_used = memory_used
 
     def __repr__(self):
-        return "%s(%s)" % (self.__class__.__name__, self.__hash__())
+        return f"{self.__class__.__name__}({self.__hash__()})"
 
     def __str__(self):
-        return "returncode %s" % self.returncode
+        return f"returncode {self.returncode}"
 
 
 def execute(command, quiet=False, input_str=None, timelimit=None):
@@ -231,29 +231,29 @@ def execute(command, quiet=False, input_str=None, timelimit=None):
     log_cmd(" ".join(command))
 
     wall_time_start = time.perf_counter()
-    process = subprocess.Popen(
+    with subprocess.Popen(
         command,
         stdin=subprocess.PIPE if input_str else None,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         universal_newlines=False,
-    )
+    ) as process:
 
-    output = None
-    err_output = None
-    wall_time = None
-    try:
-        if input_str and not isinstance(input_str, bytes):
-            input_str = input_str.encode()
-        output, err_output = process.communicate(
-            input=input_str, timeout=timelimit if timelimit else None
-        )
-        returncode = process.poll()
-        got_aborted = False
-    except subprocess.TimeoutExpired:
-        logging.debug("Timeout of %ss expired. Killing process.", timelimit)
-        returncode = shut_down(process)
-        got_aborted = True
+        output = None
+        err_output = None
+        wall_time = None
+        try:
+            if input_str and not isinstance(input_str, bytes):
+                input_str = input_str.encode()
+            output, err_output = process.communicate(
+                input=input_str, timeout=timelimit if timelimit else None
+            )
+            returncode = process.poll()
+            got_aborted = False
+        except subprocess.TimeoutExpired:
+            logging.debug("Timeout of %ss expired. Killing process.", timelimit)
+            returncode = shut_down(process)
+            got_aborted = True
     wall_time = time.perf_counter() - wall_time_start
 
     # We decode output, but we can't decode error output, since it may contain undecodable bytes.

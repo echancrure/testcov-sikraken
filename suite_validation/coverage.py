@@ -219,10 +219,10 @@ class ConditionsEntry:
 
     def __repr__(self):
         condition_repr = "\n".join(
-            "\tCondition %s: %s" % (cond, hits)
+            f"\tCondition {cond}: {hits}"
             for cond, hits in self.conditions_hit_counter.items()
         )
-        return "Line %s:\n%s" % (self.program_line, condition_repr)
+        return f"Line {self.program_line}:\n{condition_repr}"
 
     def __str__(self):
         return self.__repr__()
@@ -320,10 +320,10 @@ class _ConditionsCoverage(_CoverageComparable):
         return self.conditions_entries == other.conditions_entries
 
     def __repr__(self):
-        return "%s[%s]" % (self.__class__.__name__, self.conditions_entries)
+        return f"{self.__class__.__name__}[{self.conditions_entries}]"
 
     def __str__(self):
-        return "%s%% condition coverage" % self.hits_percent
+        return f"{self.hits_percent}% condition coverage"
 
 
 class _LinesCoverage(_CoverageComparable):
@@ -390,15 +390,15 @@ class _LinesCoverage(_CoverageComparable):
         return self.hit_counter == other.hit_counter
 
     def __repr__(self):
-        return "%s[%s]" % (self.__class__.__name__, self.hit_counter)
+        return f"{self.__class__.__name__}[{self.hit_counter}]"
 
     def __str__(self):
-        return "%s%% line coverage" % self.hits_percent
+        return f"{self.hits_percent}% line coverage"
 
 
 class _BranchesCoverage(_LinesCoverage):
     def __str__(self):
-        return "%s%% branch coverage" % self.hits_percent
+        return f"{self.hits_percent}% branch coverage"
 
 
 class TestCoverage:
@@ -459,8 +459,7 @@ class TestCoverage:
             raise ValueError()
         if not self.filename == other.filename:
             raise ValueError(
-                "Filenames between coverages do not match: %s and %s"
-                % (self.filename, other.filename)
+                f"Filenames between coverages do not match: {self.filename} and {other.filename}"
             )
 
         summarized_test_vector_results = {
@@ -489,16 +488,14 @@ class TestCoverage:
         )
 
     def __repr__(self):
-        return "%s[\n\t%s,\n\t%s,\n\t%s]" % (
-            self.__class__.__name__,
-            self.filename,
-            self.coverage,
-            self.test_vector_results,
-        )
+        return f"""{self.__class__.__name__}[
+    {self.filename},
+    {self.coverage},
+    {self.test_vector_results}]"""
 
     def __str__(self):
         results = [v.name for v in self.test_vector_results]
-        return str(results) + " on " + str(self.filename) + ": " + str(self.coverage)
+        return f"{results} on {self.filename}: {self.coverage}"
 
 
 def remove_prefix(line, prefix):
@@ -620,7 +617,7 @@ def _get_line_coverage(
         return _LinesCoverage(hits)
     if eu.uses_branch_coverage(goal):
         return _BranchesCoverage(hits)
-    raise AssertionError("Unhandled goal %s" % goal)
+    raise AssertionError(f"Unhandled goal {goal}")
 
 
 def _get_coverage_from_tracefile(
@@ -633,7 +630,7 @@ def _get_coverage_from_tracefile(
 
     # Values can be read directly from the trace file and are only used for assertion checks
     logging.debug("Reading in file")
-    with open(trace_file) as inp:
+    with open(trace_file, encoding="UTF-8") as inp:
         lines = [l.strip() for l in inp.readlines()]
     logging.debug("Done reading in file")
     logging.debug("Handling lcov-data preamble")
@@ -726,7 +723,7 @@ def _archive_file(to_archive, test_name, output_dir):
     os.makedirs(target_dir, exist_ok=True)
     try:
         while os.path.exists(target):
-            target = _get_target("-%s" % i)
+            target = _get_target(f"-{i}")
             i += 1
         shutil.move(to_archive, target)
     except FileNotFoundError:
@@ -734,7 +731,7 @@ def _archive_file(to_archive, test_name, output_dir):
     except UnicodeEncodeError as e:
         logging.info("Can't move tracefile to %s: %s", target, e)
         file_count = len(os.listdir(target_dir))
-        target = os.path.join(target_dir, "test" + str(file_count) + ".info")
-        assert not os.path.exists(target), "Going to overwrite file %s" % target
+        target = os.path.join(target_dir, f"test{file_count}.info")
+        assert not os.path.exists(target), f"Going to overwrite file {target}"
         logging.info("Moved tracefile to %s", target)
         shutil.move(to_archive, target)

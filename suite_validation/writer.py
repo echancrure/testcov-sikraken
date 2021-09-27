@@ -92,9 +92,9 @@ def write_harness(program_file, test_vector, output_dir):
 
     test_c_file = os.path.join(output_dir, SUCCESSFUL_HARNESS_NAME)
     harness_content = execution.HarnessCreator().convert(program_file, test_vector)
-    with open(program_file) as progr_inp:
+    with open(program_file, encoding="UTF-8") as progr_inp:
         harness_content = progr_inp.read() + harness_content
-    with open(test_c_file, "w+") as outp:
+    with open(test_c_file, "w+", encoding="UTF-8") as outp:
         outp.write(harness_content)
     logging.info("Function-covering test case written to %s", test_c_file)
 
@@ -158,21 +158,21 @@ def write_results(output_file, exec_results, output_format) -> None:
 
 
 def _write_results_json(output_file, header, data) -> None:
-    json_data = list()
+    json_data = []
     for table_row in data:
-        single_data = dict()
+        single_data = {}
         for idx, key in enumerate(header):
             assert key not in single_data
             single_data[key] = table_row[idx]
         json_data.append(single_data)
 
-    with open(output_file, mode="w") as outp:
+    with open(output_file, mode="w", encoding="UTF-8") as outp:
         # don't sort keys so we have same order as header specifies
         json.dump(json_data, outp, indent=2, sort_keys=False)
 
 
 def _write_results_csv(output_file, header, data) -> None:
-    with open(output_file, mode="w") as individual_test_cov_file:
+    with open(output_file, mode="w", encoding="UTF-8") as individual_test_cov_file:
         writer = csv.writer(
             individual_test_cov_file, delimiter=DELIMITER_TEST_COVERAGES
         )
@@ -191,7 +191,7 @@ def _collect_data(exec_results):
     reduced_test_coverages = exec_results.reduced_coverage_tests
 
     header = [HEADER_ID]
-    data = list()
+    data = []
     # add ids for executions, starting from 1 to match plot
     data.append(list(range(1, len(exec_results.results) + 1)))
     if test_coverages:

@@ -13,7 +13,7 @@ import suite_validation.coverage as cov
 # pylint: disable=W0212
 def _get_coverage(lines_hit):
     file_name = "dummy.c"
-    test_vector_results = dict()
+    test_vector_results = {}
     coverage = cov._LinesCoverage(lines_hit)
 
     return cov.TestCoverage(file_name, test_vector_results, coverage)

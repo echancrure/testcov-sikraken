@@ -63,7 +63,7 @@ def instrument_program(
 
     branch_label_line_numbers = collect_branch_label_line_numbers(c_code)
 
-    with open(output_program, "w") as outp:
+    with open(output_program, "w", encoding="UTF-8") as outp:
         outp.write(c_code)
         logging.debug("Wrote transformed C program to %s", output_program)
 
@@ -81,7 +81,7 @@ def collect_branch_label_line_numbers(c_code: str) -> List[int]:
 
 
 def _get_content(program: str) -> str:
-    with open(program) as inp:
+    with open(program, encoding="UTF-8") as inp:
         return inp.read()
 
 
@@ -113,7 +113,7 @@ def _rewrite_cproblems(content: str) -> str:
     need_struct_body = False
     skip_asm = False
     in_attribute = False
-    prepared_content = list()
+    prepared_content = []
     for line in [c + "\n" for c in content.split("\n")]:
         line = re.sub(r"/\*.*?\*/", "", line)
         # remove __attribute__

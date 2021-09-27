@@ -94,7 +94,7 @@ class TestHarness(TempDirExecutor):
         self._check_compilable()
 
     def test_harness_with_test_vector_compilable(self):
-        vectors = list()
+        vectors = []
 
         test_vector = eu.TestVector("int_input", "dummy.xml")
         test_vector.add("0")
@@ -145,9 +145,9 @@ class TestHarness(TempDirExecutor):
 
         harness = ex.HarnessCreator().convert(TEST_FILE_WITHOUT_ERR, test_vector)
 
-        compile_exec = subprocess.Popen(compile_cmd, stdin=subprocess.PIPE)
-        compile_exec.communicate(harness.encode())
-        returncode = compile_exec.poll()
+        with subprocess.Popen(compile_cmd, stdin=subprocess.PIPE) as compile_exec:
+            compile_exec.communicate(harness.encode())
+            returncode = compile_exec.poll()
 
         eq_(returncode, 0, "Compilation failed: %s" % compile_cmd)
 
@@ -174,9 +174,9 @@ class TestExecutionRunner(TempDirExecutor):
         try:
             output_file = runner.get_executable_harness(TEST_FILE_WITHOUT_ERR)
         except ex.ExecutionError as e:
-            assert False, "Harness creation failed: %s" % e
+            assert False, f"Harness creation failed: {e}"
 
-        assert os.path.exists(output_file), "Harness %s not found" % output_file
+        assert os.path.exists(output_file), f"Harness {output_file} not found"
 
     def test_harness_compile(self):
         for machine_model in MACHINE_MODELS:
@@ -190,7 +190,7 @@ class TestExecutionRunner(TempDirExecutor):
             out_file = runner.compile(TEST_FILE_WITHOUT_ERR, TEST_HARNESS, out_file)
 
         except ex.ExecutionError as e:
-            assert False, "Compilation failed: %s" % e
+            assert False, f"Compilation failed: {e}"
         assert os.path.exists(out_file)
 
     def test_invalid_harness_compile_throws_error(self):
@@ -314,9 +314,9 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
             coverage = result.coverage
 
             assert coverage.hits > 0, "Line coverage at 0"
-            assert coverage.hits > old_line_cov, (
-                "Line coverage didn't increase: %s" % coverage.hits
-            )
+            assert (
+                coverage.hits > old_line_cov
+            ), f"Line coverage didn't increase: {coverage.hits}"
 
             old_line_cov = coverage.hits
 
@@ -331,9 +331,9 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
             coverage = result.coverage
 
             assert coverage.hits > 0, "Condition coverage at 0"
-            assert coverage.hits > old_condition_cov, (
-                "Condition coverage didn't increase: %s" % coverage.hits
-            )
+            assert (
+                coverage.hits > old_condition_cov
+            ), f"Condition coverage didn't increase: {coverage.hits}"
 
             old_condition_cov = coverage.hits
 
@@ -434,7 +434,7 @@ class TestSuiteExecutor(TempDirExecutor):
         branches = result_obj.coverage_total.coverage
 
         eq_(len(results), 1, "Empty testcase not executed")
-        assert branches, "Coverage information invalid: %s" % branches
+        assert branches, "Coverage information invalid: {branches}"
 
     def test_run_suite_valid(self):
         for machine_model in MACHINE_MODELS:
@@ -456,16 +456,12 @@ class TestSuiteExecutor(TempDirExecutor):
         eq_(len(results), 2, "Not both tests executed")
         assert (
             results.count(eu.COVERS) == 1 and results.count(eu.UNKNOWN) == 1
-        ), "Expected exactly one result to be %s and one to be %s: %s" % (
-            eu.COVERS,
-            eu.UNKNOWN,
-            results,
-        )
-        assert branches, "Coverage information invalid: %s" % branches
+        ), f"Expected exactly one result to be {eu.COVERS} and one to be {eu.UNKNOWN}: {results}"
+        assert branches, f"Coverage information invalid: {branches}"
 
     @staticmethod
     def _check_file_exists(filename):
-        assert os.path.exists(filename), "File doesn't exist: %s" % filename
+        assert os.path.exists(filename), f"File doesn't exist: {filename}"
 
     def test_run_suite_without_metadata_throws_error(self):
         for machine_model in MACHINE_MODELS:
@@ -495,7 +491,7 @@ class TestSuiteExecutor(TempDirExecutor):
 
         assert len(results) == 2 and all(
             r == eu.ABORTED for r in results
-        ), "Expected two results '%s': %s" % (eu.ABORTED, results)
+        ), f"Expected two results '{eu.ABORTED}': {results}"
 
     def test_run_suite_with_string_inputs(self):
         for machine_model in MACHINE_MODELS:
@@ -511,11 +507,7 @@ class TestSuiteExecutor(TempDirExecutor):
             len(results) == 2
             and any(r == eu.COVERS for r in results)
             and any(r == eu.UNKNOWN for r in results)
-        ), "Expected results '%s' and '%s', but got: %s" % (
-            eu.COVERS,
-            eu.UNKNOWN,
-            results,
-        )
+        ), f"Expected results '{eu.COVERS}' and '{eu.UNKNOWN}', but got: {results}"
 
     def test_compute_individuals_produces_same_coverage(self):
         for machine_model in MACHINE_MODELS:
@@ -533,9 +525,7 @@ class TestSuiteExecutor(TempDirExecutor):
     @staticmethod
     def _get_config_str(runner):
         # pylint: disable=protected-access
-        return "SuiteExecutor[ComputeInd={}]".format(
-            runner._compute_individual_test_coverages
-        )
+        return f"SuiteExecutor[ComputeInd={runner._compute_individual_test_coverages}]"
 
     def _check_coverage_results_equal(
         self, runner1, runner2, suite_location, machine_model
@@ -552,9 +542,9 @@ class TestSuiteExecutor(TempDirExecutor):
 
         config1 = self._get_config_str(runner1)
         config2 = self._get_config_str(runner2)
-        err_msg = "Unequal for {} and {}".format(config1, config2)
+        err_msg = f"Unequal for {config1} and {config2}"
 
-        eq_(coverage1, coverage2, err_msg + ": {} vs {}".format(coverage1, coverage2))
+        eq_(coverage1, coverage2, err_msg + f": {coverage1} vs {coverage2}")
 
     def test_line_coverage_correct(self):
         for machine_model in MACHINE_MODELS:
@@ -640,10 +630,7 @@ class TestSuiteExecutor(TempDirExecutor):
         if goal in [eu.COVER_LINES]:
             assert len(result_obj.reduced_coverage_tests) < len(
                 result_obj.coverage_tests
-            ), "Inconsistent sequences: %s and %s" % (
-                result_obj.reduced_coverage_tests,
-                result_obj.coverage_tests,
-            )
+            ), f"Inconsistent sequences: {result_obj.reduced_coverage_tests} and {result_obj.coverage_tests}"
             # only test with x = 2 included because this test executes the line in the if body and
             # gives 100% line coverage. The DIFF approach find this "better" test. The naive reduction approach
             # applies this test first.
@@ -661,10 +648,7 @@ class TestSuiteExecutor(TempDirExecutor):
             # condition coverage and merging this together a branch/condition coverage of 100% is obtained.
             assert len(result_obj.reduced_coverage_tests) == len(
                 result_obj.coverage_tests
-            ), "Inconsistent sequences: %s and %s" % (
-                result_obj.reduced_coverage_tests,
-                result_obj.coverage_tests,
-            )
+            ), f"Inconsistent sequences: {result_obj.reduced_coverage_tests} and {result_obj.coverage_tests}"
             eq_(len(result_obj.reduced_coverage_tests), 2)
             total_tc_from_reduced = None
             for tc in result_obj.reduced_coverage_tests:
@@ -690,10 +674,7 @@ class TestSuiteExecutor(TempDirExecutor):
             if strategy == rs.FURTHEST_DIFF_REDUCTION:
                 assert len(result_obj.reduced_coverage_tests) < len(
                     result_obj.coverage_tests
-                ), "Inconsistent sequences: %s and %s" % (
-                    result_obj.reduced_coverage_tests,
-                    result_obj.coverage_tests,
-                )
+                ), f"Inconsistent sequences: {result_obj.reduced_coverage_tests} and {result_obj.coverage_tests}"
                 # only test with x = 2 included because this test executes the line in the if body and
                 # gives 100% line coverage. The DIFF approach finds this "better" test.
                 eq_(len(result_obj.reduced_coverage_tests), 1)
@@ -708,10 +689,7 @@ class TestSuiteExecutor(TempDirExecutor):
             if strategy == rs.BYORDER_REDUCTION:
                 assert len(result_obj.reduced_coverage_tests) == len(
                     result_obj.coverage_tests
-                ), "Inconsistent sequences: %s and %s" % (
-                    result_obj.reduced_coverage_tests,
-                    result_obj.coverage_tests,
-                )
+                ), f"Inconsistent sequences: {result_obj.reduced_coverage_tests} and {result_obj.coverage_tests}"
                 # Both test vectors included because the naive approach works sequentially when looking
                 # at the test coverages.
                 # This means that the "worse" test coverage with smaller line coverage is added because it comes first
@@ -731,10 +709,7 @@ class TestSuiteExecutor(TempDirExecutor):
             # and merging this together a branch/condition coverage of 100% is obtained.
             assert len(result_obj.reduced_coverage_tests) == len(
                 result_obj.coverage_tests
-            ), "Inconsistent sequences: %s and %s" % (
-                result_obj.reduced_coverage_tests,
-                result_obj.coverage_tests,
-            )
+            ), f"Inconsistent sequences: {result_obj.reduced_coverage_tests} and {result_obj.coverage_tests}"
             eq_(len(result_obj.reduced_coverage_tests), 2)
             total_tc_from_reduced = None
             for tc in result_obj.reduced_coverage_tests:

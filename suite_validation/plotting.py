@@ -77,9 +77,7 @@ def _write_coverages_plot(exec_results, coverage_goal, output_file):
             ), "Final coverage of coverage sequence not same as total coverage reported"
             assert len(exec_results.coverage_sequence) == len(
                 exec_results.results
-            ), "List lengths don't match: {} vs. {}".format(
-                exec_results.coverage_sequence, exec_results.results
-            )
+            ), f"List lengths don't match: {exec_results.coverage_sequence} vs. {exec_results.results}"
 
             ax.step(
                 [n - BAR_WIDTH / 2.0 for n in range(1, xlim)]
