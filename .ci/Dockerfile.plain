@@ -15,6 +15,7 @@
 # docker push registry.gitlab.com/sosy-lab/software/test-suite-validator/test:plain
 # Commands for updating the image:
 
-FROM ubuntu:18.04
+FROM ubuntu:21.04
 
-RUN apt update && apt install -y gcc-multilib g++-multilib lcov clang llvm python3.6 python3-pip git zip
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt update && apt install -y gcc-multilib g++-multilib lcov clang llvm python3-pip git zip
