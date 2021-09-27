@@ -274,7 +274,7 @@ def parse_coverage_goal_file(goal_file: str) -> str:
 def _decide_execution_result(
     exec_results, goal, error_occurred: bool
 ) -> Tuple[str, int]:
-    """ Checks test-execution results and prepares the results string/return code."""
+    """Checks test-execution results and prepares the results string/return code."""
     results_output = [
         "---Results---",
         "Tests run: {}".format(len(exec_results.results)),
