@@ -2,7 +2,7 @@
 # a robust test executor with reliable coverage measurement:
 # https://gitlab.com/sosy-lab/software/test-suite-validator/
 #
-# SPDX-FileCopyrightText: 2019-2020 Dirk Beyer <https://www.sosy-lab.org>
+# SPDX-FileCopyrightText: 2019-2021 Dirk Beyer <https://www.sosy-lab.org>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -36,7 +36,7 @@ pylint:
   script:
     - pylint suite_validation
   variables:
-    PYTHON_VERSION: '3.8'
+    PYTHON_VERSION: '3.9'
 
 check-format:
   stage: test
@@ -44,7 +44,7 @@ check-format:
       - "black --check suite_validation"
       - "clang-format -i suite_validation/harness.c && git diff -s --exit-code"
   variables:
-    PYTHON_VERSION: '3.8'
+    PYTHON_VERSION: '3.9'
 
 check-archive:
     stage: test
@@ -65,42 +65,32 @@ unit-tests:python-3.6:
   variables:
     PYTHON_VERSION: '3.6'
 
-unit-tests:python-3.7:
+unit-tests:python-3.9:
   <<: *unit-tests
   variables:
-    PYTHON_VERSION: '3.7'
-
-unit-tests:python-3.8:
-  <<: *unit-tests
-  variables:
-    PYTHON_VERSION: '3.8'
+    PYTHON_VERSION: '3.9'
 
 integration-tests:python-3.6:
   <<: *integration-tests
   variables:
     PYTHON_VERSION: '3.6'
 
-integration-tests:python-3.7:
+integration-tests:python-3.9:
   <<: *integration-tests
   variables:
-    PYTHON_VERSION: '3.7'
-
-integration-tests:python-3.8:
-  <<: *integration-tests
-  variables:
-    PYTHON_VERSION: '3.8'
+    PYTHON_VERSION: '3.9'
 
 # 
 # deploy-coverage:
 #   stage: deploy
 #   variables:
-#     PYTHON_VERSION: '3.8'
+#     PYTHON_VERSION: '3.9'
 #   before_script:
 #     - pip install -e git+https://github.com/codacy/python-codacy-coverage.git#egg=codacy
 #   script:
 #     - python-codacy-coverage -r coverage.xml
 #   dependencies:
-#     - unit-tests:python-3.8
+#     - unit-tests:python-3.9
 #   only:
 #     refs:
 #       - master
@@ -117,3 +107,39 @@ reuse:
     entrypoint: [""]
   script:
     - reuse lint
+
+.build-docker:
+  stage: ci-images
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  variables:
+    EXTRA_ARGS: ""
+  needs: []
+  script:
+    - mkdir -p /root/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor --dockerfile $CI_PROJECT_DIR/$DOCKERFILE --destination $CI_REGISTRY_IMAGE/$IMAGE $EXTRA_ARGS
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      changes:
+        - $DOCKERFILE
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $BUILD_DOCKER == "true"'
+
+build-docker:python:3.9:
+  extends: .build-docker
+  variables:
+    DOCKERFILE: .ci/Dockerfile.python-3.9
+    IMAGE: test/python:3.9
+
+build-docker:python:3.6:
+  extends: .build-docker
+  variables:
+    DOCKERFILE: .ci/Dockerfile.python-3.6
+    IMAGE: test/python:3.6
+
+build-docker:plain:
+  extends: .build-docker
+  variables:
+    DOCKERFILE: .ci/Dockerfile.plain
+    IMAGE: test/plain
