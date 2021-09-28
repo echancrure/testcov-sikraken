@@ -67,6 +67,7 @@ DUMMY_FILE = "DUMMY_FILE"
 DUMMY_TEST_VECTOR_RESULT = {eu.TestVector("dummy_tv", "dummy.xml"): eu.UNKNOWN}
 
 
+# pylint: disable=protected-access
 class TestHarness:
     """Tests for harness creation with ex.HarnessCreator."""
 
@@ -134,6 +135,7 @@ class TestHarness:
         assert returncode == 0, f"Compilation failed: {compile_cmd}"
 
 
+# pylint: disable=protected-access
 class TestExecutionRunner:
     """Tests for ex.ExecutionRunner."""
 
@@ -407,16 +409,18 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
 
 class WorkIn:
     def __init__(self, workdir):
+        self._old_dir = None
         self._tmp_dir = workdir
 
     def __enter__(self):
         self._old_dir = os.getcwd()
         os.chdir(self._tmp_dir)
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, t, value, traceback):
         os.chdir(self._old_dir)
 
 
+# pylint: disable=protected-access
 class TestSuiteExecutor:
     """Tests for ex.SuiteExecutor."""
 
@@ -812,6 +816,7 @@ def _get_cov(coverage):
     return cov.TestCoverage(DUMMY_FILE, DUMMY_TEST_VECTOR_RESULT, coverage)
 
 
+# pylint: disable=protected-access
 class TestCoverageChecker:
 
     bad_test_coverages = {
