@@ -21,25 +21,22 @@ GENINFO_LOC=$(which geninfo)
 [ -z $GENINFO_LOC ] && echo "geninfo missing on system. Please install LCOV or add it to your PATH" && false
 
 DIRNAME="$(dirname "$(readlink -f "$0")")/.."
-VERSION=$(git describe --always --dirty)
+VERSION=$(git describe --always --dirty | sed -e 's/^v//' -e 's/-\([0-9]*\)-.*/\.post\1/')
 ARCHIVE_NAME=testcov-$VERSION.zip
 TMPDIR=$(mktemp -d)
 pushd "$TMPDIR" > /dev/null
 ln -s "$DIRNAME" testcov
+# Set version number
+find testcov/suite_validation -name '*.py' -exec sed -i "s/\(__VERSION__\s*=\s*\).*/\1\"$VERSION\"/" '{}' +
 # Install dependencies
 (
 cd testcov
-EGGDIR=$(mktemp -d)
-python3 setup.py egg_info -e "$EGGDIR"
-python3 -m pip install --target lib -r "$EGGDIR/testcov.egg-info/requires.txt"
-rm -r "$EGGDIR"
+python3 -m pip install --target lib .
 mkdir -p "${DIRNAME}"/lib/bin
 cp $(which lcov) "${DIRNAME}"/lib/bin
 cp $(which geninfo) "${DIRNAME}"/lib/bin
 )
-# Set version number
-find testcov/suite_validation -name '*.py' -exec sed -i "s/\(__VERSION__\s*=\s*\).*/\1\"$VERSION\"/" '{}' +
-zip --exclude="*/lib/PyYAML-*.dist-info/*" --exclude="*/lib/yaml*" --exclude="*/test/*" --exclude="*/a.out" --exclude="*/.idea/*" --exclude="*/__pycache__/*" -r "$ARCHIVE_NAME" testcov/{bin,suite_validation,lib,LICENSE,LICENSES,README.md}
+zip --exclude="*/lib/PyYAML-*.dist-info/*" --exclude="*/lib/yaml*" --exclude="*/test/*" --exclude="*/a.out" --exclude="*/.idea/*" --exclude="*/__pycache__/*" -r "$ARCHIVE_NAME" testcov/{bin,lib,LICENSE,LICENSES,README.md}
 popd
 mv "$TMPDIR/$ARCHIVE_NAME" ./
 echo "Wrote $ARCHIVE_NAME"

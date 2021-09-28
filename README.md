@@ -25,8 +25,7 @@ For containerization, TestCov uses parts of [BenchExec](https://github.com/sosy-
 * gcc >= 8.0
 * lcov >= 1.13
 
-The following requirements are automatically installed by `setup.py` upon installation,
-but can also be installed with `pip install -r requirements.txt`:
+The following requirements are automatically installed upon installation:
 * lxml >= 4.0
 * numpy >= 1.15
 * BenchExec >= 1.20
