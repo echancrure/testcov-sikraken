@@ -10,11 +10,9 @@
 """Tests for execution module."""
 
 import os
-import shutil
 import subprocess
 import tempfile
 import itertools
-import pytest
 import suite_validation.coverage as cov
 import suite_validation.reduction_strategy as rs
 import suite_validation.execution as ex
