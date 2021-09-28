@@ -162,3 +162,9 @@ build-docker:plain:
   variables:
     DOCKERFILE: .ci/Dockerfile.plain
     IMAGE: test:plain
+
+build-docker:gcc-11:
+  extends: .build-docker
+  variables:
+    DOCKERFILE: .ci/Dockerfile.gcc-11
+    IMAGE: test:gcc-11
