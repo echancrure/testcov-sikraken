@@ -6,7 +6,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from nose.tools import eq_
 import suite_validation.coverage as cov
 
 
@@ -54,4 +53,4 @@ def test_coverage_add_commutative():
     sum1 = none_covered + all_covered
     sum2 = all_covered + none_covered
 
-    eq_(sum1, sum2)
+    assert sum1 == sum2

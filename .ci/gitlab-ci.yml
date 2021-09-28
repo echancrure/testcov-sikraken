@@ -23,7 +23,7 @@ variables:
 .unit-tests: &unit-tests
   stage: test
   script:
-    - ./setup.py nosetests
+    - pytest
   artifacts:
     paths:
       - coverage.xml

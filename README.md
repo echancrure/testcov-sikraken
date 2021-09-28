@@ -39,7 +39,7 @@ Optional, for plotting (if not available, run `testcov` with argument `--no-plot
 
 For development, we use the [`black`](https://github.com/python/black) formatter,
 [`pylint`](https://www.pylint.org/)
-and [`nosetest`](https://nose.readthedocs.io/en/latest/).
+and [`pytest`](https://docs.pytest.org/en/6.2.x/).
 
 ## Installation
 

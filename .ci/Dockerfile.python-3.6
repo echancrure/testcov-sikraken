@@ -22,8 +22,9 @@ RUN apt-get update && apt-get install -y gcc-multilib g++-multilib lcov clang ll
 RUN pip install -U pip && pip install \
   coverage \
   lxml \
-  nose \
   benchexec \
   matplotlib \
   numpy \
-  pycparser
+  pycparser \
+  pytest \
+  pytest-cov
