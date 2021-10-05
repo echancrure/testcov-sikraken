@@ -380,12 +380,13 @@ class GcovCoverageMeasurer(ExecutionRunner):
             )
 
         build_directory = os.path.dirname(self._compile_target)
-        try:
-            return _get_gcda(build_directory)
-        except FileNotFoundError as e:
-            logging.debug(e)
+        if build_directory:
+            try:
+                return _get_gcda(build_directory)
+            except FileNotFoundError as e:
+                logging.debug(e)
 
-        logging.debug("Falling back to look in current directory for GCDA file.")
+            logging.debug("Falling back to look in current directory for GCDA file.")
         return _get_gcda(".")
 
 
