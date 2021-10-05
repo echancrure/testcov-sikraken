@@ -309,7 +309,7 @@ class GcovCoverageMeasurer(ExecutionRunner):
         cmd = super()._get_compile_cmd(
             program_file, harness_file, output_file, c_version
         )
-        cmd += ["-fprofile-arcs", "-ftest-coverage", "-DGCOV"]
+        cmd += ["--coverage", "-DGCOV"]
 
         return cmd
 
