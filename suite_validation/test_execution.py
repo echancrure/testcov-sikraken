@@ -266,37 +266,27 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
             individual_runs=False,
         )
 
-    def test_get_line_coverage_single_execution(self):
+    def test_get_line_coverage_single_execution(self, tmp_path):
         vector_going_one_way = eu.TestVector("vector1", "vector1.xml")
         vector_going_one_way.add("5")
 
         for machine_model in MACHINE_MODELS:
-            self._check_line_coverage_multiple_executions(
-                machine_model, [vector_going_one_way]
-            )
+            with WorkIn(tmp_path):
+                self._check_line_coverage_multiple_executions(
+                    machine_model, [vector_going_one_way]
+                )
 
-    def test_get_condition_coverage_single_execution(self):
+    def test_get_condition_coverage_single_execution(self, tmp_path):
         vector_going_one_way = eu.TestVector("vector1", "vector1.xml")
         vector_going_one_way.add("5")
 
         for machine_model in MACHINE_MODELS:
-            self._check_condition_coverage_multiple_executions(
-                machine_model, [vector_going_one_way]
-            )
+            with WorkIn(tmp_path):
+                self._check_condition_coverage_multiple_executions(
+                    machine_model, [vector_going_one_way]
+                )
 
-    def test_get_line_coverage_multiple_executions(self):
-        vector_going_one_way = eu.TestVector("vector1", "vector1.xml")
-        vector_going_one_way.add("5")
-
-        vector_going_other_way = eu.TestVector("vector2", "vector2.xml")
-        vector_going_other_way.add("-5")
-
-        for machine_model in MACHINE_MODELS:
-            self._check_line_coverage_multiple_executions(
-                machine_model, [vector_going_one_way, vector_going_other_way]
-            )
-
-    def test_get_condition_coverage_multiple_executions(self):
+    def test_get_line_coverage_multiple_executions(self, tmp_path):
         vector_going_one_way = eu.TestVector("vector1", "vector1.xml")
         vector_going_one_way.add("5")
 
@@ -304,13 +294,27 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
         vector_going_other_way.add("-5")
 
         for machine_model in MACHINE_MODELS:
-            self._check_condition_coverage_multiple_executions(
-                machine_model,
-                [
-                    vector_going_one_way,
-                    vector_going_other_way,
-                ],
-            )
+            with WorkIn(tmp_path):
+                self._check_line_coverage_multiple_executions(
+                    machine_model, [vector_going_one_way, vector_going_other_way]
+                )
+
+    def test_get_condition_coverage_multiple_executions(self, tmp_path):
+        vector_going_one_way = eu.TestVector("vector1", "vector1.xml")
+        vector_going_one_way.add("5")
+
+        vector_going_other_way = eu.TestVector("vector2", "vector2.xml")
+        vector_going_other_way.add("-5")
+
+        for machine_model in MACHINE_MODELS:
+            with WorkIn(tmp_path):
+                self._check_condition_coverage_multiple_executions(
+                    machine_model,
+                    [
+                        vector_going_one_way,
+                        vector_going_other_way,
+                    ],
+                )
 
     def _check_line_coverage_multiple_executions(self, machine_model, vectors):
         goal = eu.COVER_LINES
@@ -346,7 +350,7 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
 
             old_condition_cov = coverage.hits
 
-    def test_function_call_coverage(self):
+    def test_function_call_coverage(self, tmp_path):
         covering_vector = eu.TestVector("covers_test", "covers_test.c")
         covering_vector.add("'a'")
         covering_vector.add("5")
@@ -359,17 +363,19 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
 
         for machine_model in MACHINE_MODELS:
             for err_file, goal in TEST_FILES_WITH_ERR:
-                self._check_call_coverage(
-                    machine_model, err_file, goal, covering_vector, eu.COVERS
-                )
+                with WorkIn(tmp_path):
+                    self._check_call_coverage(
+                        machine_model, err_file, goal, covering_vector, eu.COVERS
+                    )
 
         for machine_model in MACHINE_MODELS:
             for err_file, goal in TEST_FILES_WITH_ERR:
-                self._check_call_coverage(
-                    machine_model, err_file, goal, missing_vector, eu.UNKNOWN
-                )
+                with WorkIn(tmp_path):
+                    self._check_call_coverage(
+                        machine_model, err_file, goal, missing_vector, eu.UNKNOWN
+                    )
 
-    def test_function_call_coverage_incomplete_input(self):
+    def test_function_call_coverage_incomplete_input(self, tmp_path):
         runner = self.get_runner(eu.MACHINE_MODEL_32, None, COVER_REACH)
         err_file = os.path.join(TEST_DIRECTORY, "test_multiple_branches_ReachError.c")
 
@@ -380,11 +386,12 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
         # file #test_multiple_branches_ReachError requires four inputs, so this vector is missing one (on purpose)
         # let's see what happens.
 
-        run_result = runner.run(err_file, incomplete_vector)
+        with WorkIn(tmp_path):
+            run_result = runner.run(err_file, incomplete_vector)
 
         assert run_result == eu.UNKNOWN
 
-    def test_function_call_coverage_complete_input_if_without_braces(self):
+    def test_function_call_coverage_complete_input_if_without_braces(self, tmp_path):
         runner = self.get_runner(eu.MACHINE_MODEL_32, None, COVER_REACH)
         err_file = os.path.join(TEST_DIRECTORY, "test_ifWithoutBraces_ReachError.c")
 
@@ -395,7 +402,8 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
         incomplete_vector.add("0x10")
         # file #test_multiple_branches_ReachError requires four inputs, so this vector is complete
 
-        run_result = runner.run(err_file, incomplete_vector)
+        with WorkIn(tmp_path):
+            run_result = runner.run(err_file, incomplete_vector)
 
         assert run_result == eu.COVERS
 
