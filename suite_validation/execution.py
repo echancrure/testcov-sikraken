@@ -187,7 +187,6 @@ class ExecutionRunner:
             program_file,
             harness_file,
             "-lm",
-            "-lgcov",
         ]
 
         return cmd
