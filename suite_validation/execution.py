@@ -346,10 +346,10 @@ class GcovCoverageMeasurer(ExecutionRunner):
             return result
 
         program_name = _get_program_name(program_file)
-        data_file = self._get_data_file()
         try:
+            data_file = self._get_data_file()
             result.coverage = self._compute_coverage_with_gcov(program_name, data_file)
-        except _gcov_coverage.GcovError as e:
+        except (_gcov_coverage.GcovError, FileNotFoundError) as e:
             logging.info("GCov coverage could not be computed: %s", e)
             result.coverage = None
         return result
@@ -462,16 +462,19 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
         program_file, label_line_numbers = self._prepare_program(program_file)
 
         result = super().run(program_file, test_vector)
-        if eu.is_failed_run(result):
+
+        try:
+            result.coverage = self._compute_coverage(
+                program_file,
+                test_vector,
+                result,
+                self._goal,
+                label_line_numbers,
+            )
+        except FileNotFoundError as e:
+            logging.warning("Could not compute coverage for last test run: %s", e)
             return result
 
-        result.coverage = self._compute_coverage(
-            program_file,
-            test_vector,
-            result,
-            self._goal,
-            label_line_numbers,
-        )
         if result.coverage:
             # To hide the information that lcov measurement actually works on an instrumented program,
             # set the filename to the original program before returning the coverage
