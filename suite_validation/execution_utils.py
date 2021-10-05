@@ -179,7 +179,7 @@ class TestResult:
         return self.verdict
 
     def __repr__(self):
-        return f"({self._verdict}, {self.execution_info}, {self.coverage})"
+        return f"({self.verdict}, {self.execution_info}, {self.coverage})"
 
 
 COVERS = "false"
