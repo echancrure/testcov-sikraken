@@ -66,6 +66,11 @@ def instrument_program(
 
     lines = c_code.split("\n")
     lines = add_gcov_flushes(lines)
+    # If we keep preprocessor comments, gcov and lcov may use these to deduce the original file name.
+    # While this is nice in general, we already manage the original file name separately, for all goal types.
+    # So we remove the comments here to avoid the additional special case where the file name
+    # in the gcov file does not match the file name of the transformed file used for compilation.
+    lines = remove_preprocessor_comments(lines)
     c_code = "\n".join(lines)
 
     branch_label_line_numbers = collect_branch_label_line_numbers(c_code)
@@ -234,6 +239,10 @@ def add_gcov_flushes(content: Sequence[str]) -> Sequence[str]:
 
         new_content.append(line)
     return new_content
+
+
+def remove_preprocessor_comments(content: Sequence[str]) -> Sequence[str]:
+    return [line for line in content if not line.strip().startswith("# ")]
 
 
 class CondensingCGenerator(c_generator.CGenerator):
