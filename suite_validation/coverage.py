@@ -569,7 +569,9 @@ def _get_lcov_body(lcov_lines: List[str], relevant_program_name: str):
         elif start is not None and line.startswith(_END_OF_RECORD):
             stop = idx + 1
             break
-    assert start is not None
+    assert (
+        start is not None
+    ), f"Missing {_FILEPATH} in lcov file for {relevant_program_name}"
     assert stop is not None
     return lcov_lines[start:stop]
 
