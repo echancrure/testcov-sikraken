@@ -250,6 +250,8 @@ class ExecutionRunner:
     def _get_execute_cmd(self, executable):
         # pylint: disable=no-self-use
         # `self` may be used by children
+        if not os.path.isabs(executable):
+            executable = "./" + executable
         return [executable]
 
     @staticmethod
