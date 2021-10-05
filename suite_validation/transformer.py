@@ -39,6 +39,14 @@ def _preprocess(input_program: str, machine_model: str) -> str:
     return preprocessed_file
 
 
+def _get_label_adder(coverage_goal):
+    if isinstance(coverage_goal, eu.CoverFunc):
+        return la.TargetFuncLabelAdder(coverage_goal.target_method)
+    if eu.uses_branch_coverage(coverage_goal):
+        return la.LabelAdder()
+    return None
+
+
 def instrument_program(
     input_program: str, machine_model: str, output_program: str, coverage_goal
 ) -> List[int]:
@@ -46,17 +54,16 @@ def instrument_program(
         ".i"
     ):  # very simple heuristic to decide whether program is preprocessed
         input_program = _preprocess(input_program, machine_model)
-    content = _get_content(input_program)
+    c_code = _get_content(input_program)
 
-    ast = _parse(content)
     logging.debug("Adding program labels")
-    if isinstance(coverage_goal, eu.CoverFunc):
-        adder = la.TargetFuncLabelAdder(coverage_goal.target_method)
-    else:
-        adder = la.LabelAdder()
-    adder.visit(ast)
+    adder = _get_label_adder(coverage_goal)
 
-    c_code = _to_c(ast)
+    if adder:
+        ast = _parse(c_code)
+        adder.visit(ast)
+        c_code = _to_c(ast)
+
     lines = c_code.split("\n")
     lines = add_gcov_flushes(lines)
     c_code = "\n".join(lines)
