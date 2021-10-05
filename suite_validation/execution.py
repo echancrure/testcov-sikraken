@@ -468,10 +468,11 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
                 output_dir=self._output_dir_info,
             )
             return coverage
-        except FileNotFoundError:
+        except FileNotFoundError as e:
             logging.info(
-                "Coverage computation failed. No coverage recorded for run %s",
+                "Coverage computation failed. No coverage recorded for run %s. Reason is a missing file: %s",
                 test_vector,
+                e,
             )
             return None
         finally:
