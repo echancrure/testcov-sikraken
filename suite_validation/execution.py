@@ -13,6 +13,7 @@ import re
 import os
 import sys
 import tempfile
+import glob
 from typing import Optional
 import zipfile
 
@@ -186,6 +187,7 @@ class ExecutionRunner:
             program_file,
             harness_file,
             "-lm",
+            "-lgcov",
         ]
 
         return cmd
@@ -209,9 +211,7 @@ class ExecutionRunner:
 
     def get_executable_harness(self, program_file):
         if not self.harness:
-            self.harness = os.path.abspath(
-                self._create_executable_harness(program_file)
-            )
+            self.harness = self._create_executable_harness(program_file)
         return self.harness
 
     def _create_executable_harness(self, program_file):
@@ -282,7 +282,6 @@ class ExecutionRunner:
 
 
 class GcovCoverageMeasurer(ExecutionRunner):
-    HARNESS_GCDA_FILE = "harness.gcda"
     TEMPORARY_FILE_SUFFIXES = (".gcda", ".gcno", ".gcov")
 
     def __init__(
@@ -343,7 +342,7 @@ class GcovCoverageMeasurer(ExecutionRunner):
     def run(self, program_file, test_vector: eu.TestVector) -> eu.TestResult:
         result = super().run(program_file, test_vector)
         program_name = _get_program_name(program_file)
-        data_file = GcovCoverageMeasurer.HARNESS_GCDA_FILE
+        data_file = self._get_data_file()
         try:
             result.coverage = self._compute_coverage_with_gcov(program_name, data_file)
         except _gcov_coverage.GcovError as e:
@@ -351,9 +350,42 @@ class GcovCoverageMeasurer(ExecutionRunner):
             result.coverage = None
         return result
 
+    def _get_data_file(self):
+        # According to the gcc documentation,
+        # "The .gcno files are placed in the same directory as the object file" and
+        # "the .gcda files are also stored in the same directory as the object file".
+        # -- https://gcc.gnu.org/onlinedocs/gcc/Gcov-Data-Files.html
+        #
+        # So we look in the directory of our compile target first.
+        # Unfortunately, older versions of GCC (before GCC-11, and even some versions of GCC 11, e.g. on Ubuntu)
+        # place the .gcda file in the current working directory.
+        # So as a fallback, we also look there.
+
+        def _get_gcda(directory):
+            candidate = list(glob.glob(directory + "/*.gcda"))
+            if len(candidate) == 1:
+                gcda_file = candidate[0]
+                logging.debug("Using .gcda file: %s", gcda_file)
+                return gcda_file
+            if len(candidate) > 1:
+                raise ValueError(
+                    f"Multiple GCOV data files found in directory: {candidate}"
+                )
+            raise FileNotFoundError(
+                f"No GCOV data file with known name found in directory: {os.listdir(directory)}"
+            )
+
+        build_directory = os.path.dirname(self._compile_target)
+        try:
+            return _get_gcda(build_directory)
+        except FileNotFoundError as e:
+            logging.debug(e)
+
+        logging.debug("Falling back to look in current directory for GCDA file.")
+        return _get_gcda(".")
+
 
 class LcovCoverageMeasurer(GcovCoverageMeasurer):
-    HARNESS_GCDA_FILE = "harness.gcda"
     TEMPORARY_FILE_SUFFIXES = (".gcda", ".gcno", ".gcov", ".info")
 
     def __init__(
@@ -456,7 +488,7 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
         branch_label_line_numbers=None,
     ) -> Optional[cov.TestCoverage]:
         program_name = _get_program_name(program_file)
-        data_file = LcovCoverageMeasurer.HARNESS_GCDA_FILE
+        data_file = self._get_data_file()
         try:
             coverage = cov.compute_test_coverage(
                 program_name,

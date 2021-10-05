@@ -650,8 +650,9 @@ def _get_coverage_from_tracefile(
         logging.debug("Done extracting coverage from created tracefile")
 
 
-def _create_lcov_tracefile(coverage_goal, gcov_tool="gcov"):
+def _create_lcov_tracefile(coverage_goal, data_file, gcov_tool="gcov"):
     output_tracefile = "current_test.info"
+    data_directory = os.path.dirname(data_file)
     cmd = ["lcov", "--gcov-tool", gcov_tool]
     if eu.uses_condition_coverage(coverage_goal):
         # add coverage information about which branch conditions were taken/evaluated.
@@ -661,7 +662,7 @@ def _create_lcov_tracefile(coverage_goal, gcov_tool="gcov"):
         # lcov produces wrong line coverage with old versions of gcov (<= 8)
         # if this option is used
         cmd += ["--rc", "lcov_branch_coverage=1"]
-    cmd += ["-c", "-d", ".", "--no-recursion", "-o", output_tracefile]
+    cmd += ["-c", "-d", data_directory, "--no-recursion", "-o", output_tracefile]
     eu.execute(cmd, quiet=True)
     return output_tracefile
 
@@ -676,7 +677,7 @@ def _compute_test_coverage_lcov(
     if not os.path.exists(data_file):
         raise FileNotFoundError(data_file)
 
-    tracefile = _create_lcov_tracefile(coverage_goal, gcov_tool)
+    tracefile = _create_lcov_tracefile(coverage_goal, data_file, gcov_tool)
     return (
         [tracefile],
         _get_coverage_from_tracefile(
