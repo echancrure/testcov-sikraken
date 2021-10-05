@@ -280,6 +280,10 @@ def found_err(output):
     return output and ERROR_STRING in str(output)
 
 
+def is_failed_run(result: TestResult):
+    return result in (ABORTED, ERROR)
+
+
 def uses_line_coverage(goal):
     return goal == COVER_LINES
 

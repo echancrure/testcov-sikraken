@@ -343,6 +343,9 @@ class GcovCoverageMeasurer(ExecutionRunner):
 
     def run(self, program_file, test_vector: eu.TestVector) -> eu.TestResult:
         result = super().run(program_file, test_vector)
+        if eu.is_failed_run(result):
+            return result
+
         program_name = _get_program_name(program_file)
         data_file = self._get_data_file()
         try:
@@ -434,24 +437,25 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
         return os.path.join(tmp_dir, "instrumented_" + filename)
 
     def _prepare_program(self, program_file):
-        if isinstance(self._goal, eu.CoverFunc) or eu.uses_branch_coverage(self._goal):
-            if program_file not in self._instrumented_programs_cache:
-                prepared_program = self._get_instrumented_file_name(program_file)
+        if program_file not in self._instrumented_programs_cache:
+            prepared_program = self._get_instrumented_file_name(program_file)
 
-                label_lines = tr.instrument_program(
-                    program_file, self.machine_model, prepared_program, self._goal
-                )
-                self._instrumented_programs_cache[program_file] = (
-                    prepared_program,
-                    label_lines,
-                )
+            label_lines = tr.instrument_program(
+                program_file, self.machine_model, prepared_program, self._goal
+            )
+            self._instrumented_programs_cache[program_file] = (
+                prepared_program,
+                label_lines,
+            )
 
-            # Beware! Overwrites program_file parameter
-            program_file, label_line_numbers = self._instrumented_programs_cache[
-                program_file
-            ]
-        else:
-            label_line_numbers = None
+        # Beware! Overwrites program_file parameter
+        program_file, label_line_numbers = self._instrumented_programs_cache[
+            program_file
+        ]
+        if not (
+            isinstance(self._goal, eu.CoverFunc) or eu.uses_branch_coverage(self._goal)
+        ):
+            label_line_numbers = None  # for condition coverage and line coverage we use existing measurements
         return program_file, label_line_numbers
 
     def run(self, program_file, test_vector: eu.TestVector) -> eu.TestResult:
@@ -459,6 +463,9 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
         program_file, label_line_numbers = self._prepare_program(program_file)
 
         result = super().run(program_file, test_vector)
+        if eu.is_failed_run(result):
+            return result
+
         result.coverage = self._compute_coverage(
             program_file,
             test_vector,
