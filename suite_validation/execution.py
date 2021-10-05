@@ -437,6 +437,11 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
         return os.path.join(tmp_dir, "instrumented_" + filename)
 
     def _prepare_program(self, program_file):
+        if eu.uses_line_coverage(self._goal):
+            return (
+                program_file,
+                None,
+            )  # no modifications possible without changing line count
         if program_file not in self._instrumented_programs_cache:
             prepared_program = self._get_instrumented_file_name(program_file)
 
