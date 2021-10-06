@@ -14,6 +14,7 @@ image: ${CI_REGISTRY_IMAGE}/test:python-${PYTHON_VERSION}
 
 stages:
   - ci-images
+  - build
   - test
   - deploy
 
@@ -51,33 +52,44 @@ check-format:
   variables:
     PYTHON_VERSION: '3.9'
 
-check-archive:
-    stage: test
-    # Use docker image without dependencies installed
-    # - these should be included in the archive and used correctly
-    image: ${CI_REGISTRY_IMAGE}/test:plain
-    # Archive testcov and run a simple test case on the archived version to check that it is working as expected
-    script:
-        - "./contrib/create_archive_testcov.sh"
-        - cd /tmp && unzip "$CI_PROJECT_DIR"/testcov-*.zip && cd -
-        - cd /tmp/testcov && ./bin/testcov --no-isolation --verbose --test-suite "$CI_PROJECT_DIR/test/suites/suite-valid.zip" --goal "$CI_PROJECT_DIR/contrib/goal_files/coverage-error-call.prp" "$CI_PROJECT_DIR/test/test_false_ReachError.c"
+.build-archive: &build-archive
+    stage: build
+    script: "./contrib/create_archive_testcov.sh"
     artifacts:
         paths:
             - testcov-*.zip
 
-check-archive:gcc-11:
+.check-archive: &check-archive
     stage: test
-    # Use docker image without dependencies installed
-    # - these should be included in the archive and used correctly
-    image: ${CI_REGISTRY_IMAGE}/test:gcc-11
-    # Archive testcov and run a simple test case on the archived version to check that it is working as expected
     script:
         - "./contrib/create_archive_testcov.sh"
-        - cd /tmp && unzip "$CI_PROJECT_DIR"/testcov-*.zip && cd -
+        - cd /tmp && unzip "$CI_PROJECT_DIR"/testcov-*.zip
         - cd /tmp/testcov && ./bin/testcov --no-isolation --verbose --test-suite "$CI_PROJECT_DIR/test/suites/suite-valid.zip" --goal "$CI_PROJECT_DIR/contrib/goal_files/coverage-error-call.prp" "$CI_PROJECT_DIR/test/test_false_ReachError.c"
-    artifacts:
-        paths:
-            - testcov-*.zip
+    dependencies:
+        - .build-archive  # In jobs inheriting, set correct job build-archive:X
+
+build-archive:default:
+  <<: *build-archive
+  # Build archive on mostly expected OS (usually some Ubuntu LTS)
+  image: ${CI_REGISTRY_IMAGE}/test:plain
+
+build-archive:gcc-11:
+  <<: *build-archive
+  image: ${CI_REGISTRY_IMAGE}/test:gcc-11
+
+
+check-archive:default:
+  <<: *check-archive
+  image: ${CI_REGISTRY_IMAGE}/test:plain
+  dependencies:
+    - build-archive:default
+
+check-archive:gcc-11:
+  <<: *check-archive
+  image: ${CI_REGISTRY_IMAGE}/test:gcc-11
+  dependencies:
+    - build-archive:gcc-11
+
 
 unit-tests:python-3.6:
   <<: *unit-tests
