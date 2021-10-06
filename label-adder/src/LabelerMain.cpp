@@ -73,8 +73,8 @@ static llvm::cl::opt<bool> InPlace("in-place",
                                    llvm::cl::desc("Overwrite files"),
                                    llvm::cl::cat(InstrumentationOptions));
 static llvm::cl::opt<bool>
-    NoInfo("no-info", llvm::cl::desc("Do not print information to stderr"),
-           llvm::cl::cat(InstrumentationOptions));
+    DebugInfo("debug", llvm::cl::desc("Print debug information to stderr"),
+              llvm::cl::cat(InstrumentationOptions));
 
 LabelOptions generateLabelOptions() {
   LabelOptions labelOptions;
@@ -111,7 +111,7 @@ LabelOptions generateLabelOptions() {
   }
 
   labelOptions.inPlace = InPlace.getValue();
-  labelOptions.noInfo = NoInfo.getValue();
+  labelOptions.noInfo = !DebugInfo.getValue();
 
   return labelOptions;
 }
