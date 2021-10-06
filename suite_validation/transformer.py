@@ -39,6 +39,14 @@ def _preprocess(input_program: str, machine_model: str) -> str:
     return preprocessed_file
 
 
+def _get_label_adder(coverage_goal):
+    if isinstance(coverage_goal, eu.CoverFunc):
+        return la.TargetFuncLabelAdder(coverage_goal.target_method)
+    if eu.uses_branch_coverage(coverage_goal):
+        return la.LabelAdder()
+    return None
+
+
 def instrument_program(
     input_program: str, machine_model: str, output_program: str, coverage_goal
 ) -> List[int]:
@@ -46,24 +54,28 @@ def instrument_program(
         ".i"
     ):  # very simple heuristic to decide whether program is preprocessed
         input_program = _preprocess(input_program, machine_model)
-    content = _get_content(input_program)
+    c_code = _get_content(input_program)
 
-    ast = _parse(content)
     logging.debug("Adding program labels")
-    if isinstance(coverage_goal, eu.CoverFunc):
-        adder = la.TargetFuncLabelAdder(coverage_goal.target_method)
-    else:
-        adder = la.LabelAdder()
-    adder.visit(ast)
+    adder = _get_label_adder(coverage_goal)
 
-    c_code = _to_c(ast)
+    if adder:
+        ast = _parse(c_code)
+        adder.visit(ast)
+        c_code = _to_c(ast)
+
     lines = c_code.split("\n")
     lines = add_gcov_flushes(lines)
+    # If we keep preprocessor comments, gcov and lcov may use these to deduce the original file name.
+    # While this is nice in general, we already manage the original file name separately, for all goal types.
+    # So we remove the comments here to avoid the additional special case where the file name
+    # in the gcov file does not match the file name of the transformed file used for compilation.
+    lines = remove_preprocessor_comments(lines)
     c_code = "\n".join(lines)
 
     branch_label_line_numbers = collect_branch_label_line_numbers(c_code)
 
-    with open(output_program, "w") as outp:
+    with open(output_program, "w", encoding="UTF-8") as outp:
         outp.write(c_code)
         logging.debug("Wrote transformed C program to %s", output_program)
 
@@ -81,7 +93,7 @@ def collect_branch_label_line_numbers(c_code: str) -> List[int]:
 
 
 def _get_content(program: str) -> str:
-    with open(program) as inp:
+    with open(program, encoding="UTF-8") as inp:
         return inp.read()
 
 
@@ -113,7 +125,7 @@ def _rewrite_cproblems(content: str) -> str:
     need_struct_body = False
     skip_asm = False
     in_attribute = False
-    prepared_content = list()
+    prepared_content = []
     for line in [c + "\n" for c in content.split("\n")]:
         line = re.sub(r"/\*.*?\*/", "", line)
         # remove __attribute__
@@ -210,23 +222,27 @@ def replace_reach_error(content: Sequence[str]) -> Sequence[str]:
 
 
 def add_gcov_flushes(content: Sequence[str]) -> Sequence[str]:
-    new_content = ["#ifdef GCOV", "extern void __gcov_flush(void);", "#endif"]
+    new_content = ["#ifdef GCOV", "extern void __gcov_dump(void);", "#endif"]
     for line in content:
         if " abort();" in line:
             line = re.sub(
                 r"(\s+)abort\(\);",
-                r"\1{\n\1#ifdef GCOV\n\1__gcov_flush();\n\1#endif\n\1abort();\n\1}",
+                r"\1{\n\1#ifdef GCOV\n\1__gcov_dump();\n\1#endif\n\1abort();\n\1}",
                 line,
             )
         if " __assert_fail" in line and not re.search(r"void.*__assert_fail", line):
             line = re.sub(
                 r"(\s+)__assert_fail",
-                r"\1#ifdef GCOV\n\1__gcov_flush();\n\1#endif\n\1__assert_fail",
+                r"\1#ifdef GCOV\n\1__gcov_dump();\n\1#endif\n\1__assert_fail",
                 line,
             )
 
         new_content.append(line)
     return new_content
+
+
+def remove_preprocessor_comments(content: Sequence[str]) -> Sequence[str]:
+    return [line for line in content if not line.strip().startswith("# ")]
 
 
 class CondensingCGenerator(c_generator.CGenerator):

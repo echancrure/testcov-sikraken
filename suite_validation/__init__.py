@@ -57,7 +57,7 @@ class StoreInputPath(StorePath):
     @staticmethod
     def create_path(path) -> str:
         if not os.path.exists(path):
-            raise ValueError("Given path %s does not exist" % path)
+            raise ValueError(f"Given path {path} does not exist")
         return path
 
 
@@ -250,7 +250,7 @@ def parse(argv):
 
 
 def parse_coverage_goal_file(goal_file: str) -> str:
-    with open(goal_file) as inp:
+    with open(goal_file, encoding="UTF-8") as inp:
         content = inp.read().strip()
     prop_match = re.match(
         r"COVER\s*\(\s*init\s*\(\s*main\s*\(\s*\)\s*\)\s*,\s*FQL\s*\(COVER\s+EDGES\s*\((.*)\)\s*\)\s*\)",
@@ -258,33 +258,29 @@ def parse_coverage_goal_file(goal_file: str) -> str:
     )
     if not prop_match:
         raise IllegalArgumentError(
-            "No valid coverage goal specification in file {}: {}".format(
-                goal_file, content[:100]
-            )
+            f"No valid coverage goal specification in file {goal_file}: {content[:100]}"
         )
 
     goal = prop_match.group(1).strip()
     if goal not in eu.COVERAGE_GOALS.keys():
-        raise IllegalArgumentError(
-            "No valid coverage goal specification: {}".format(goal)
-        )
+        raise IllegalArgumentError(f"No valid coverage goal specification: {goal}")
     return eu.COVERAGE_GOALS[goal]
 
 
 def _decide_execution_result(
     exec_results, goal, error_occurred: bool
 ) -> Tuple[str, int]:
-    """ Checks test-execution results and prepares the results string/return code."""
+    """Checks test-execution results and prepares the results string/return code."""
     results_output = [
         "---Results---",
-        "Tests run: {}".format(len(exec_results.results)),
+        f"Tests run: {len(exec_results.results)}",
     ]
     coverage = exec_results.coverage_total
     if not coverage or coverage.count_total is None:
         results_output.append("No coverage information available")
     else:
-        results_output.append("Coverage: {}%".format(coverage.hits_percent))
-        results_output.append("Number of goals: {}".format(coverage.count_total))
+        results_output.append(f"Coverage: {coverage.hits_percent}%")
+        results_output.append(f"Number of goals: {coverage.count_total}")
 
     if not isinstance(goal, eu.CoverFunc):
         if any(r == eu.ABORTED for r in exec_results.results):
@@ -298,10 +294,10 @@ def _decide_execution_result(
             verdict = VERDICT_UNKNOWN
     if error_occurred:
         if verdict == VERDICT_TRUE:
-            verdict = VERDICT_ERROR + " ({})".format(verdict)
+            verdict = VERDICT_ERROR + f" ({verdict})"
         else:
             verdict = VERDICT_ERROR
-    results_output.append("Result: {}".format(verdict))
+    results_output.append(f"Result: {verdict}")
     results_str = "\n".join(results_output)
 
     if verdict.startswith(VERDICT_ERROR):

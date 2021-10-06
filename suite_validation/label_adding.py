@@ -39,7 +39,7 @@ class AbstractLabelAdder(pycparser.c_ast.NodeVisitor):
         goto = pycparser.c_ast.Goto(label.name)
 
         if node.block_items is None:
-            node.block_items = list()
+            node.block_items = []
         else:
             try:
                 curr_stmt, next_stmt = node.block_items[i], node.block_items[i + 1]
@@ -214,7 +214,7 @@ class LabelAdder(AbstractLabelAdder):
             logging.debug(
                 "Function %s has no body, adding compound statement.", node.decl.name
             )
-            node.body = pycparser.c_ast.Compound(list())
+            node.body = pycparser.c_ast.Compound([])
         # self._add_label_at_start(node.body)
 
 

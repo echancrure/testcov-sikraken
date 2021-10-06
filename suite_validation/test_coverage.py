@@ -6,14 +6,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from nose.tools import eq_
 import suite_validation.coverage as cov
 
 
 # pylint: disable=W0212
 def _get_coverage(lines_hit):
     file_name = "dummy.c"
-    test_vector_results = dict()
+    test_vector_results = {}
     coverage = cov._LinesCoverage(lines_hit)
 
     return cov.TestCoverage(file_name, test_vector_results, coverage)
@@ -54,4 +53,4 @@ def test_coverage_add_commutative():
     sum1 = none_covered + all_covered
     sum2 = all_covered + none_covered
 
-    eq_(sum1, sum2)
+    assert sum1 == sum2

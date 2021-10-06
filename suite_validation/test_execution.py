@@ -10,13 +10,9 @@
 """Tests for execution module."""
 
 import os
-import shutil
 import subprocess
 import tempfile
 import itertools
-from nose.tools import timed
-from nose.tools import raises
-from nose.tools import eq_
 import suite_validation.coverage as cov
 import suite_validation.reduction_strategy as rs
 import suite_validation.execution as ex
@@ -72,29 +68,15 @@ DUMMY_TEST_VECTOR_RESULT = {eu.TestVector("dummy_tv", "dummy.xml"): eu.UNKNOWN}
 
 
 # pylint: disable=protected-access
-class TempDirExecutor:
-    def __init__(self):
-        self.temp_dir = None
-        self._old_dir = "."
-
-    def setup(self):
-        self.temp_dir = _get_test_directory()
-        self._old_dir = os.path.abspath(".")
-        os.chdir(self.temp_dir)
-
-    def teardown(self):
-        os.chdir(self._old_dir)
-        shutil.rmtree(self.temp_dir, ignore_errors=True)
-
-
-class TestHarness(TempDirExecutor):
+class TestHarness:
     """Tests for harness creation with ex.HarnessCreator."""
 
-    def test_harness_without_test_vector_compilable(self):
-        self._check_compilable()
+    def test_harness_without_test_vector_compilable(self, tmp_path):
+        with WorkIn(tmp_path):
+            self._check_compilable()
 
-    def test_harness_with_test_vector_compilable(self):
-        vectors = list()
+    def test_harness_with_test_vector_compilable(self, tmp_path):
+        vectors = []
 
         test_vector = eu.TestVector("int_input", "dummy.xml")
         test_vector.add("0")
@@ -129,7 +111,8 @@ class TestHarness(TempDirExecutor):
         vectors.append(test_vector)
 
         for tv in vectors:
-            yield self._check_compilable, tv
+            with WorkIn(tmp_path):
+                self._check_compilable(tv)
 
     @staticmethod
     def _check_compilable(test_vector=None):
@@ -145,14 +128,15 @@ class TestHarness(TempDirExecutor):
 
         harness = ex.HarnessCreator().convert(TEST_FILE_WITHOUT_ERR, test_vector)
 
-        compile_exec = subprocess.Popen(compile_cmd, stdin=subprocess.PIPE)
-        compile_exec.communicate(harness.encode())
-        returncode = compile_exec.poll()
+        with subprocess.Popen(compile_cmd, stdin=subprocess.PIPE) as compile_exec:
+            compile_exec.communicate(harness.encode())
+            returncode = compile_exec.poll()
 
-        eq_(returncode, 0, "Compilation failed: %s" % compile_cmd)
+        assert returncode == 0, f"Compilation failed: {compile_cmd}"
 
 
-class TestExecutionRunner(TempDirExecutor):
+# pylint: disable=protected-access
+class TestExecutionRunner:
     """Tests for ex.ExecutionRunner."""
 
     @staticmethod
@@ -164,9 +148,10 @@ class TestExecutionRunner(TempDirExecutor):
             machine_model, timelimit, harness_file, compile_output_file
         )
 
-    def test_harness_creation(self):
+    def test_harness_creation(self, tmp_path):
         for machine_model in MACHINE_MODELS:
-            yield self._check_harness_creation, machine_model
+            with WorkIn(tmp_path):
+                self._check_harness_creation(machine_model)
 
     def _check_harness_creation(self, machine_model):
         runner = self.get_runner(machine_model, timelimit=None)
@@ -174,13 +159,14 @@ class TestExecutionRunner(TempDirExecutor):
         try:
             output_file = runner.get_executable_harness(TEST_FILE_WITHOUT_ERR)
         except ex.ExecutionError as e:
-            assert False, "Harness creation failed: %s" % e
+            assert False, f"Harness creation failed: {e}"
 
-        assert os.path.exists(output_file), "Harness %s not found" % output_file
+        assert os.path.exists(output_file), f"Harness {output_file} not found"
 
-    def test_harness_compile(self):
+    def test_harness_compile(self, tmp_path):
         for machine_model in MACHINE_MODELS:
-            yield self._check_harness_creation, machine_model
+            with WorkIn(tmp_path):
+                self._check_harness_creation(machine_model)
 
     def _check_harness_compile(self, machine_model):
         runner = self.get_runner(machine_model, timelimit=None)
@@ -188,59 +174,80 @@ class TestExecutionRunner(TempDirExecutor):
 
         try:
             out_file = runner.compile(TEST_FILE_WITHOUT_ERR, TEST_HARNESS, out_file)
-
         except ex.ExecutionError as e:
-            assert False, "Compilation failed: %s" % e
+            assert False, f"Compilation failed: {e}"
+
         assert os.path.exists(out_file)
 
-    def test_invalid_harness_compile_throws_error(self):
+    def test_invalid_harness_compile_throws_error(self, tmp_path):
         for machine_model in MACHINE_MODELS:
-            yield self._check_invalid_harness_compile_throws_error, machine_model
+            with WorkIn(tmp_path):
+                self._check_invalid_harness_compile_throws_error(machine_model)
 
-    @raises(ex.ExecutionError)
     def _check_invalid_harness_compile_throws_error(self, machine_model):
         runner = self.get_runner(machine_model, timelimit=None)
         _, out_file = tempfile.mkstemp()
 
-        runner.compile(TEST_FILE_WITHOUT_ERR, "harness.c", out_file)
+        try:
+            runner.compile(TEST_FILE_WITHOUT_ERR, "harness.c", out_file)
+        except ex.ExecutionError:
+            pass
+        else:
+            assert False, "Expected ExecutionError"
 
-    def test_invalid_program_compile_throws_error(self):
+    def test_invalid_program_compile_throws_error(self, tmp_path):
         for machine_model in MACHINE_MODELS:
-            yield self._check_invalid_harness_compile_throws_error, machine_model
+            with WorkIn(tmp_path):
+                self._check_invalid_harness_compile_throws_error(machine_model)
 
-    @raises(ex.ExecutionError)
     def _check_invalid_program_compile_throws_error(self, machine_model):
         runner = self.get_runner(machine_model, timelimit=None)
         _, out_file = tempfile.mkstemp()
 
-        runner.compile("program.c", TEST_HARNESS, out_file)
+        try:
+            runner.compile("program.c", TEST_HARNESS, out_file)
+        except ex.ExecutionError:
+            pass
+        else:
+            assert False, "Expected ExecutionError"
 
-    def test_execution_run_result_unknown(self):
+    def test_execution_run_result_unknown(self, tmp_path):
         simple_vector = eu.TestVector("dummy", "dummy.xml")
         simple_vector.add("1")
 
         for machine_model in MACHINE_MODELS:
             for timelimit in (None, 5, 10, 99999):
-                yield self._check_test_execution_runs, machine_model, timelimit, TEST_FILE_WITHOUT_ERR, simple_vector, eu.UNKNOWN
+                with WorkIn(tmp_path):
+                    self._check_test_execution_runs(
+                        machine_model,
+                        timelimit,
+                        TEST_FILE_WITHOUT_ERR,
+                        simple_vector,
+                        eu.UNKNOWN,
+                    )
 
     def _check_test_execution_runs(
         self, machine_model, timelimit, test_file, test_vector, expected
     ):
-        if timelimit:
-            timed(timelimit * 1.2)
-
         runner = self.get_runner(machine_model, timelimit)
 
         run_result = runner.run(test_file, test_vector)
 
-        eq_(run_result, expected)
+        assert run_result == expected
 
-    def test_execution_run_non_terminating_with_timelimit(self):
+    def test_execution_run_non_terminating_with_timelimit(self, tmp_path):
         empty_vector = eu.TestVector("dummy", "dummy.xml")
         timelimit = 3
 
         for machine_model in MACHINE_MODELS:
-            yield self._check_test_execution_runs, machine_model, timelimit, TEST_FILE_WITH_NO_TERMINATION, empty_vector, eu.ABORTED
+            with WorkIn(tmp_path):
+                self._check_test_execution_runs(
+                    machine_model,
+                    timelimit,
+                    TEST_FILE_WITH_NO_TERMINATION,
+                    empty_vector,
+                    eu.ABORTED,
+                )
 
 
 class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
@@ -259,38 +266,27 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
             individual_runs=False,
         )
 
-    def test_get_line_coverage_single_execution(self):
+    def test_get_line_coverage_single_execution(self, tmp_path):
         vector_going_one_way = eu.TestVector("vector1", "vector1.xml")
         vector_going_one_way.add("5")
 
         for machine_model in MACHINE_MODELS:
-            yield self._check_line_coverage_multiple_executions, machine_model, [
-                vector_going_one_way
-            ]
+            with WorkIn(tmp_path):
+                self._check_line_coverage_multiple_executions(
+                    machine_model, [vector_going_one_way]
+                )
 
-    def test_get_condition_coverage_single_execution(self):
+    def test_get_condition_coverage_single_execution(self, tmp_path):
         vector_going_one_way = eu.TestVector("vector1", "vector1.xml")
         vector_going_one_way.add("5")
 
         for machine_model in MACHINE_MODELS:
-            yield self._check_condition_coverage_multiple_executions, machine_model, [
-                vector_going_one_way
-            ]
+            with WorkIn(tmp_path):
+                self._check_condition_coverage_multiple_executions(
+                    machine_model, [vector_going_one_way]
+                )
 
-    def test_get_line_coverage_multiple_executions(self):
-        vector_going_one_way = eu.TestVector("vector1", "vector1.xml")
-        vector_going_one_way.add("5")
-
-        vector_going_other_way = eu.TestVector("vector2", "vector2.xml")
-        vector_going_other_way.add("-5")
-
-        for machine_model in MACHINE_MODELS:
-            yield self._check_line_coverage_multiple_executions, machine_model, [
-                vector_going_one_way,
-                vector_going_other_way,
-            ]
-
-    def test_get_condition_coverage_multiple_executions(self):
+    def test_get_line_coverage_multiple_executions(self, tmp_path):
         vector_going_one_way = eu.TestVector("vector1", "vector1.xml")
         vector_going_one_way.add("5")
 
@@ -298,10 +294,27 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
         vector_going_other_way.add("-5")
 
         for machine_model in MACHINE_MODELS:
-            yield self._check_condition_coverage_multiple_executions, machine_model, [
-                vector_going_one_way,
-                vector_going_other_way,
-            ]
+            with WorkIn(tmp_path):
+                self._check_line_coverage_multiple_executions(
+                    machine_model, [vector_going_one_way, vector_going_other_way]
+                )
+
+    def test_get_condition_coverage_multiple_executions(self, tmp_path):
+        vector_going_one_way = eu.TestVector("vector1", "vector1.xml")
+        vector_going_one_way.add("5")
+
+        vector_going_other_way = eu.TestVector("vector2", "vector2.xml")
+        vector_going_other_way.add("-5")
+
+        for machine_model in MACHINE_MODELS:
+            with WorkIn(tmp_path):
+                self._check_condition_coverage_multiple_executions(
+                    machine_model,
+                    [
+                        vector_going_one_way,
+                        vector_going_other_way,
+                    ],
+                )
 
     def _check_line_coverage_multiple_executions(self, machine_model, vectors):
         goal = eu.COVER_LINES
@@ -314,9 +327,9 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
             coverage = result.coverage
 
             assert coverage.hits > 0, "Line coverage at 0"
-            assert coverage.hits > old_line_cov, (
-                "Line coverage didn't increase: %s" % coverage.hits
-            )
+            assert (
+                coverage.hits > old_line_cov
+            ), f"Line coverage didn't increase: {coverage.hits}"
 
             old_line_cov = coverage.hits
 
@@ -331,13 +344,13 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
             coverage = result.coverage
 
             assert coverage.hits > 0, "Condition coverage at 0"
-            assert coverage.hits > old_condition_cov, (
-                "Condition coverage didn't increase: %s" % coverage.hits
-            )
+            assert (
+                coverage.hits > old_condition_cov
+            ), f"Condition coverage didn't increase: {coverage.hits}"
 
             old_condition_cov = coverage.hits
 
-    def test_function_call_coverage(self):
+    def test_function_call_coverage(self, tmp_path):
         covering_vector = eu.TestVector("covers_test", "covers_test.c")
         covering_vector.add("'a'")
         covering_vector.add("5")
@@ -350,13 +363,19 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
 
         for machine_model in MACHINE_MODELS:
             for err_file, goal in TEST_FILES_WITH_ERR:
-                yield self._check_call_coverage, machine_model, err_file, goal, covering_vector, eu.COVERS
+                with WorkIn(tmp_path):
+                    self._check_call_coverage(
+                        machine_model, err_file, goal, covering_vector, eu.COVERS
+                    )
 
         for machine_model in MACHINE_MODELS:
             for err_file, goal in TEST_FILES_WITH_ERR:
-                yield self._check_call_coverage, machine_model, err_file, goal, missing_vector, eu.UNKNOWN
+                with WorkIn(tmp_path):
+                    self._check_call_coverage(
+                        machine_model, err_file, goal, missing_vector, eu.UNKNOWN
+                    )
 
-    def test_function_call_coverage_incomplete_input(self):
+    def test_function_call_coverage_incomplete_input(self, tmp_path):
         runner = self.get_runner(eu.MACHINE_MODEL_32, None, COVER_REACH)
         err_file = os.path.join(TEST_DIRECTORY, "test_multiple_branches_ReachError.c")
 
@@ -367,11 +386,12 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
         # file #test_multiple_branches_ReachError requires four inputs, so this vector is missing one (on purpose)
         # let's see what happens.
 
-        run_result = runner.run(err_file, incomplete_vector)
+        with WorkIn(tmp_path):
+            run_result = runner.run(err_file, incomplete_vector)
 
-        eq_(run_result, eu.UNKNOWN)
+        assert run_result == eu.UNKNOWN
 
-    def test_function_call_coverage_complete_input_if_without_braces(self):
+    def test_function_call_coverage_complete_input_if_without_braces(self, tmp_path):
         runner = self.get_runner(eu.MACHINE_MODEL_32, None, COVER_REACH)
         err_file = os.path.join(TEST_DIRECTORY, "test_ifWithoutBraces_ReachError.c")
 
@@ -382,25 +402,37 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
         incomplete_vector.add("0x10")
         # file #test_multiple_branches_ReachError requires four inputs, so this vector is complete
 
-        run_result = runner.run(err_file, incomplete_vector)
+        with WorkIn(tmp_path):
+            run_result = runner.run(err_file, incomplete_vector)
 
-        eq_(run_result, eu.COVERS)
+        assert run_result == eu.COVERS
 
     def _check_call_coverage(self, machine_model, test_file, goal, vector, expected):
         runner = self.get_runner(machine_model, None, goal)
 
         run_result = runner.run(test_file, vector)
 
-        eq_(run_result, expected)
+        assert run_result == expected
 
 
-class TestSuiteExecutor(TempDirExecutor):
+class WorkIn:
+    def __init__(self, workdir):
+        self._old_dir = None
+        self._tmp_dir = workdir
+
+    def __enter__(self):
+        self._old_dir = os.getcwd()
+        os.chdir(self._tmp_dir)
+
+    def __exit__(self, t, value, traceback):
+        os.chdir(self._old_dir)
+
+
+# pylint: disable=protected-access
+class TestSuiteExecutor:
     """Tests for ex.SuiteExecutor."""
 
-    def __init__(self):
-        super().__init__()
-        self.program_file_with_err = TEST_FILES_WITH_ERR[-1][0]
-        self.program_file_simple_if = TEST_FILE_SIMPLE_IF
+    PROGRAM_FILE_WITH_ERR = TEST_FILES_WITH_ERR[-1][0]
 
     @staticmethod
     def get_runner(
@@ -420,9 +452,10 @@ class TestSuiteExecutor(TempDirExecutor):
             use_runexec=False,
         )
 
-    def test_empty_testcase(self):
+    def test_empty_testcase(self, tmp_path):
         for machine_model in MACHINE_MODELS:
-            yield self._check_run_suite_empty, machine_model
+            with WorkIn(tmp_path):
+                self._check_run_suite_empty(machine_model)
 
     def _check_run_suite_empty(self, machine_model):
         runner = self.get_runner()
@@ -433,55 +466,65 @@ class TestSuiteExecutor(TempDirExecutor):
         results = result_obj.results
         branches = result_obj.coverage_total.coverage
 
-        eq_(len(results), 1, "Empty testcase not executed")
-        assert branches, "Coverage information invalid: %s" % branches
+        assert len(results) == 1, "Empty testcase not executed"
+        assert branches, "Coverage information invalid: {branches}"
 
-    def test_run_suite_valid(self):
+    def test_run_suite_valid(self, tmp_path):
         for machine_model in MACHINE_MODELS:
-            yield self._check_run_suite_valid, machine_model, SUITE_VALID_ZIP
+            with WorkIn(tmp_path):
+                self._check_run_suite_valid(machine_model, SUITE_VALID_ZIP)
 
-    def test_run_nested_suite_valid(self):
+    def test_run_nested_suite_valid(self, tmp_path):
         for machine_model in MACHINE_MODELS:
-            yield self._check_run_suite_valid, machine_model, SUITE_VALID_NESTED_ZIP
+            with WorkIn(tmp_path):
+                self._check_run_suite_valid(machine_model, SUITE_VALID_NESTED_ZIP)
 
     def _check_run_suite_valid(self, machine_model, suite_location):
         runner = self.get_runner(goal=COVER_REACH)
 
         result_obj = runner.run(
-            self.program_file_with_err, suite_location, machine_model
+            TestSuiteExecutor.PROGRAM_FILE_WITH_ERR, suite_location, machine_model
         )
         results = result_obj.results
         branches = result_obj.coverage_total.coverage
 
-        eq_(len(results), 2, "Not both tests executed")
+        assert len(results) == 2, "Not both tests executed"
         assert (
             results.count(eu.COVERS) == 1 and results.count(eu.UNKNOWN) == 1
-        ), "Expected exactly one result to be %s and one to be %s: %s" % (
-            eu.COVERS,
-            eu.UNKNOWN,
-            results,
-        )
-        assert branches, "Coverage information invalid: %s" % branches
+        ), f"Expected exactly one result to be {eu.COVERS} and one to be {eu.UNKNOWN}: {results}"
+        assert branches, f"Coverage information invalid: {branches}"
 
     @staticmethod
     def _check_file_exists(filename):
-        assert os.path.exists(filename), "File doesn't exist: %s" % filename
+        assert os.path.exists(filename), f"File doesn't exist: {filename}"
 
-    def test_run_suite_without_metadata_throws_error(self):
+    def test_run_suite_without_metadata_throws_error(self, tmp_path):
         for machine_model in MACHINE_MODELS:
-            yield self._check_run_suite_without_metadata_throws_error, machine_model, SUITE_INVALID_ZIP
+            with WorkIn(tmp_path):
+                self._check_run_suite_without_metadata_throws_error(
+                    machine_model, SUITE_INVALID_ZIP
+                )
 
-    @raises(ex.ExecutionError)
     def _check_run_suite_without_metadata_throws_error(
         self, machine_model, suite_location
     ):
         runner = self.get_runner()
 
-        runner.run(self.program_file_with_err, suite_location, machine_model)
+        try:
+            runner.run(
+                TestSuiteExecutor.PROGRAM_FILE_WITH_ERR, suite_location, machine_model
+            )
+        except ex.ExecutionError:
+            pass
+        else:
+            assert False, "Expected ExecutionError"
 
-    def test_run_suite_with_non_terminating_program(self):
+    def test_run_suite_with_non_terminating_program(self, tmp_path):
         for machine_model in MACHINE_MODELS:
-            yield self._check_run_suite_with_non_terminating_program, machine_model, SUITE_VALID_ZIP
+            with WorkIn(tmp_path):
+                self._check_run_suite_with_non_terminating_program(
+                    machine_model, SUITE_VALID_ZIP
+                )
 
     def _check_run_suite_with_non_terminating_program(
         self, machine_model, suite_location
@@ -495,11 +538,14 @@ class TestSuiteExecutor(TempDirExecutor):
 
         assert len(results) == 2 and all(
             r == eu.ABORTED for r in results
-        ), "Expected two results '%s': %s" % (eu.ABORTED, results)
+        ), f"Expected two results '{eu.ABORTED}': {results}"
 
-    def test_run_suite_with_string_inputs(self):
+    def test_run_suite_with_string_inputs(self, tmp_path):
         for machine_model in MACHINE_MODELS:
-            yield self._check_run_suite_with_string_inputs, machine_model, SUITE_VALID_STRINGS
+            with WorkIn(tmp_path):
+                self._check_run_suite_with_string_inputs(
+                    machine_model, SUITE_VALID_STRINGS
+                )
 
     def _check_run_suite_with_string_inputs(self, machine_model, suite_location):
         runner = self.get_runner(goal=COVER_REACH, timelimit=2)
@@ -511,13 +557,9 @@ class TestSuiteExecutor(TempDirExecutor):
             len(results) == 2
             and any(r == eu.COVERS for r in results)
             and any(r == eu.UNKNOWN for r in results)
-        ), "Expected results '%s' and '%s', but got: %s" % (
-            eu.COVERS,
-            eu.UNKNOWN,
-            results,
-        )
+        ), f"Expected results '{eu.COVERS}' and '{eu.UNKNOWN}', but got: {results}"
 
-    def test_compute_individuals_produces_same_coverage(self):
+    def test_compute_individuals_produces_same_coverage(self, tmp_path):
         for machine_model in MACHINE_MODELS:
             for goal in eu.COVERAGE_GOALS.values():
                 runners = [
@@ -528,106 +570,117 @@ class TestSuiteExecutor(TempDirExecutor):
                 runners_tuples = itertools.combinations(runners, 2)
 
                 for runner1, runner2 in runners_tuples:
-                    yield self._check_coverage_results_equal, runner1, runner2, SUITE_VALID_ZIP, machine_model
+                    with WorkIn(tmp_path):
+                        self._check_coverage_results_equal(
+                            runner1, runner2, SUITE_VALID_ZIP, machine_model
+                        )
 
     @staticmethod
     def _get_config_str(runner):
         # pylint: disable=protected-access
-        return "SuiteExecutor[ComputeInd={}]".format(
-            runner._compute_individual_test_coverages
-        )
+        return f"SuiteExecutor[ComputeInd={runner._compute_individual_test_coverages}]"
 
     def _check_coverage_results_equal(
         self, runner1, runner2, suite_location, machine_model
     ):
         result_obj = runner1.run(
-            self.program_file_with_err, suite_location, machine_model
+            TestSuiteExecutor.PROGRAM_FILE_WITH_ERR, suite_location, machine_model
         )
         coverage1 = result_obj.coverage_total.hits
 
         result_obj = runner2.run(
-            self.program_file_with_err, suite_location, machine_model
+            TestSuiteExecutor.PROGRAM_FILE_WITH_ERR, suite_location, machine_model
         )
         coverage2 = result_obj.coverage_total.hits
 
         config1 = self._get_config_str(runner1)
         config2 = self._get_config_str(runner2)
-        err_msg = "Unequal for {} and {}".format(config1, config2)
+        err_msg = f"Unequal for {config1} and {config2}"
 
-        eq_(coverage1, coverage2, err_msg + ": {} vs {}".format(coverage1, coverage2))
+        assert coverage1 == coverage2, err_msg + f": {coverage1} vs {coverage2}"
 
-    def test_line_coverage_correct(self):
+    def test_line_coverage_correct(self, tmp_path):
         for machine_model in MACHINE_MODELS:
             runner = self.get_runner(eu.COVER_LINES)
-            yield self._check_line_coverage, runner, machine_model
+            with WorkIn(tmp_path):
+                self._check_line_coverage(runner, machine_model)
 
-    def test_branch_coverage_correct(self):
+    def test_branch_coverage_correct(self, tmp_path):
         for machine_model in MACHINE_MODELS:
             runner = self.get_runner(eu.COVER_BRANCHES)
-            yield self._check_branch_coverage, runner, machine_model
+            with WorkIn(tmp_path):
+                self._check_branch_coverage(runner, machine_model)
 
-    def test_condition_coverage_correct(self):
+    def test_condition_coverage_correct(self, tmp_path):
         for machine_model in MACHINE_MODELS:
             runner = self.get_runner(eu.COVER_CONDITIONS)
-            yield self._check_condition_coverage, runner, machine_model
+            with WorkIn(tmp_path):
+                self._check_condition_coverage(runner, machine_model)
 
     @staticmethod
     def _check_line_coverage(runner, machine_model):
         result_obj = runner.run(TEST_FILE_COVERAGE, SUITE_COVERAGE, machine_model)
         test_coverage = result_obj.coverage_total
 
-        eq_(test_coverage.hits, 9)
-        eq_(test_coverage.hits_percent, 75.0)
-        eq_(test_coverage.count_total, 12)
+        assert test_coverage.hits == 9
+        assert test_coverage.hits_percent == 75.0
+        assert test_coverage.count_total == 12
 
     @staticmethod
     def _check_branch_coverage(runner, machine_model):
         result_obj = runner.run(TEST_FILE_COVERAGE, SUITE_COVERAGE, machine_model)
         test_coverage = result_obj.coverage_total
 
-        eq_(test_coverage.hits, 4)
-        eq_(test_coverage.hits_percent, 50)
-        eq_(test_coverage.count_total, 8)
+        assert test_coverage.hits == 4
+        assert test_coverage.hits_percent == 50
+        assert test_coverage.count_total == 8
 
     @staticmethod
     def _check_condition_coverage(runner, machine_model):
         result_obj = runner.run(TEST_FILE_COVERAGE, SUITE_COVERAGE, machine_model)
         test_coverage = result_obj.coverage_total
 
-        eq_(test_coverage.hits, 4)
-        eq_(test_coverage.hits_percent, 33.33)
-        eq_(test_coverage.count_total, 12)
+        assert test_coverage.hits == 4
+        assert test_coverage.hits_percent == 33.33
+        assert test_coverage.count_total == 12
 
-    def test_reduction_correct(self):
+    def test_reduction_correct(self, tmp_path):
         strategies = [rs.BYORDER_REDUCTION, rs.FURTHEST_DIFF_REDUCTION]
         for machine_model in MACHINE_MODELS:
             for goal in eu.COVERAGE_GOALS.values():
                 runner = self.get_runner(goal)
                 for strategy in strategies:
-                    yield self._check_reduction_correct_suite_simple_if, runner, strategy, machine_model, goal
-                    yield self._check_reduction_correct_suite_simple_if_inverted, runner, strategy, machine_model, goal
+                    with WorkIn(tmp_path):
+                        self._check_reduction_correct_suite_simple_if(
+                            runner, strategy, machine_model, goal
+                        )
+                        self._check_reduction_correct_suite_simple_if_inverted(
+                            runner, strategy, machine_model, goal
+                        )
 
     # pylint: disable=invalid-name
-    def test_function_call_coverage_xcsp_AllInterval013(self):
+    def test_function_call_coverage_xcsp_AllInterval013(self, tmp_path):
         program = os.path.join(TEST_DIRECTORY, "AllInterval-013.c")
         test_suite = os.path.join(SUITE_DIR, "suite-xcsp-AllInterval-013.zip")
         runner = self.get_runner(COVER_REACH)
 
-        result_obj = runner.run(program, test_suite, eu.MACHINE_MODEL_32)
+        with WorkIn(tmp_path):
+            result_obj = runner.run(program, test_suite, eu.MACHINE_MODEL_32)
         test_coverage = result_obj.coverage_total
 
-        eq_(test_coverage.hits_percent, 100)
+        assert test_coverage.hits_percent == 100
 
-    def test_function_call_coverage_heap_sll_to_dll_rev1(self):
+    def test_function_call_coverage_heap_sll_to_dll_rev1(self, tmp_path):
         program = os.path.join(TEST_DIRECTORY, "sll_to_dll_rev-1.i")
         # we use this test suite on purpose: it finds the function call
         test_suite = os.path.join(SUITE_DIR, "suite-xcsp-AllInterval-013.zip")
         runner = self.get_runner(COVER_REACH)
 
-        result_obj = runner.run(program, test_suite, eu.MACHINE_MODEL_32)
+        with WorkIn(tmp_path):
+            result_obj = runner.run(program, test_suite, eu.MACHINE_MODEL_32)
         test_coverage = result_obj.coverage_total
 
-        eq_(test_coverage.hits_percent, 100)
+        assert test_coverage.hits_percent == 100
 
     @staticmethod
     def _check_reduction_correct_suite_simple_if(runner, strategy, machine_model, goal):
@@ -640,14 +693,11 @@ class TestSuiteExecutor(TempDirExecutor):
         if goal in [eu.COVER_LINES]:
             assert len(result_obj.reduced_coverage_tests) < len(
                 result_obj.coverage_tests
-            ), "Inconsistent sequences: %s and %s" % (
-                result_obj.reduced_coverage_tests,
-                result_obj.coverage_tests,
-            )
+            ), f"Inconsistent sequences: {result_obj.reduced_coverage_tests} and {result_obj.coverage_tests}"
             # only test with x = 2 included because this test executes the line in the if body and
             # gives 100% line coverage. The DIFF approach find this "better" test. The naive reduction approach
             # applies this test first.
-            eq_(len(result_obj.reduced_coverage_tests), 1)
+            assert len(result_obj.reduced_coverage_tests) == 1
             total_tc_from_reduced = None
             for tc in result_obj.reduced_coverage_tests:
                 assert tc in result_obj.coverage_tests
@@ -655,17 +705,14 @@ class TestSuiteExecutor(TempDirExecutor):
                     total_tc_from_reduced = tc
                 else:
                     total_tc_from_reduced = total_tc_from_reduced + tc
-            eq_(total_tc_from_reduced.hits_percent, 100)
+            assert total_tc_from_reduced.hits_percent == 100
         if goal in [eu.COVER_BRANCHES, eu.COVER_CONDITIONS]:
             # test with x = 2 and x := -2 included because each test will give 50% branch coverage and 50%
             # condition coverage and merging this together a branch/condition coverage of 100% is obtained.
             assert len(result_obj.reduced_coverage_tests) == len(
                 result_obj.coverage_tests
-            ), "Inconsistent sequences: %s and %s" % (
-                result_obj.reduced_coverage_tests,
-                result_obj.coverage_tests,
-            )
-            eq_(len(result_obj.reduced_coverage_tests), 2)
+            ), f"Inconsistent sequences: {result_obj.reduced_coverage_tests} and {result_obj.coverage_tests}"
+            assert len(result_obj.reduced_coverage_tests) == 2
             total_tc_from_reduced = None
             for tc in result_obj.reduced_coverage_tests:
                 assert tc in result_obj.coverage_tests
@@ -673,8 +720,8 @@ class TestSuiteExecutor(TempDirExecutor):
                     total_tc_from_reduced = tc
                 else:
                     total_tc_from_reduced = total_tc_from_reduced + tc
-            eq_(total_tc_from_reduced.hits_percent, 100)  # branch coverage
-            eq_(total_tc_from_reduced.hits_percent, 100)  # condition coverage
+            assert total_tc_from_reduced.hits_percent == 100  # branch coverage
+            assert total_tc_from_reduced.hits_percent == 100  # condition coverage
 
     @staticmethod
     def _check_reduction_correct_suite_simple_if_inverted(
@@ -690,13 +737,10 @@ class TestSuiteExecutor(TempDirExecutor):
             if strategy == rs.FURTHEST_DIFF_REDUCTION:
                 assert len(result_obj.reduced_coverage_tests) < len(
                     result_obj.coverage_tests
-                ), "Inconsistent sequences: %s and %s" % (
-                    result_obj.reduced_coverage_tests,
-                    result_obj.coverage_tests,
-                )
+                ), f"Inconsistent sequences: {result_obj.reduced_coverage_tests} and {result_obj.coverage_tests}"
                 # only test with x = 2 included because this test executes the line in the if body and
                 # gives 100% line coverage. The DIFF approach finds this "better" test.
-                eq_(len(result_obj.reduced_coverage_tests), 1)
+                assert len(result_obj.reduced_coverage_tests) == 1
                 total_tc_from_reduced = None
                 for tc in result_obj.reduced_coverage_tests:
                     assert tc in result_obj.coverage_tests
@@ -704,19 +748,16 @@ class TestSuiteExecutor(TempDirExecutor):
                         total_tc_from_reduced = tc
                     else:
                         total_tc_from_reduced = total_tc_from_reduced + tc
-                eq_(total_tc_from_reduced.hits_percent, 100)
+                assert total_tc_from_reduced.hits_percent == 100
             if strategy == rs.BYORDER_REDUCTION:
                 assert len(result_obj.reduced_coverage_tests) == len(
                     result_obj.coverage_tests
-                ), "Inconsistent sequences: %s and %s" % (
-                    result_obj.reduced_coverage_tests,
-                    result_obj.coverage_tests,
-                )
+                ), f"Inconsistent sequences: {result_obj.reduced_coverage_tests} and {result_obj.coverage_tests}"
                 # Both test vectors included because the naive approach works sequentially when looking
                 # at the test coverages.
                 # This means that the "worse" test coverage with smaller line coverage is added because it comes first
                 # in the sequence. Then the "better" test coverage is also added since it increases the line coverage.
-                eq_(len(result_obj.reduced_coverage_tests), 2)
+                assert len(result_obj.reduced_coverage_tests) == 2
                 total_tc_from_reduced = None
                 for tc in result_obj.reduced_coverage_tests:
                     assert tc in result_obj.coverage_tests
@@ -724,18 +765,15 @@ class TestSuiteExecutor(TempDirExecutor):
                         total_tc_from_reduced = tc
                     else:
                         total_tc_from_reduced = total_tc_from_reduced + tc
-                eq_(total_tc_from_reduced.hits_percent, 100)
+                assert total_tc_from_reduced.hits_percent == 100
         if goal in [eu.COVER_BRANCHES, eu.COVER_CONDITIONS]:
             # In naive and furthest diff strategy tests with x = 2 and x := -2 are included
             # because each test will give 50% branch coverage and 50% condition coverage
             # and merging this together a branch/condition coverage of 100% is obtained.
             assert len(result_obj.reduced_coverage_tests) == len(
                 result_obj.coverage_tests
-            ), "Inconsistent sequences: %s and %s" % (
-                result_obj.reduced_coverage_tests,
-                result_obj.coverage_tests,
-            )
-            eq_(len(result_obj.reduced_coverage_tests), 2)
+            ), f"Inconsistent sequences: {result_obj.reduced_coverage_tests} and {result_obj.coverage_tests}"
+            assert len(result_obj.reduced_coverage_tests) == 2
             total_tc_from_reduced = None
             for tc in result_obj.reduced_coverage_tests:
                 assert tc in result_obj.coverage_tests
@@ -744,11 +782,11 @@ class TestSuiteExecutor(TempDirExecutor):
                 else:
                     total_tc_from_reduced = total_tc_from_reduced + tc
             if goal is eu.COVER_BRANCHES:
-                eq_(total_tc_from_reduced.hits_percent, 100)
+                assert total_tc_from_reduced.hits_percent == 100
             if goal is eu.COVER_CONDITIONS:
-                eq_(total_tc_from_reduced.hits_percent, 100)
+                assert total_tc_from_reduced.hits_percent == 100
 
-    def test_branch_coverage_instrumented_programs(self):
+    def test_branch_coverage_instrumented_programs(self, tmp_path):
         for machine_model in MACHINE_MODELS:
             runner = self.get_runner(eu.COVER_BRANCHES)
             for program in (
@@ -758,7 +796,10 @@ class TestSuiteExecutor(TempDirExecutor):
                     "test_false_ReachErrorMultiline.c",
                 )
             ):
-                yield self.check_coverage_instrumented_program, runner, machine_model, program
+                with WorkIn(tmp_path):
+                    self.check_coverage_instrumented_program(
+                        runner, machine_model, program
+                    )
 
     @staticmethod
     def check_coverage_instrumented_program(runner, machine_model, program):
@@ -766,23 +807,24 @@ class TestSuiteExecutor(TempDirExecutor):
             TEST_FILE_SIMPLE_IF, SUITE_SIMPLE_IF, machine_model
         )
         coverage: cov.TestCoverage = result_obj.coverage_total
-        eq_(coverage.hits_percent, 100)
-        eq_(coverage.count_total, 2)
-        eq_(coverage.hits, 2)
+        assert coverage.hits_percent == 100
+        assert coverage.count_total == 2
+        assert coverage.hits == 2
 
         result_obj: eu.SuiteExecutionResult = runner.run(
             program, SUITE_VALID_ZIP, machine_model
         )
         coverage = result_obj.coverage_total
-        eq_(coverage.hits_percent, 100)
-        eq_(coverage.count_total, 3)
-        eq_(coverage.hits, 3)
+        assert coverage.hits_percent == 100
+        assert coverage.count_total == 3
+        assert coverage.hits == 3
 
 
 def _get_cov(coverage):
     return cov.TestCoverage(DUMMY_FILE, DUMMY_TEST_VECTOR_RESULT, coverage)
 
 
+# pylint: disable=protected-access
 class TestCoverageChecker:
 
     bad_test_coverages = {
@@ -869,14 +911,14 @@ class TestCoverageChecker:
         for goal in eu.COVERAGE_GOALS.values():
             if isinstance(goal, eu.CoverFunc):
                 continue
-            yield self._check_basic_test_coverage_computations, goal
+            self._check_basic_test_coverage_computations(goal)
 
     def _check_basic_test_coverage_computations(self, goal):
         first_extends_second, second_extends_first = self.perfect_test_coverages[
             goal
         ].coverage.compute_coverage_relation(self.bad_test_coverages[goal].coverage)
-        eq_(first_extends_second, 1.0)
-        eq_(second_extends_first, 0.0)
+        assert first_extends_second == 1.0
+        assert second_extends_first == 0.0
 
         total_test_coverage = (
             self.bad_test_coverages[goal] + self.perfect_test_coverages[goal]
@@ -887,64 +929,58 @@ class TestCoverageChecker:
         ) = total_test_coverage.coverage.compute_coverage_relation(
             self.perfect_test_coverages[goal].coverage
         )
-        eq_(first_extends_second, 0.0)
-        eq_(second_extends_first, 0.0)
+        assert first_extends_second == 0.0
+        assert second_extends_first == 0.0
 
         first_extends_second, second_extends_first = self.half_perfect_test_coverages[
             goal
         ].coverage.compute_coverage_relation(
             self.half_perfect_test_coverages_complementary[goal].coverage
         )
-        eq_(first_extends_second, 0.5)
-        eq_(second_extends_first, 0.5)
+        assert first_extends_second == 0.5
+        assert second_extends_first == 0.5
 
     def test_basic_coverage_computations_lines(self):
         for test_coverages in self.test_coverage_group_one:
             goal = eu.COVER_LINES
-            eq_(test_coverages[goal].count_total, 10)
-            eq_(len(test_coverages[goal].coverage.relevant_program_lines), 10)
+            assert test_coverages[goal].count_total == 10
+            assert len(test_coverages[goal].coverage.relevant_program_lines) == 10
 
-        eq_(self.half_perfect_test_coverages[goal].hits, 5)
-        eq_(
-            self.half_perfect_test_coverages[goal].coverage.is_program_line_covered(1),
-            False,
-        )
-        eq_(
-            self.half_perfect_test_coverages[goal].coverage.is_program_line_covered(2),
-            True,
+        assert self.half_perfect_test_coverages[goal].hits == 5
+        assert not self.half_perfect_test_coverages[
+            goal
+        ].coverage.is_program_line_covered(1)
+        assert self.half_perfect_test_coverages[goal].coverage.is_program_line_covered(
+            2
         )
 
     def test_basic_coverage_computations_branches(self):
         for test_coverages in self.test_coverage_group_one:
             goal = eu.COVER_BRANCHES
-            eq_(test_coverages[goal].count_total, 4)
-            eq_(len(test_coverages[goal].coverage.relevant_program_lines), 4)
+            assert test_coverages[goal].count_total == 4
+            assert len(test_coverages[goal].coverage.relevant_program_lines) == 4
 
-        eq_(self.half_perfect_test_coverages[goal].hits, 2)
-        eq_(
-            self.half_perfect_test_coverages[goal].coverage.is_program_line_covered(5),
-            False,
-        )
-        eq_(
-            self.half_perfect_test_coverages[goal].coverage.is_program_line_covered(9),
-            False,
-        )
+        assert self.half_perfect_test_coverages[goal].hits == 2
+        assert not self.half_perfect_test_coverages[
+            goal
+        ].coverage.is_program_line_covered(5)
+        assert not self.half_perfect_test_coverages[
+            goal
+        ].coverage.is_program_line_covered(9)
 
     def test_basic_coverage_computations_conditions(self):
         for test_coverages in self.test_coverage_group_one:
             goal = eu.COVER_CONDITIONS
-            eq_(test_coverages[goal].count_total, 12)
-            eq_(len(test_coverages[goal].coverage.relevant_program_lines), 2)
+            assert test_coverages[goal].count_total == 12
+            assert len(test_coverages[goal].coverage.relevant_program_lines) == 2
 
-        eq_(self.half_perfect_test_coverages[goal].hits, 6)
-        eq_(
-            self.half_perfect_test_coverages[goal].coverage.is_program_line_covered(4),
-            False,
-        )
-        eq_(
-            self.half_perfect_test_coverages[goal].coverage.is_program_line_covered(8),
-            False,
-        )
+        assert self.half_perfect_test_coverages[goal].hits == 6
+        assert not self.half_perfect_test_coverages[
+            goal
+        ].coverage.is_program_line_covered(4)
+        assert not self.half_perfect_test_coverages[
+            goal
+        ].coverage.is_program_line_covered(8)
 
     def test_coverage_stragey(self):
         for goal in eu.COVERAGE_GOALS.values():

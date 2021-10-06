@@ -11,8 +11,8 @@
 # and will be used by CI as declared in .gitlab-ci.yml.
 #
 # Commands for updating the image:
-# docker build -t registry.gitlab.com/sosy-lab/software/test-suite-validator/test:python-3.6 - < test/Dockerfile.python-3.6
-# docker push registry.gitlab.com/sosy-lab/software/test-suite-validator/test
+# docker build -t registry.gitlab.com/sosy-lab/software/test-suite-validator/test:python-3.6 - < .ci/Dockerfile.python-3.6
+# docker push registry.gitlab.com/sosy-lab/software/test-suite-validator/test:python-3.6
 
 FROM python:3.6-buster
 
@@ -22,8 +22,10 @@ RUN apt-get update && apt-get install -y gcc-multilib g++-multilib lcov clang ll
 RUN pip install -U pip && pip install \
   coverage \
   lxml \
-  nose \
   benchexec \
   matplotlib \
   numpy \
-  pycparser
+  pycparser \
+  pytest \
+  pytest-cov \
+  tsbuilder

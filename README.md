@@ -25,8 +25,7 @@ For containerization, TestCov uses parts of [BenchExec](https://github.com/sosy-
 * gcc >= 8.0
 * lcov >= 1.13
 
-The following requirements are automatically installed by `setup.py` upon installation,
-but can also be installed with `pip install -r requirements.txt`:
+The following requirements are automatically installed upon installation:
 * lxml >= 4.0
 * numpy >= 1.15
 * BenchExec >= 1.20
@@ -40,7 +39,7 @@ Optional, for plotting (if not available, run `testcov` with argument `--no-plot
 
 For development, we use the [`black`](https://github.com/python/black) formatter,
 [`pylint`](https://www.pylint.org/)
-and [`nosetest`](https://nose.readthedocs.io/en/latest/).
+and [`pytest`](https://docs.pytest.org/en/6.2.x/).
 
 ## Installation
 

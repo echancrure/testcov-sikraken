@@ -1,0 +1,200 @@
+# This file is part of TestCov,
+# a robust test executor with reliable coverage measurement:
+# https://gitlab.com/sosy-lab/software/test-suite-validator/
+#
+# SPDX-FileCopyrightText: 2019-2021 Dirk Beyer <https://www.sosy-lab.org>
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# To execute a job locally, install gitlab-runner (https://docs.gitlab.com/runner/install/)
+# and run the following command:
+# gitlab-runner exec docker --docker-privileged --docker-volumes /sys/fs/cgroup:/sys/fs/cgroup:rw --env CI_REGISTRY_IMAGE=registry.gitlab.com/sosy-lab/software/test-format <<JOB_NAME>>
+
+image: ${CI_REGISTRY_IMAGE}/test:python-${PYTHON_VERSION}
+
+stages:
+  - ci-images
+  - build
+  - test
+  - deploy
+
+variables:
+    PYTHONPATH: "lib/"
+
+.unit-tests: &unit-tests
+  stage: test
+  script:
+    - pytest
+  artifacts:
+    paths:
+      - coverage.xml
+      - cover
+
+.integration-tests: &integration-tests
+    stage: test
+    script:
+        - bin/testcov --verbose --test-suite test/suites/suite-invalid-unicode.zip test/test_invalid_unicode.c --goal contrib/goal_files/coverage-branches.prp --no-isolation
+        - bin/testcov --verbose --test-suite test/suites/suite-invalid-unicode-test.zip test/test_invalid_unicode.c --goal contrib/goal_files/coverage-branches.prp --no-isolation
+        - 'rm -rf output ; bin/testcov --verbose --test-suite test/suites/suite-valid.zip test/test_false_ReachError.c --goal contrib/goal_files/coverage-error-call.prp --no-isolation --no-stop-on-success && test $(ls output/info_files | wc -l) -eq 2'
+
+pylint:
+  stage: test
+  script:
+    - pylint suite_validation
+  variables:
+    PYTHON_VERSION: '3.9'
+
+check-format:
+  stage: test
+  script:
+      - "black --check suite_validation"
+      - "clang-format -i suite_validation/harness.c && git diff -s --exit-code"
+  variables:
+    PYTHON_VERSION: '3.9'
+
+.build-archive: &build-archive
+    stage: build
+    script: "./contrib/create_archive_testcov.sh"
+    artifacts:
+        paths:
+            - testcov-*.zip
+
+.check-archive: &check-archive
+    stage: test
+    script:
+        - "./contrib/create_archive_testcov.sh"
+        - cd /tmp && unzip "$CI_PROJECT_DIR"/testcov-*.zip
+        - cd /tmp/testcov && ./bin/testcov --no-isolation --verbose --test-suite "$CI_PROJECT_DIR/test/suites/suite-valid.zip" --goal "$CI_PROJECT_DIR/contrib/goal_files/coverage-error-call.prp" "$CI_PROJECT_DIR/test/test_false_ReachError.c"
+    dependencies:
+        - .build-archive  # In jobs inheriting, set correct job build-archive:X
+
+build-archive:default:
+  <<: *build-archive
+  # Build archive on mostly expected OS (usually some Ubuntu LTS)
+  image: ${CI_REGISTRY_IMAGE}/test:plain
+
+build-archive:gcc-11:
+  <<: *build-archive
+  image: ${CI_REGISTRY_IMAGE}/test:gcc-11
+
+build-archive:arch-linux:
+  <<: *build-archive
+  # Build archive on some other linux distribution, to be more confident
+  # that it does work on different distributions
+  image: ${CI_REGISTRY_IMAGE}/test:arch-linux
+
+
+check-archive:default:
+  <<: *check-archive
+  image: ${CI_REGISTRY_IMAGE}/test:plain
+  dependencies:
+    - build-archive:default
+
+check-archive:gcc-11:
+  <<: *check-archive
+  image: ${CI_REGISTRY_IMAGE}/test:gcc-11
+  dependencies:
+    - build-archive:gcc-11
+
+check-archive:arch-linux:
+  <<: *check-archive
+  image: ${CI_REGISTRY_IMAGE}/test:arch-linux
+  dependencies:
+    - build-archive:arch-linux
+
+
+unit-tests:python-3.6:
+  <<: *unit-tests
+  variables:
+    PYTHON_VERSION: '3.6'
+
+unit-tests:python-3.9:
+  <<: *unit-tests
+  variables:
+    PYTHON_VERSION: '3.9'
+
+integration-tests:python-3.6:
+  <<: *integration-tests
+  variables:
+    PYTHON_VERSION: '3.6'
+
+integration-tests:python-3.9:
+  <<: *integration-tests
+  variables:
+    PYTHON_VERSION: '3.9'
+
+# 
+# deploy-coverage:
+#   stage: deploy
+#   variables:
+#     PYTHON_VERSION: '3.9'
+#   before_script:
+#     - pip install -e git+https://github.com/codacy/python-codacy-coverage.git#egg=codacy
+#   script:
+#     - python-codacy-coverage -r coverage.xml
+#   dependencies:
+#     - unit-tests:python-3.9
+#   only:
+#     refs:
+#       - master
+#     variables:
+#       - $CODACY_PROJECT_TOKEN # required for job
+#       - $CI_PROJECT_PATH == $PROJECT_PATH # not on forks
+
+reuse:
+  stage: test
+  dependencies: []
+  needs: []
+  image:
+    name: fsfe/reuse:latest
+    entrypoint: [""]
+  script:
+    - reuse lint
+
+.build-docker:
+  stage: ci-images
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  variables:
+    EXTRA_ARGS: ""
+  needs: []
+  script:
+    - mkdir -p /root/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor --dockerfile $CI_PROJECT_DIR/$DOCKERFILE --destination $CI_REGISTRY_IMAGE/$IMAGE $EXTRA_ARGS
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      changes:
+        - $DOCKERFILE
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $BUILD_DOCKER == "true"'
+
+build-docker:python:3.9:
+  extends: .build-docker
+  variables:
+    DOCKERFILE: .ci/Dockerfile.python-3.9
+    IMAGE: test:python-3.9
+
+build-docker:python:3.6:
+  extends: .build-docker
+  variables:
+    DOCKERFILE: .ci/Dockerfile.python-3.6
+    IMAGE: test:python-3.6
+
+build-docker:plain:
+  extends: .build-docker
+  variables:
+    DOCKERFILE: .ci/Dockerfile.plain
+    IMAGE: test:plain
+
+build-docker:gcc-11:
+  extends: .build-docker
+  variables:
+    DOCKERFILE: .ci/Dockerfile.gcc-11
+    IMAGE: test:gcc-11
+
+build-docker:arch-linux:
+  extends: .build-docker
+  variables:
+    DOCKERFILE: .ci/Dockerfile.arch-linux
+    IMAGE: test:arch-linux

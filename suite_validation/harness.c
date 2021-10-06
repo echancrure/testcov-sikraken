@@ -9,12 +9,12 @@
 
 #define MAX_INPUT_SIZE 3000
 #ifdef GCOV
-extern void __gcov_flush(void);
+extern void __gcov_dump(void);
 #endif
 
 void abort_prog() {
 #ifdef GCOV
-  __gcov_flush();
+  __gcov_dump();
 #endif
   abort();
 }

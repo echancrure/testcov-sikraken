@@ -11,19 +11,10 @@
 # and will be used by CI as declared in .gitlab-ci.yml.
 #
 # Commands for updating the image:
-# docker build -t registry.gitlab.com/sosy-lab/software/test-suite-validator/test:python-3.7 - < test/Dockerfile.python-3.7
-# docker push registry.gitlab.com/sosy-lab/software/test-suite-validator/test
+# docker build -t registry.gitlab.com/sosy-lab/software/test-suite-validator/test:gcc-11 - < .ci/Dockerfile.gcc-11
+# docker push registry.gitlab.com/sosy-lab/software/test-suite-validator/test:gcc-11
 
-FROM python:3.7-buster
+FROM registry.gitlab.com/sosy-lab/software/test-suite-validator/test:plain
 
-RUN apt-get update && apt-get install -y gcc-multilib g++-multilib lcov clang llvm \
+RUN apt-get update && apt-get install -y gcc-11 \
   && rm -rf /var/lib/apt/lists/*
-
-RUN pip install -U pip && pip install \
-  coverage \
-  lxml \
-  nose \
-  benchexec \
-  matplotlib \
-  numpy \
-  pycparser

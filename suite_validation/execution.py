@@ -13,6 +13,7 @@ import re
 import os
 import sys
 import tempfile
+import glob
 from typing import Optional
 import zipfile
 
@@ -86,7 +87,7 @@ class HarnessCreator:
     def _get_declarations(program_file):
         to_declare = set(l[0] for l in eu.EXTERNAL_DECLARATIONS)
         preprocessed = True
-        with open(program_file) as inp:
+        with open(program_file, encoding="UTF-8") as inp:
             for line in inp.readlines():
                 # This loop may produce strange results if an include-statement
                 # comes after the declaration of one of the required declarations;
@@ -110,7 +111,7 @@ class HarnessCreator:
                 l[1] for l in eu.EXTERNAL_DECLARATIONS if l[0] in to_declare
             )
         to_declare = set(l[2] for l in eu.EXTERNAL_DECLARATIONS)
-        with open(program_file) as inp:
+        with open(program_file, encoding="UTF-8") as inp:
             for line in inp.readlines():
                 for _, _, decl in eu.EXTERNAL_DECLARATIONS:
                     if line.startswith(decl):
@@ -120,7 +121,7 @@ class HarnessCreator:
     @staticmethod
     def _get_harness_skeleton():
         harness_skeleton = os.path.join(os.path.dirname(__file__), HARNESS_FILE_NAME)
-        with open(harness_skeleton) as inp:
+        with open(harness_skeleton, encoding="UTF-8") as inp:
             return inp.read()
 
     def convert(self, program_file, test_vector=None) -> str:
@@ -176,7 +177,7 @@ class ExecutionRunner:
         mm_arg = "-m64" if self.machine_model == eu.MACHINE_MODEL_64 else "-m32"
         cmd = [self._compiler]
         cmd += [
-            "-std={}".format(c_version),
+            f"-std={c_version}",
             mm_arg,
             "-Wno-attributes",
             "-D__alias__(x)=",
@@ -199,7 +200,7 @@ class ExecutionRunner:
 
         if compile_result.returncode != 0:
             raise ExecutionError(
-                "Compilation failed for harness {}:\n".format(harness_file)
+                f"Compilation failed for harness {harness_file}:\n"
                 + "\n".join(
                     "    " + l for l in compile_result.stderr.decode().split("\n")
                 )
@@ -209,16 +210,14 @@ class ExecutionRunner:
 
     def get_executable_harness(self, program_file):
         if not self.harness:
-            self.harness = os.path.abspath(
-                self._create_executable_harness(program_file)
-            )
+            self.harness = self._create_executable_harness(program_file)
         return self.harness
 
     def _create_executable_harness(self, program_file):
         harness_file = self._harness_file_target
         harness_content = self.harness_generator.convert(program_file)
 
-        with open(harness_file, "w+") as outp:
+        with open(harness_file, "w+", encoding="UTF-8") as outp:
             outp.write(harness_content)
         self.harness_file = (
             harness_file  # set this only after successfully writing the harness
@@ -250,6 +249,8 @@ class ExecutionRunner:
     def _get_execute_cmd(self, executable):
         # pylint: disable=no-self-use
         # `self` may be used by children
+        if not os.path.isabs(executable):
+            executable = "./" + executable
         return [executable]
 
     @staticmethod
@@ -271,7 +272,7 @@ class ExecutionRunner:
                 tail_start = threshold - head_stop
                 input_values = (
                     input_values[:head_stop]
-                    + ["..(snip %s values).." % number_snipped]
+                    + [f"..(snip {number_snipped} values).."]
                     + input_values[-tail_start:]
                 )
 
@@ -282,7 +283,6 @@ class ExecutionRunner:
 
 
 class GcovCoverageMeasurer(ExecutionRunner):
-    HARNESS_GCDA_FILE = "harness.gcda"
     TEMPORARY_FILE_SUFFIXES = (".gcda", ".gcno", ".gcov")
 
     def __init__(
@@ -310,7 +310,7 @@ class GcovCoverageMeasurer(ExecutionRunner):
         cmd = super()._get_compile_cmd(
             program_file, harness_file, output_file, c_version
         )
-        cmd += ["-fprofile-arcs", "-ftest-coverage", "-DGCOV"]
+        cmd += ["--coverage", "-DGCOV"]
 
         return cmd
 
@@ -342,18 +342,55 @@ class GcovCoverageMeasurer(ExecutionRunner):
 
     def run(self, program_file, test_vector: eu.TestVector) -> eu.TestResult:
         result = super().run(program_file, test_vector)
+        if eu.is_failed_run(result):
+            return result
+
         program_name = _get_program_name(program_file)
-        data_file = GcovCoverageMeasurer.HARNESS_GCDA_FILE
         try:
+            data_file = self._get_data_file()
             result.coverage = self._compute_coverage_with_gcov(program_name, data_file)
-        except _gcov_coverage.GcovError as e:
+        except (_gcov_coverage.GcovError, FileNotFoundError) as e:
             logging.info("GCov coverage could not be computed: %s", e)
             result.coverage = None
         return result
 
+    def _get_data_file(self):
+        # According to the gcc documentation,
+        # "The .gcno files are placed in the same directory as the object file" and
+        # "the .gcda files are also stored in the same directory as the object file".
+        # -- https://gcc.gnu.org/onlinedocs/gcc/Gcov-Data-Files.html
+        #
+        # So we look in the directory of our compile target first.
+        # Unfortunately, older versions of GCC (before GCC-11, and even some versions of GCC 11, e.g. on Ubuntu)
+        # place the .gcda file in the current working directory.
+        # So as a fallback, we also look there.
+
+        def _get_gcda(directory):
+            candidate = list(glob.glob(directory + "/*.gcda"))
+            if len(candidate) == 1:
+                gcda_file = candidate[0]
+                logging.debug("Using .gcda file: %s", gcda_file)
+                return gcda_file
+            if len(candidate) > 1:
+                raise ValueError(
+                    f"Multiple GCOV data files found in directory: {candidate}"
+                )
+            raise FileNotFoundError(
+                f"No GCOV data file with known name found in directory: {os.listdir(directory)}"
+            )
+
+        build_directory = os.path.dirname(self._compile_target)
+        if build_directory:
+            try:
+                return _get_gcda(build_directory)
+            except FileNotFoundError as e:
+                logging.debug(e)
+
+            logging.debug("Falling back to look in current directory for GCDA file.")
+        return _get_gcda(".")
+
 
 class LcovCoverageMeasurer(GcovCoverageMeasurer):
-    HARNESS_GCDA_FILE = "harness.gcda"
     TEMPORARY_FILE_SUFFIXES = (".gcda", ".gcno", ".gcov", ".info")
 
     def __init__(
@@ -380,7 +417,7 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
         self._output_dir_info = os.path.join(output_dir, info_files_dir)
         self.harness_file = None
         self._individual_runs = individual_runs
-        self._instrumented_programs_cache = dict()
+        self._instrumented_programs_cache = {}
         os.makedirs(self._output_dir_info, exist_ok=True)
 
     @staticmethod
@@ -400,24 +437,30 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
         return os.path.join(tmp_dir, "instrumented_" + filename)
 
     def _prepare_program(self, program_file):
-        if isinstance(self._goal, eu.CoverFunc) or eu.uses_branch_coverage(self._goal):
-            if program_file not in self._instrumented_programs_cache:
-                prepared_program = self._get_instrumented_file_name(program_file)
+        if eu.uses_line_coverage(self._goal):
+            return (
+                program_file,
+                None,
+            )  # no modifications possible without changing line count
+        if program_file not in self._instrumented_programs_cache:
+            prepared_program = self._get_instrumented_file_name(program_file)
 
-                label_lines = tr.instrument_program(
-                    program_file, self.machine_model, prepared_program, self._goal
-                )
-                self._instrumented_programs_cache[program_file] = (
-                    prepared_program,
-                    label_lines,
-                )
+            label_lines = tr.instrument_program(
+                program_file, self.machine_model, prepared_program, self._goal
+            )
+            self._instrumented_programs_cache[program_file] = (
+                prepared_program,
+                label_lines,
+            )
 
-            # Beware! Overwrites program_file parameter
-            program_file, label_line_numbers = self._instrumented_programs_cache[
-                program_file
-            ]
-        else:
-            label_line_numbers = None
+        # Beware! Overwrites program_file parameter
+        program_file, label_line_numbers = self._instrumented_programs_cache[
+            program_file
+        ]
+        if not (
+            isinstance(self._goal, eu.CoverFunc) or eu.uses_branch_coverage(self._goal)
+        ):
+            label_line_numbers = None  # for condition coverage and line coverage we use existing measurements
         return program_file, label_line_numbers
 
     def run(self, program_file, test_vector: eu.TestVector) -> eu.TestResult:
@@ -425,13 +468,19 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
         program_file, label_line_numbers = self._prepare_program(program_file)
 
         result = super().run(program_file, test_vector)
-        result.coverage = self._compute_coverage(
-            program_file,
-            test_vector,
-            result,
-            self._goal,
-            label_line_numbers,
-        )
+
+        try:
+            result.coverage = self._compute_coverage(
+                program_file,
+                test_vector,
+                result,
+                self._goal,
+                label_line_numbers,
+            )
+        except FileNotFoundError as e:
+            logging.warning("Could not compute coverage for last test run: %s", e)
+            return result
+
         if result.coverage:
             # To hide the information that lcov measurement actually works on an instrumented program,
             # set the filename to the original program before returning the coverage
@@ -456,7 +505,7 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
         branch_label_line_numbers=None,
     ) -> Optional[cov.TestCoverage]:
         program_name = _get_program_name(program_file)
-        data_file = LcovCoverageMeasurer.HARNESS_GCDA_FILE
+        data_file = self._get_data_file()
         try:
             coverage = cov.compute_test_coverage(
                 program_name,
@@ -468,10 +517,11 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
                 output_dir=self._output_dir_info,
             )
             return coverage
-        except FileNotFoundError:
+        except FileNotFoundError as e:
             logging.info(
-                "Coverage computation failed. No coverage recorded for run %s",
+                "Coverage computation failed. No coverage recorded for run %s. Reason is a missing file: %s",
                 test_vector,
+                e,
             )
             return None
         finally:
@@ -758,7 +808,7 @@ class SuiteExecutor:
             if not any(
                 os.path.basename(f) == mu.METADATA_XML_NAME for f in zip_inp.namelist()
             ):
-                raise ExecutionError("No %s in %s" % (mu.METADATA_XML_NAME, test_suite))
+                raise ExecutionError(f"No {mu.METADATA_XML_NAME} in {test_suite}")
 
             for xml_file in (
                 l
@@ -816,7 +866,7 @@ class SuiteExecutor:
         else:
             logging.debug("Accumulated coverage: %s%%", accumulated_coverage_in_percent)
             if not result_target.coverage_sequence:
-                result_target.coverage_sequence = list()
+                result_target.coverage_sequence = []
             result_target.coverage_sequence.append(accumulated_coverage_in_percent)
 
     def _execute_tests(self, program_file, test_vectors, executor, result_target):

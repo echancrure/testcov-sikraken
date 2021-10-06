@@ -2,7 +2,7 @@
 # a robust test executor with reliable coverage measurement:
 # https://gitlab.com/sosy-lab/software/test-suite-validator/
 #
-# SPDX-FileCopyrightText: 2019 Dirk Beyer <https://www.sosy-lab.org>
+# SPDX-FileCopyrightText: 2019-2020 Dirk Beyer <https://www.sosy-lab.org>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -11,9 +11,10 @@
 # and will be used by CI as declared in .gitlab-ci.yml.
 #
 # Commands for updating the image:
-# docker build -t registry.gitlab.com/sosy-lab/software/test-suite-validator/test:plain - < test/Dockerfile.plain
-# docker push registry.gitlab.com/sosy-lab/software/test-suite-validator/test
+# docker build -t registry.gitlab.com/sosy-lab/software/test-suite-validator/test:arch-linux - < .ci/Dockerfile.arch-linux
+# docker push registry.gitlab.com/sosy-lab/software/test-suite-validator/test:arch-linux
 
-FROM ubuntu:18.04
+FROM archlinux
 
-RUN apt update && apt install -y gcc-multilib g++-multilib lcov clang llvm python3.6 python3-pip git zip
+RUN pacman -Sy && pacman --noconfirm -S gcc lib32-gcc-libs lcov clang llvm python-pip git unzip zip which
+

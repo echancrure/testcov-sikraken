@@ -48,7 +48,7 @@ def parse_gcov_output(program_name, gcov_output, goal) -> Coverage:
         # this is actually condition coverage, but use it for backwards-compatibility
         match = "Taken at least once:"
     else:
-        raise GcovError("Unhandled coverage goal type %s" % goal)
+        raise GcovError(f"Unhandled coverage goal type {goal}")
 
     value_re = re.compile(r".*:\s*([0-9]+(.[0-9]+)?)% of ([0-9]+)")
     in_file = False
