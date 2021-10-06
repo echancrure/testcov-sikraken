@@ -7,8 +7,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 BUILD_DIR := build
+PREFIX := .
 
 build: ${BUILD_DIR}/label-adder/bin/label-adder
+
+install: ${BUILD_DIR}/label-adder/bin/label-adder
+	mkdir -p ${PREFIX}/bin
+	mv $< ${PREFIX}/bin/
 
 ${BUILD_DIR}/label-adder/bin/label-adder: ${BUILD_DIR}/label-adder/CMakeCache.txt
 	cd ${BUILD_DIR}/label-adder \
