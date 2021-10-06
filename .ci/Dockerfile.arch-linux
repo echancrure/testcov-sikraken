@@ -1,0 +1,20 @@
+# This file is part of TestCov,
+# a robust test executor with reliable coverage measurement:
+# https://gitlab.com/sosy-lab/software/test-suite-validator/
+#
+# SPDX-FileCopyrightText: 2019-2020 Dirk Beyer <https://www.sosy-lab.org>
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# This is a Docker image for running the tests.
+# It should be pushed to registry.gitlab.com/sosy-lab/software/test-format/test
+# and will be used by CI as declared in .gitlab-ci.yml.
+#
+# Commands for updating the image:
+# docker build -t registry.gitlab.com/sosy-lab/software/test-suite-validator/test:arch-linux - < .ci/Dockerfile.arch-linux
+# docker push registry.gitlab.com/sosy-lab/software/test-suite-validator/test:arch-linux
+
+FROM archlinux
+
+RUN pacman -Sy && pacman --noconfirm -S gcc lib32-gcc-libs lcov clang llvm python-pip git unzip zip
+

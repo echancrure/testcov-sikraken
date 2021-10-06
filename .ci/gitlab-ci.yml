@@ -77,6 +77,12 @@ build-archive:gcc-11:
   <<: *build-archive
   image: ${CI_REGISTRY_IMAGE}/test:gcc-11
 
+build-archive:arch-linux:
+  <<: *build-archive
+  # Build archive on some other linux distribution, to be more confident
+  # that it does work on different distributions
+  image: ${CI_REGISTRY_IMAGE}/test:arch-linux
+
 
 check-archive:default:
   <<: *check-archive
@@ -89,6 +95,12 @@ check-archive:gcc-11:
   image: ${CI_REGISTRY_IMAGE}/test:gcc-11
   dependencies:
     - build-archive:gcc-11
+
+check-archive:arch-linux:
+  <<: *check-archive
+  image: ${CI_REGISTRY_IMAGE}/test:arch-linux
+  dependencies:
+    - build-archive:arch-linux
 
 
 unit-tests:python-3.6:
@@ -180,3 +192,9 @@ build-docker:gcc-11:
   variables:
     DOCKERFILE: .ci/Dockerfile.gcc-11
     IMAGE: test:gcc-11
+
+build-docker:arch-linux:
+  extends: .build-docker
+  variables:
+    DOCKERFILE: .ci/Dockerfile.arch-linux
+    IMAGE: test:arch-linux
