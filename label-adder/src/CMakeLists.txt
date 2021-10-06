@@ -1,6 +1,6 @@
 set(LLVM_LINK_COMPONENTS support)
 
-add_clang_tool(labeler
+add_clang_tool(label-adder
     LabelerMain.cpp
 
     LabelerASTConsumer.cpp
@@ -13,7 +13,7 @@ add_clang_tool(labeler
     LabelerFrontendAction.hpp
     LabelerFrontendActionFactory.hpp
   )
-target_link_libraries(labeler
+target_link_libraries(label-adder
   PRIVATE
   clangTooling
   clangBasic
