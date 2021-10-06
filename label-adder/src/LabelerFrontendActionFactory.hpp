@@ -12,7 +12,8 @@
 #define LABELER_FRONTEND_ACTION_FACTORY_HPP
 
 // A Factory Method, generating FrontendActions for each processed file
-std::unique_ptr<FrontendActionFactory> newLabelerFrontendActionFactory(LabelOptions labelOptions);
+std::unique_ptr<FrontendActionFactory>
+newLabelerFrontendActionFactory(LabelOptions labelOptions);
 
 class LabelerFrontendActionFactory : public FrontendActionFactory {
 public:
@@ -23,6 +24,7 @@ private:
   LabelOptions options;
 };
 
-std::unique_ptr<FrontendActionFactory> newLabelerFrontendActionFactory(LabelOptions labelOptions);
+std::unique_ptr<FrontendActionFactory>
+newLabelerFrontendActionFactory(LabelOptions labelOptions);
 
 #endif

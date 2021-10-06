@@ -16,7 +16,7 @@ bool LabelerASTConsumer::HandleTopLevelDecl(DeclGroupRef DR) {
   for (DeclGroupRef::iterator b = DR.begin(), e = DR.end(); b != e; ++b) {
     // Traverse the declaration using our AST visitor.
     Visitor.TraverseDecl(*b);
-    if(!options.noInfo) {
+    if (!options.noInfo) {
       (*b)->dump();
     }
   }

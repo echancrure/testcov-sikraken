@@ -6,8 +6,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-
-
 #ifndef INCLUDES_HPP
 #define INCLUDES_HPP
 
@@ -23,15 +21,13 @@
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
-#include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/CommandLine.h"
+#include "llvm/Support/raw_ostream.h"
 
 #include "OptionsStruct.hpp"
 
 using namespace clang;
 using namespace clang::driver;
 using namespace clang::tooling;
-
-
 
 #endif

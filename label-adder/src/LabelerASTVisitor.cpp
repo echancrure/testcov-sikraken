@@ -40,9 +40,11 @@ void LabelerASTVisitor::LabelStatementAndAddBracesIfMissing(
   // Return instantly, if no labels to add
   if (!(beginLabel || endLabel))
     return;
-  // If there is no code (a Null-Statement), remove semicolon and add brackets and Label
-  if(isa<NullStmt>(processedStatement)){
-    labelAddRewriter.ReplaceText(processedStatement->getSourceRange(), "{" + getNextLabel() + "}");
+  // If there is no code (a Null-Statement), remove semicolon and add brackets
+  // and Label
+  if (isa<NullStmt>(processedStatement)) {
+    labelAddRewriter.ReplaceText(processedStatement->getSourceRange(),
+                                 "{" + getNextLabel() + "}");
     return;
   }
   SourceLocation beginPos;
@@ -53,8 +55,9 @@ void LabelerASTVisitor::LabelStatementAndAddBracesIfMissing(
     beginPos = processedStatement->getBeginLoc();
     endPos = processedStatement->getEndLoc();
   } else {
-    if(cast<CompoundStmt>(processedStatement)->body_empty()){
-      labelAddRewriter.ReplaceText(processedStatement->getSourceRange(), "{" + getNextLabel() + "}");
+    if (cast<CompoundStmt>(processedStatement)->body_empty()) {
+      labelAddRewriter.ReplaceText(processedStatement->getSourceRange(),
+                                   "{" + getNextLabel() + "}");
       return;
     }
     // If braces are already there, beginLoc leaves us with the position
@@ -96,7 +99,8 @@ bool LabelerASTVisitor::VisitCaseStmt(CaseStmt *S) {
 }
 
 bool LabelerASTVisitor::VisitBinaryOperator(BinaryOperator *S) {
-  if(!(options.ternaryTrueLabel || options.ternaryFalseLabel)) return true;
+  if (!(options.ternaryTrueLabel || options.ternaryFalseLabel))
+    return true;
   Stmt *rightHandSide = S->getRHS();
   Stmt *leftHandSide = S->getLHS();
   std::string leftHandString =
@@ -122,9 +126,10 @@ bool LabelerASTVisitor::VisitBinaryOperator(BinaryOperator *S) {
 }
 
 bool LabelerASTVisitor::VisitCompoundStmt(CompoundStmt *S) {
-  if(!(options.ternaryTrueLabel || options.ternaryFalseLabel)) return true;
-  for (Stmt *child : S->children()){
-    if(isa<ConditionalOperator>(child)){
+  if (!(options.ternaryTrueLabel || options.ternaryFalseLabel))
+    return true;
+  for (Stmt *child : S->children()) {
+    if (isa<ConditionalOperator>(child)) {
       LabelTernaryStmt(cast<ConditionalOperator>(child), std::string(""));
     }
   }
@@ -133,8 +138,8 @@ bool LabelerASTVisitor::VisitCompoundStmt(CompoundStmt *S) {
 
 bool LabelerASTVisitor::VisitDefaultStmt(DefaultStmt *S) {
   if (options.defaultLabel)
-    labelAddRewriter.InsertText(S->getSubStmt()->getBeginLoc(), getNextLabel(), true,
-                                true);
+    labelAddRewriter.InsertText(S->getSubStmt()->getBeginLoc(), getNextLabel(),
+                                true, true);
   return true;
 }
 
@@ -150,8 +155,8 @@ void LabelerASTVisitor::LabelTernaryStmt(ConditionalOperator *ternaryStatement,
   labelAddRewriter.InsertText(ternaryStatement->getColonLoc(),
                               ";\n}else{" + getNextLabel() + leftHandString,
                               true, true);
-  labelAddRewriter.InsertText(GetTrueEndLocation(ternaryStatement), "\n}", false,
-                              true);
+  labelAddRewriter.InsertText(GetTrueEndLocation(ternaryStatement), "\n}",
+                              false, true);
 }
 
 bool LabelerASTVisitor::VisitFunctionDecl(FunctionDecl *f) {

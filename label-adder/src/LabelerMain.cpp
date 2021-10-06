@@ -69,14 +69,12 @@ static llvm::cl::opt<bool> NoTernaryFalseLabel(
     llvm::cl::desc("Do not add labels to refactored ternary false cases"),
     llvm::cl::cat(InstrumentationOptions));
 // Output Options
-static llvm::cl::opt<bool> InPlace(
-    "in-place",
-     llvm::cl::desc("Overwrite files"),
-     llvm::cl::cat(InstrumentationOptions));
-static llvm::cl::opt<bool> NoInfo(
-    "no-info",
-    llvm::cl::desc("Do not print information to stderr"),
-    llvm::cl::cat(InstrumentationOptions));
+static llvm::cl::opt<bool> InPlace("in-place",
+                                   llvm::cl::desc("Overwrite files"),
+                                   llvm::cl::cat(InstrumentationOptions));
+static llvm::cl::opt<bool>
+    NoInfo("no-info", llvm::cl::desc("Do not print information to stderr"),
+           llvm::cl::cat(InstrumentationOptions));
 
 LabelOptions generateLabelOptions() {
   LabelOptions labelOptions;
@@ -119,8 +117,9 @@ LabelOptions generateLabelOptions() {
 }
 
 int main(int argc, const char **argv) {
-  auto ExpectedParser =
-      CommonOptionsParser::create(argc, argv, InstrumentationOptions, llvm::cl::NumOccurrencesFlag(llvm::cl::OneOrMore), NULL);
+  auto ExpectedParser = CommonOptionsParser::create(
+      argc, argv, InstrumentationOptions,
+      llvm::cl::NumOccurrencesFlag(llvm::cl::OneOrMore), NULL);
   if (!ExpectedParser) {
     // Fail gracefully for unsupported options.
     llvm::errs() << ExpectedParser.takeError();

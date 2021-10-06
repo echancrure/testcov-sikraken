@@ -10,11 +10,9 @@
 #define OPTIONS_STRUCT_HPP
 
 typedef struct LabelOptions {
-  bool ternaryTrueLabel, ternaryFalseLabel,
-      functionStartLabel, functionEndLabel,
-      caseLabel, defaultLabel,
-      ifLabel, elseLabel,
-      inPlace, noInfo;
+  bool ternaryTrueLabel, ternaryFalseLabel, functionStartLabel,
+      functionEndLabel, caseLabel, defaultLabel, ifLabel, elseLabel, inPlace,
+      noInfo;
 } LabelOptions;
 
 #endif

@@ -6,21 +6,21 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-
-#include "Includes.hpp"
 #include "LabelerFrontendAction.hpp"
+#include "Includes.hpp"
 #include "LabelerASTConsumer.hpp"
 
-LabelerFrontendAction::LabelerFrontendAction(LabelOptions labelOptions) : options(labelOptions) {}
+LabelerFrontendAction::LabelerFrontendAction(LabelOptions labelOptions)
+    : options(labelOptions) {}
 void LabelerFrontendAction::EndSourceFileAction() {
   SourceManager &SM = labelAddRewriter.getSourceMgr();
-  if(!options.noInfo){
+  if (!options.noInfo) {
     llvm::errs() << "** EndSourceFileAction for: "
                  << SM.getFileEntryForID(SM.getMainFileID())->getName() << "\n";
   }
 
   // Now emit the rewritten buffer.
-  if(options.inPlace){
+  if (options.inPlace) {
     labelAddRewriter.overwriteChangedFiles();
   } else {
     labelAddRewriter.getEditBuffer(SM.getMainFileID()).write(llvm::outs());
@@ -28,9 +28,9 @@ void LabelerFrontendAction::EndSourceFileAction() {
   SM.getMainFileID();
 }
 
-std::unique_ptr<ASTConsumer> LabelerFrontendAction::CreateASTConsumer(CompilerInstance &CI,
-                                               StringRef file) {
-  if(!options.noInfo) {
+std::unique_ptr<ASTConsumer>
+LabelerFrontendAction::CreateASTConsumer(CompilerInstance &CI, StringRef file) {
+  if (!options.noInfo) {
     llvm::errs() << "** Creating AST consumer for: " << file << "\n";
   }
   labelAddRewriter.setSourceMgr(CI.getSourceManager(), CI.getLangOpts());

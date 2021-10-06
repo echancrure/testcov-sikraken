@@ -16,8 +16,8 @@ class LabelerFrontendAction : public ASTFrontendAction {
 public:
   LabelerFrontendAction(LabelOptions labelOptions);
   void EndSourceFileAction() override;
-  // A new Consumer for the AST, its job is calling the Visit...Stmt() Methods of
-  // the Visitor
+  // A new Consumer for the AST, its job is calling the Visit...Stmt() Methods
+  // of the Visitor
   std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI,
                                                  StringRef file) override;
 
