@@ -16,5 +16,5 @@
 
 FROM archlinux
 
-RUN pacman -Sy && pacman --noconfirm -S gcc lib32-gcc-libs lcov clang llvm python-pip git unzip zip
+RUN pacman -Sy && pacman --noconfirm -S gcc lib32-gcc-libs lcov clang llvm python-pip git unzip zip which
 
