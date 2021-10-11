@@ -36,6 +36,12 @@ public:
   //   else{}
   // }
   bool VisitIfStmt(IfStmt *S);
+  // Traverse while-loop and add label to begin of body and after the
+  // loop.
+  bool VisitWhileStmt(WhileStmt *S);
+  // Traverse for-loop and add label to begin of body and after the
+  // loop.
+  bool VisitForStmt(ForStmt *S);
   // Traverse Switch-Cases and add Labels to them
   bool VisitCaseStmt(CaseStmt *S);
   // Traverse Switch-Default-Caes and add Labels to them

@@ -23,33 +23,34 @@ SourceLocation LabelerASTVisitor::GetTrueEndLocation(Stmt *fromStatement) {
   }
   if (isa<IfStmt>(fromStatement)) {
     IfStmt *ifStmt = cast<IfStmt>(fromStatement);
-    Stmt *finalDecision;
     if (ifStmt->getElse()) {
-      finalDecision = ifStmt->getElse();
+      fromStatement = ifStmt->getElse();
     } else {
-      finalDecision = ifStmt->getThen();
+      fromStatement = ifStmt->getThen();
     }
-    if (isa<CompoundStmt>(finalDecision)) {
-      // the final decision of the if-statement is a compound statement with
-      // curly braces, so we return the location at its closing }. Example 1: if
-      // (p) {
-      //  x++;
-      // }
-      // ^ this is returned
-      //
-      // Example 2:
-      // if (p) {
-      //  x++;
-      // } else {
-      //  y++;
-      // }
-      // ^ this is returned
-      Optional<Token> nextToken = getNextToken(finalDecision->getEndLoc());
-      assert(nextToken->is(tok::r_brace));
-      return nextToken->getLocation();
-    }
-
-    fromStatement = finalDecision;
+  } else if (isa<WhileStmt>(fromStatement)) {
+    fromStatement = cast<WhileStmt>(fromStatement)->getBody();
+  } else if (isa<ForStmt>(fromStatement)) {
+    fromStatement = cast<ForStmt>(fromStatement)->getBody();
+  }
+  if (isa<CompoundStmt>(fromStatement)) {
+    // the final decision of the if-statement is a compound statement with
+    // curly braces, so we return the location at its closing }. Example 1: if
+    // (p) {
+    //  x++;
+    // }
+    // ^ this is returned
+    //
+    // Example 2:
+    // if (p) {
+    //  x++;
+    // } else {
+    //  y++;
+    // }
+    // ^ this is returned
+    Optional<Token> nextToken = getNextToken(fromStatement->getEndLoc());
+    assert(nextToken->is(tok::r_brace));
+    return nextToken->getLocation();
   }
   Optional<Token> nextToken = getNextToken(fromStatement->getEndLoc());
   if (nextToken->is(tok::semi)) {
@@ -130,6 +131,24 @@ bool LabelerASTVisitor::VisitIfStmt(IfStmt *S) {
   } else if (options.elseLabel) {
     SourceLocation endLoc = GetTrueEndLocation(S);
     labelAddRewriter.InsertTextAfter(endLoc, " else { " + getNextLabel() + "}");
+  }
+  return true;
+}
+
+bool LabelerASTVisitor::VisitWhileStmt(WhileStmt *S) {
+  LabelStatementAndAddBracesIfMissing(S->getBody(), options.ifLabel, false);
+  SourceLocation afterLoop = GetTrueEndLocation(S->getBody());
+  if (options.elseLabel) {
+    labelAddRewriter.InsertTextAfter(afterLoop, getNextLabel());
+  }
+  return true;
+}
+
+bool LabelerASTVisitor::VisitForStmt(ForStmt *S) {
+  LabelStatementAndAddBracesIfMissing(S->getBody(), options.ifLabel, false);
+  SourceLocation afterLoop = GetTrueEndLocation(S->getBody());
+  if (options.elseLabel) {
+    labelAddRewriter.InsertTextAfter(afterLoop, getNextLabel());
   }
   return true;
 }
