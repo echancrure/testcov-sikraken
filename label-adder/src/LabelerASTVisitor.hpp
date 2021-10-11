@@ -40,17 +40,15 @@ public:
   bool VisitCaseStmt(CaseStmt *S);
   // Traverse Switch-Default-Caes and add Labels to them
   bool VisitDefaultStmt(DefaultStmt *S);
-  // Traverse Binary Operators, check if they contain a ternary statement, and
-  // refactor them if so. Add Labels to the true and false case.
+  // Traverse ternary statements and refactor them:
+  // each decision is on separate line, starting with a goal label.
+  // refactor them if so. Add Labels to the true and false casek.
   // a = (a<2) ? 1 : 2;
   // becomes
-  // if(a<2){
-  //   a = 1
-  // } else {
-  //   a = 2
-  // }
-  bool VisitBinaryOperator(BinaryOperator *S);
-  bool VisitCompoundStmt(CompoundStmt *S);
+  // a = (a<2) ?
+  //     Goal_1:; 1 :
+  //     : Goal_2:; 2;
+  bool VisitConditionalOperator(ConditionalOperator *f);
   // Traverse Functions, check if they are declarations or functions with
   // bodies. If they are functions with bodies, add Labels to them.
   bool VisitFunctionDecl(FunctionDecl *f);
@@ -80,6 +78,8 @@ private:
   // one already.
   void AddBracesAroundStatement(Stmt *processedStatement);
 
+  void LabelStatement(Stmt *processedStatement, bool beginLabel, bool endLabel);
+
   // This Method adds a Label at the begin of a statement, if beginLabel is set.
   // And a Label at the end if endLabel is set. It also transforms a statement,
   // to a compound statement, if it is a one-liner with missing braces.
@@ -90,6 +90,8 @@ private:
   // Currently in progress...
   void LabelTernaryStmt(ConditionalOperator *ternaryStatement,
                         std::string leftHandString);
+
+  Optional<Token> getNextToken(SourceLocation fromLocation);
 };
 
 #endif

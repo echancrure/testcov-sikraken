@@ -42,17 +42,9 @@ static llvm::cl::opt<bool> NoSwitchDefaultLabel(
     llvm::cl::desc("Do not create Labels in default cases"),
     llvm::cl::cat(InstrumentationOptions));
 // Function Options
-static llvm::cl::opt<bool> NoFunctionLabel(
-    "no-labels-function",
-    llvm::cl::desc("Do not create Labels at the begin or end of a function"),
-    llvm::cl::cat(InstrumentationOptions));
 static llvm::cl::opt<bool> NoFunctionStartLabel(
     "no-labels-function-start",
     llvm::cl::desc("Do not create Labels at the begin of a function"),
-    llvm::cl::cat(InstrumentationOptions));
-static llvm::cl::opt<bool> NoFunctionEndLabel(
-    "no-labels-function-end",
-    llvm::cl::desc("Do not create Labels at the end of a function"),
     llvm::cl::cat(InstrumentationOptions));
 // Ternary Options
 static llvm::cl::opt<bool>
@@ -94,13 +86,7 @@ LabelOptions generateLabelOptions() {
     labelOptions.defaultLabel = !NoSwitchDefaultLabel.getValue();
   }
 
-  if (NoFunctionLabel) {
-    labelOptions.functionStartLabel = false;
-    labelOptions.functionEndLabel = false;
-  } else {
-    labelOptions.functionStartLabel = !NoFunctionStartLabel.getValue();
-    labelOptions.functionEndLabel = !NoFunctionEndLabel.getValue();
-  }
+  labelOptions.functionStartLabel = !NoFunctionStartLabel.getValue();
 
   if (NoTernaryLabel) {
     labelOptions.ternaryTrueLabel = false;

@@ -69,7 +69,7 @@ Use `--no-info` to avoid this.
 
 By default, labels are added for the following syntax elements:
     - `if-stmt`: right after each if- (`if-case`) and else-statement (`else-case`)
-    - `function`: at the beginning (`function-start`) and the return (`function-end`) of each function definition
+    - `function-start`: at the beginning of each function definition
     - `switch`: at the beginning of each switch-case block (`switch-case`) and the switch-default block (`switch-default`)
     - `ternary`: at the beginning of the true decision (`ternary-true`) and false decision (`ternary-false`) of ternary operators.
 

@@ -18,62 +18,105 @@ std::string LabelerASTVisitor::getNextLabel() {
 }
 
 SourceLocation LabelerASTVisitor::GetTrueEndLocation(Stmt *fromStatement) {
-  return Lexer::findNextToken(fromStatement->getEndLoc(),
-                              labelAddRewriter.getSourceMgr(),
-                              labelAddRewriter.getLangOpts())
-      ->getEndLoc();
+  if (isa<NullStmt>(fromStatement)) {
+    return fromStatement->getEndLoc().getLocWithOffset(1);
+  }
+  if (isa<IfStmt>(fromStatement)) {
+    IfStmt *ifStmt = cast<IfStmt>(fromStatement);
+    Stmt *finalDecision;
+    if (ifStmt->getElse()) {
+      finalDecision = ifStmt->getElse();
+    } else {
+      finalDecision = ifStmt->getThen();
+    }
+    if (isa<CompoundStmt>(finalDecision)) {
+      // the final decision of the if-statement is a compound statement with
+      // curly braces, so we return the location at its closing }. Example 1: if
+      // (p) {
+      //  x++;
+      // }
+      // ^ this is returned
+      //
+      // Example 2:
+      // if (p) {
+      //  x++;
+      // } else {
+      //  y++;
+      // }
+      // ^ this is returned
+      Optional<Token> nextToken = getNextToken(finalDecision->getEndLoc());
+      assert(nextToken->is(tok::r_brace));
+      return nextToken->getLocation();
+    }
+
+    fromStatement = finalDecision;
+  }
+  Optional<Token> nextToken = getNextToken(fromStatement->getEndLoc());
+  if (nextToken->is(tok::semi)) {
+    return nextToken->getEndLoc();
+  }
+  return fromStatement->getEndLoc();
+}
+
+Optional<Token> LabelerASTVisitor::getNextToken(SourceLocation fromLocation) {
+  return Lexer::findNextToken(fromLocation, labelAddRewriter.getSourceMgr(),
+                              labelAddRewriter.getLangOpts());
 }
 
 void LabelerASTVisitor::AddBracesAroundStatement(Stmt *processedStatement) {
   if (isa<CompoundStmt>(processedStatement))
     return;
-  // in case other code was written at same locations already,
+  // We have to use InsertTextBefore so in case
+  // other code was written at the same location already,
   // the braces will be put around that written code
   labelAddRewriter.InsertTextBefore(processedStatement->getBeginLoc(), "{\n");
   // We need to add the closing brace after the semicolon, therefore we need
   // to calculate the semicolons position.
-  SourceLocation semicolonLocation = GetTrueEndLocation(processedStatement);
-  labelAddRewriter.InsertTextAfter(semicolonLocation, "\n}\n");
+  SourceLocation afterSemicolonLocation =
+      GetTrueEndLocation(processedStatement);
+  labelAddRewriter.InsertTextAfter(afterSemicolonLocation, "\n}\n");
 }
 
-void LabelerASTVisitor::LabelStatementAndAddBracesIfMissing(
-    Stmt *processedStatement, bool beginLabel, bool endLabel) {
+void LabelerASTVisitor::LabelStatement(Stmt *processedStatement,
+                                       bool beginLabel, bool endLabel) {
   // Return instantly, if no labels to add
-  if (!(beginLabel || endLabel))
+  if (!(beginLabel || endLabel)) {
     return;
-  // If there is no code (a Null-Statement), remove semicolon and add brackets
-  // and Label
+  }
   if (isa<NullStmt>(processedStatement)) {
-    labelAddRewriter.ReplaceText(processedStatement->getSourceRange(),
-                                 "{" + getNextLabel() + "}");
+    labelAddRewriter.RemoveText(SourceRange(processedStatement->getBeginLoc(),
+                                            processedStatement->getEndLoc()));
+    labelAddRewriter.InsertTextAfter(processedStatement->getBeginLoc(),
+                                     getNextLabel());
     return;
   }
   SourceLocation beginPos;
   SourceLocation endPos;
   // Check if Braces are missing
-  if (!isa<CompoundStmt>(processedStatement)) {
-    AddBracesAroundStatement(processedStatement);
-    beginPos = processedStatement->getBeginLoc();
-    endPos = processedStatement->getEndLoc();
-  } else {
-    if (cast<CompoundStmt>(processedStatement)->body_empty()) {
-      labelAddRewriter.ReplaceText(processedStatement->getSourceRange(),
-                                   "{" + getNextLabel() + "}");
-      return;
-    }
+  if (isa<CompoundStmt>(processedStatement)) {
     // If braces are already there, beginLoc leaves us with the position
     // before the brace, so we have to offset by 1
     // The reverse applies to the closing brace, so we offset by -1
     beginPos = processedStatement->getBeginLoc().getLocWithOffset(1);
     endPos = processedStatement->getEndLoc().getLocWithOffset(-1);
+  } else {
+    beginPos = processedStatement->getBeginLoc();
+    endPos = processedStatement->getEndLoc();
   }
-  // Add Label after opening Brace, if wanted
   if (beginLabel) {
     labelAddRewriter.InsertTextAfter(beginPos, getNextLabel());
   }
-  // Add Label before closing Brace, if wanted
   if (endLabel) {
-    labelAddRewriter.InsertTextBefore(endPos, getNextLabel());
+    labelAddRewriter.InsertTextAfter(endPos, getNextLabel());
+  }
+}
+
+void LabelerASTVisitor::LabelStatementAndAddBracesIfMissing(
+    Stmt *processedStatement, bool beginLabel, bool endLabel) {
+  LabelStatement(processedStatement, beginLabel, endLabel);
+  if (!isa<CompoundStmt>(processedStatement) &&
+      !isa<NullStmt>(processedStatement)) {
+    AddBracesAroundStatement(processedStatement);
   }
 }
 
@@ -92,82 +135,45 @@ bool LabelerASTVisitor::VisitIfStmt(IfStmt *S) {
 }
 
 bool LabelerASTVisitor::VisitCaseStmt(CaseStmt *S) {
-  if (options.caseLabel)
-    for (Stmt *child : S->children()) {
-      if (isa<ConstantExpr>(child)) {
-        labelAddRewriter.InsertText(GetTrueEndLocation(child), getNextLabel(),
-                                    true, true);
-      }
-    }
-  return true;
-}
-
-bool LabelerASTVisitor::VisitBinaryOperator(BinaryOperator *S) {
-  if (!(options.ternaryTrueLabel || options.ternaryFalseLabel))
-    return true;
-  Stmt *rightHandSide = S->getRHS();
-  Stmt *leftHandSide = S->getLHS();
-  std::string leftHandString =
-      Lexer::getSourceText(
-          CharSourceRange::getCharRange(leftHandSide->getBeginLoc(),
-                                        GetTrueEndLocation(leftHandSide)),
-          labelAddRewriter.getSourceMgr(), labelAddRewriter.getLangOpts())
-          .str();
-  if (isa<ConditionalOperator>(rightHandSide)) {
-    labelAddRewriter.RemoveText(SourceRange(leftHandSide->getBeginLoc(),
-                                            GetTrueEndLocation(leftHandSide)));
-    LabelTernaryStmt(cast<ConditionalOperator>(rightHandSide), leftHandString);
-  } else if (isa<ImplicitCastExpr>(rightHandSide)) {
-    for (Stmt *child : rightHandSide->children()) {
-      if (isa<ConditionalOperator>(child)) {
-        labelAddRewriter.RemoveText(SourceRange(
-            leftHandSide->getBeginLoc(), GetTrueEndLocation(leftHandSide)));
-        LabelTernaryStmt(cast<ConditionalOperator>(child), leftHandString);
-      }
-    }
+  if (options.caseLabel) {
+    LabelStatement(S->getSubStmt(), true, false);
   }
   return true;
 }
 
-bool LabelerASTVisitor::VisitCompoundStmt(CompoundStmt *S) {
-  if (!(options.ternaryTrueLabel || options.ternaryFalseLabel))
+bool LabelerASTVisitor::VisitConditionalOperator(ConditionalOperator *S) {
+  if (!(options.ternaryTrueLabel || options.ternaryFalseLabel)) {
     return true;
-  for (Stmt *child : S->children()) {
-    if (isa<ConditionalOperator>(child)) {
-      LabelTernaryStmt(cast<ConditionalOperator>(child), std::string(""));
-    }
+  }
+
+  {
+    SourceLocation beginOfTrueExpr = S->getTrueExpr()->getBeginLoc();
+    labelAddRewriter.InsertTextBefore(beginOfTrueExpr, "({" + getNextLabel());
+    SourceLocation endOfTrueExpr = S->getTrueExpr()->getEndLoc();
+    labelAddRewriter.InsertTextAfterToken(endOfTrueExpr, ";})");
+  }
+  {
+    SourceLocation beginOfFalseExpr = S->getFalseExpr()->getBeginLoc();
+    labelAddRewriter.InsertTextBefore(beginOfFalseExpr, "({" + getNextLabel());
+    SourceLocation endOfFalseExpr = S->getFalseExpr()->getEndLoc();
+    labelAddRewriter.InsertTextAfterToken(endOfFalseExpr, ";})");
   }
   return true;
 }
 
 bool LabelerASTVisitor::VisitDefaultStmt(DefaultStmt *S) {
-  if (options.defaultLabel)
-    labelAddRewriter.InsertText(S->getSubStmt()->getBeginLoc(), getNextLabel(),
-                                true, true);
-  return true;
-}
+  if (options.defaultLabel) {
+    LabelStatement(S->getSubStmt(), true, false);
+  }
 
-void LabelerASTVisitor::LabelTernaryStmt(ConditionalOperator *ternaryStatement,
-                                         std::string leftHandString) {
-  labelAddRewriter.InsertText(ternaryStatement->getBeginLoc(), "if(", true,
-                              true);
-  labelAddRewriter.RemoveText(ternaryStatement->getQuestionLoc(), 1);
-  labelAddRewriter.InsertText(ternaryStatement->getQuestionLoc(),
-                              "){" + getNextLabel() + leftHandString, true,
-                              true);
-  labelAddRewriter.RemoveText(ternaryStatement->getColonLoc(), 1);
-  labelAddRewriter.InsertText(ternaryStatement->getColonLoc(),
-                              ";\n}else{" + getNextLabel() + leftHandString,
-                              true, true);
-  labelAddRewriter.InsertText(GetTrueEndLocation(ternaryStatement), "\n}",
-                              false, true);
+  return true;
 }
 
 bool LabelerASTVisitor::VisitFunctionDecl(FunctionDecl *f) {
   // Only function with bodies should get labeled, not declarations.
   if (f->hasBody()) {
-    LabelStatementAndAddBracesIfMissing(
-        f->getBody(), options.functionStartLabel, options.functionEndLabel);
+    LabelStatementAndAddBracesIfMissing(f->getBody(),
+                                        options.functionStartLabel, false);
   }
 
   return true;
