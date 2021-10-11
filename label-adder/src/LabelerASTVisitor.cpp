@@ -27,12 +27,13 @@ SourceLocation LabelerASTVisitor::GetTrueEndLocation(Stmt *fromStatement) {
 void LabelerASTVisitor::AddBracesAroundStatement(Stmt *processedStatement) {
   if (isa<CompoundStmt>(processedStatement))
     return;
-  labelAddRewriter.InsertText(processedStatement->getBeginLoc(), "{", true,
-                              true);
+  // in case other code was written at same locations already,
+  // the braces will be put around that written code
+  labelAddRewriter.InsertTextBefore(processedStatement->getBeginLoc(), "{\n");
   // We need to add the closing brace after the semicolon, therefore we need
   // to calculate the semicolons position.
   SourceLocation semicolonLocation = GetTrueEndLocation(processedStatement);
-  labelAddRewriter.InsertText(semicolonLocation, "\n}\n", true, true);
+  labelAddRewriter.InsertTextAfter(semicolonLocation, "\n}\n");
 }
 
 void LabelerASTVisitor::LabelStatementAndAddBracesIfMissing(
@@ -66,13 +67,13 @@ void LabelerASTVisitor::LabelStatementAndAddBracesIfMissing(
     beginPos = processedStatement->getBeginLoc().getLocWithOffset(1);
     endPos = processedStatement->getEndLoc().getLocWithOffset(-1);
   }
-  // Add Label after opening Brace, if present
+  // Add Label after opening Brace, if wanted
   if (beginLabel) {
-    labelAddRewriter.InsertText(beginPos, getNextLabel(), true, true);
+    labelAddRewriter.InsertTextAfter(beginPos, getNextLabel());
   }
-  // Add Label after closing Brace, if present
+  // Add Label before closing Brace, if wanted
   if (endLabel) {
-    labelAddRewriter.InsertText(endPos, getNextLabel(), true, true);
+    labelAddRewriter.InsertTextBefore(endPos, getNextLabel());
   }
 }
 
@@ -83,6 +84,9 @@ bool LabelerASTVisitor::VisitIfStmt(IfStmt *S) {
   if (elseStatement) {
     LabelStatementAndAddBracesIfMissing(elseStatement, options.elseLabel,
                                         false);
+  } else if (options.elseLabel) {
+    SourceLocation endLoc = GetTrueEndLocation(S);
+    labelAddRewriter.InsertTextAfter(endLoc, " else { " + getNextLabel() + "}");
   }
   return true;
 }
