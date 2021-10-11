@@ -43,15 +43,18 @@ def labeler_bin():
     return os.path.join(label_adder_root, "bin", "label-adder")
 
 
-def test_labeler_output_compiles(
-    source_files_and_expected_outcome, labeler_bin
-):
+def test_labeler_output_compiles(source_files_and_expected_outcome, labeler_bin):
     for program_file, _ in source_files_and_expected_outcome:
         actual_output = _label(program_file, labeler_bin)
 
-        result = subprocess.run(['gcc', '-o', '/dev/null', '-x', 'c', '-include', 'test/sv-comp.h', '-'], input=actual_output, capture_output=True)
-        assert result.returncode == 0, f"Error for {program_file}: {result.stderr.decode(encoding='UTF-8')}"
-
+        result = subprocess.run(
+            ["gcc", "-o", "/dev/null", "-x", "c", "-include", "test/sv-comp.h", "-"],
+            input=actual_output,
+            capture_output=True,
+        )
+        assert (
+            result.returncode == 0
+        ), f"Error for {program_file}: {result.stderr.decode(encoding='UTF-8')}"
 
 
 def _label(program_file, labeler_bin, options=[]):
@@ -69,12 +72,17 @@ def test_label_branches_if_without_else(labeler_bin, test_program_dir):
     result = _label(
         prog,
         labeler_bin,
-        options=["--no-labels-function-start", "--no-labels-switch", "--no-labels-ternary"],
+        options=[
+            "--no-labels-function-start",
+            "--no-labels-switch",
+            "--no-labels-ternary",
+        ],
     )
 
     assert (
         _number_goals(result) == 2
     ), f"Wrong number of goals ({_number_goals(result)} instead of 2):\n{result}"
+
 
 def test_label_branches_if_without_else_no_braces(labeler_bin, test_program_dir):
     prog = os.path.join(test_program_dir, "test_ifWithoutBraces_ReachError.c")
@@ -82,12 +90,17 @@ def test_label_branches_if_without_else_no_braces(labeler_bin, test_program_dir)
     result = _label(
         prog,
         labeler_bin,
-        options=["--no-labels-function-start", "--no-labels-switch", "--no-labels-ternary"],
+        options=[
+            "--no-labels-function-start",
+            "--no-labels-switch",
+            "--no-labels-ternary",
+        ],
     )
 
     assert (
         _number_goals(result) == 4
     ), f"Wrong number of goals ({_number_goals(result)} instead of 4):\n{result}"
+
 
 def test_label_branches_if_else_no_braces(labeler_bin, test_program_dir):
     prog = os.path.join(test_program_dir, "test_if-else-without-braces.c")
@@ -95,13 +108,16 @@ def test_label_branches_if_else_no_braces(labeler_bin, test_program_dir):
     result = _label(
         prog,
         labeler_bin,
-        options=["--no-labels-function-start", "--no-labels-switch", "--no-labels-ternary"],
+        options=[
+            "--no-labels-function-start",
+            "--no-labels-switch",
+            "--no-labels-ternary",
+        ],
     )
 
     assert (
         _number_goals(result) == 2
     ), f"Wrong number of goals ({_number_goals(result)} instead of 2):\n{result}"
-
 
 
 def test_label_branches_multipleBranchesAndConditions(labeler_bin, test_program_dir):
@@ -110,12 +126,17 @@ def test_label_branches_multipleBranchesAndConditions(labeler_bin, test_program_
     result = _label(
         prog,
         labeler_bin,
-        options=["--no-labels-function-start", "--no-labels-switch", "--no-labels-ternary"],
+        options=[
+            "--no-labels-function-start",
+            "--no-labels-switch",
+            "--no-labels-ternary",
+        ],
     )
 
     assert (
         _number_goals(result) == 4
     ), f"Wrong number of goals ({_number_goals(result)} instead of 4):\n{result}"
+
 
 def test_label_while(labeler_bin, test_program_dir):
     prog = os.path.join(test_program_dir, "test_while-singleline.c")
@@ -123,12 +144,17 @@ def test_label_while(labeler_bin, test_program_dir):
     result = _label(
         prog,
         labeler_bin,
-        options=["--no-labels-function-start", "--no-labels-switch", "--no-labels-ternary"],
+        options=[
+            "--no-labels-function-start",
+            "--no-labels-switch",
+            "--no-labels-ternary",
+        ],
     )
 
     assert (
         _number_goals(result) == 2
     ), f"Wrong number of goals ({_number_goals(result)} instead of 2):\n{result}"
+
 
 def test_label_for_loop(labeler_bin, test_program_dir):
     prog = os.path.join(test_program_dir, "test_for.c")
@@ -136,7 +162,11 @@ def test_label_for_loop(labeler_bin, test_program_dir):
     result = _label(
         prog,
         labeler_bin,
-        options=["--no-labels-function-start", "--no-labels-switch", "--no-labels-ternary"],
+        options=[
+            "--no-labels-function-start",
+            "--no-labels-switch",
+            "--no-labels-ternary",
+        ],
     )
 
     assert (
@@ -150,7 +180,11 @@ def test_label_for_loop_empty(labeler_bin, test_program_dir):
     result = _label(
         prog,
         labeler_bin,
-        options=["--no-labels-function-start", "--no-labels-switch", "--no-labels-ternary"],
+        options=[
+            "--no-labels-function-start",
+            "--no-labels-switch",
+            "--no-labels-ternary",
+        ],
     )
 
     assert (
