@@ -43,12 +43,12 @@ def labeler_bin():
     return os.path.join(label_adder_root, "bin", "label-adder")
 
 
-def test_labeler_output_compiles(source_files_and_expected_outcome, labeler_bin):
+def test_labeler_output_compiles(source_files_and_expected_outcome, labeler_bin, test_program_dir):
     for program_file, _ in source_files_and_expected_outcome:
         actual_output = _label(program_file, labeler_bin)
 
         result = subprocess.run(
-            ["gcc", "-o", "/dev/null", "-x", "c", "-include", "test/sv-comp.h", "-"],
+            ["gcc", "-o", "/dev/null", "-x", "c", "-include", f"{test_program_dir}/../sv-comp.h", "-"],
             input=actual_output,
             capture_output=True,
         )
