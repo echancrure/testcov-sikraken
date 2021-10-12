@@ -43,18 +43,45 @@ def labeler_bin():
     return os.path.join(label_adder_root, "bin", "label-adder")
 
 
-def test_labeler_output_compiles(source_files_and_expected_outcome, labeler_bin, test_program_dir):
-    for program_file, _ in source_files_and_expected_outcome:
-        actual_output = _label(program_file, labeler_bin)
+@pytest.fixture
+def labeler_params():
+    return [
+        "--labels-branching-only",
+        "--labels-function-start-only",
+        "--labels-switch-only",
+        "--labels-ternary-only",
+        "--function-call-only=main",
+        None,
+    ]
 
-        result = subprocess.run(
-            ["gcc", "-o", "/dev/null", "-x", "c", "-include", f"{test_program_dir}/../sv-comp.h", "-"],
-            input=actual_output,
-            capture_output=True,
-        )
-        assert (
-            result.returncode == 0
-        ), f"Error for {program_file}: {result.stderr.decode(encoding='UTF-8')}"
+
+def test_labeler_output_compiles(
+    source_files_and_expected_outcome, labeler_bin, test_program_dir, labeler_params
+):
+    for program_file, _ in source_files_and_expected_outcome:
+        for param in labeler_params:
+            if param:
+                actual_output = _label(
+                    program_file, labeler_bin, options=[param] if param else []
+                )
+
+            result = subprocess.run(
+                [
+                    "gcc",
+                    "-o",
+                    "/dev/null",
+                    "-x",
+                    "c",
+                    "-include",
+                    f"{test_program_dir}/../sv-comp.h",
+                    "-",
+                ],
+                input=actual_output,
+                capture_output=True,
+            )
+            assert (
+                result.returncode == 0
+            ), f"Error for {program_file} with parameter {param}: {result.stderr.decode(encoding='UTF-8')}"
 
 
 def _label(program_file, labeler_bin, options=[]):

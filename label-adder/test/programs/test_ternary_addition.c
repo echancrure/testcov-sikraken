@@ -24,5 +24,5 @@ int main() {
   char b = __VERIFIER_nondet_char();
   char c = __VERIFIER_nondet_char();
 
-  a='a'+((a == 'a' && b == 5 && c == 16)?({b!=5?'f':'g';}):({ Goal_2:;   'b'  ;   }));
+  a='a'+((a == 'a' && b == 5 && c == 16)?({b!=5?'f':'g';}):({ G:; 'b'  ;   }));
 }
