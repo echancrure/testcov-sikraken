@@ -41,8 +41,7 @@ label-adder-tests:
   stage: test
   script:
     - pytest label-adder
-  variables:
-    PYTHON_VERSION: '3.9'
+  image: ${CI_REGISTRY_IMAGE}/test:gcc-11
 
 pylint:
   stage: test
