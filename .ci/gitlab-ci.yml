@@ -41,6 +41,8 @@ label-adder-tests:
   stage: test
   script:
     - pytest label-adder
+  variables:
+    PYTHON_VERSION: '3.9'
 
 pylint:
   stage: test
