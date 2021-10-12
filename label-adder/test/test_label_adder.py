@@ -19,7 +19,6 @@ def test_program_dir():
     return os.path.join(test_dir, "programs")
 
 
-@pytest.fixture(scope="session")
 def source_files_and_expected_outcome():
     test_dir = os.path.dirname(__file__)
     source_programs = glob.glob(f"{test_dir}/programs/*")
@@ -43,45 +42,43 @@ def labeler_bin():
     return os.path.join(label_adder_root, "bin", "label-adder")
 
 
-@pytest.fixture
-def labeler_params():
-    return [
-        "--labels-branching-only",
+def pytest_generate_tests(metafunc):
+    if "labeler_param" in metafunc.fixturenames:
+        metafunc.parametrize("labeler_param", [ "--labels-branching-only",
         "--labels-function-start-only",
         "--labels-switch-only",
         "--labels-ternary-only",
         "--function-call-only=main",
         None,
-    ]
-
+    ])
+    if "test_program" in metafunc.fixturenames:
+        metafunc.parametrize("test_program", source_files_and_expected_outcome())
 
 def test_labeler_output_compiles(
-    source_files_and_expected_outcome, labeler_bin, test_program_dir, labeler_params
+    test_program, labeler_bin, test_program_dir, labeler_param
 ):
-    for program_file, _ in source_files_and_expected_outcome:
-        for param in labeler_params:
-            if param:
-                actual_output = _label(
-                    program_file, labeler_bin, options=[param] if param else []
-                )
+    program_file, _ = test_program
+    actual_output = _label(
+        program_file, labeler_bin, options=[labeler_param] if labeler_param else []
+    )
 
-            result = subprocess.run(
-                [
-                    "gcc",
-                    "-o",
-                    "/dev/null",
-                    "-x",
-                    "c",
-                    "-include",
-                    f"{test_program_dir}/../sv-comp.h",
-                    "-",
-                ],
-                input=actual_output,
-                capture_output=True,
-            )
-            assert (
-                result.returncode == 0
-            ), f"Error for {program_file} with parameter {param}: {result.stderr.decode(encoding='UTF-8')}"
+    result = subprocess.run(
+        [
+            "gcc",
+            "-o",
+            "/dev/null",
+            "-x",
+            "c",
+            "-include",
+            f"{test_program_dir}/../sv-comp.h",
+            "-",
+        ],
+        input=actual_output,
+        capture_output=True,
+    )
+    assert (
+        result.returncode == 0
+    ), f"Error for {program_file} with parameter {labeler_param}: {result.stderr.decode(encoding='UTF-8')}"
 
 
 def _label(program_file, labeler_bin, options=[]):
