@@ -68,11 +68,14 @@ By default, additional debug info is written to stderr.
 Use `--no-info` to avoid this.
 
 By default, labels are added for the following syntax elements:
-    - `if-stmt`: right after each if- (`if-case`) and else-statement (`else-case`)
+    - `branching`: right after each control-flow branching in the program: if, else, for loops (body and exit) and while loops (body and exit).
     - `function-start`: at the beginning of each function definition
-    - `switch`: at the beginning of each switch-case block (`switch-case`) and the switch-default block (`switch-default`)
-    - `ternary`: at the beginning of the true decision (`ternary-true`) and false decision (`ternary-false`) of ternary operators.
+    - `switch`: at the beginning of each switch-case block and the switch-default block
+    - `ternary`: at the beginning of the true decision and false decision of ternary operators.
 
 To deactivate some of these labels, use `--no-labels-TYPE`,
 where `TYPE` is the respective name in the list above.
-Examples: `--no-labels-if-stmt`, `--no-labels-function-end`.
+Examples: `--no-labels-branching`, `--no-labels-function-start`.
+
+To only use a single of these labelings, use `--labels-TYPE-only`.
+Examples: `--labels-branching-only`, `--labels-function-start-only`.

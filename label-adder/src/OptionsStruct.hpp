@@ -13,6 +13,7 @@ typedef struct LabelOptions {
   bool ternaryTrueLabel, ternaryFalseLabel, functionStartLabel,
       functionEndLabel, caseLabel, defaultLabel, ifLabel, elseLabel, inPlace,
       noInfo;
+  std::string functionCall;
 } LabelOptions;
 
 #endif

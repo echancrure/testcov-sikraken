@@ -16,50 +16,55 @@
 static llvm::cl::OptionCategory
     InstrumentationOptions("Instrumentation Options");
 // If Options
+static llvm::cl::opt<bool> NoBranchingLabel(
+    "no-labels-branching",
+    llvm::cl::desc("Do not add labels at the beginning of control-flow "
+                   "branchings (if, else, while, for)."),
+    llvm::cl::cat(InstrumentationOptions));
+static llvm::cl::opt<bool> BranchingLabelOnly(
+    "labels-branching-only",
+    llvm::cl::desc("Do only add labels at the beginning of control-flow "
+                   "branchings (if, else, while, for)."),
+    llvm::cl::cat(InstrumentationOptions));
+// Switch Options
 static llvm::cl::opt<bool>
-    NoIfStmtLabel("no-labels-if-stmt",
-                  llvm::cl::desc("Do not create Labels in if-statements."),
+    NoSwitchLabel("no-labels-switch",
+                  llvm::cl::desc("Do not add labels at the beginnig of switch "
+                                 "cases (including the default case)"),
                   llvm::cl::cat(InstrumentationOptions));
 static llvm::cl::opt<bool>
-    NoIfLabel("no-labels-if-case",
-              llvm::cl::desc("Do not create Labels in if-branches"),
-              llvm::cl::cat(InstrumentationOptions));
-static llvm::cl::opt<bool>
-    NoElseLabel("no-labels-else-case",
-                llvm::cl::desc("Do not create Labels in else-branches"),
-                llvm::cl::cat(InstrumentationOptions));
-// Switch Options
-static llvm::cl::opt<bool> NoSwitchLabel(
-    "no-labels-switch",
-    llvm::cl::desc("Do not create Labels in switch cases and default case"),
-    llvm::cl::cat(InstrumentationOptions));
-static llvm::cl::opt<bool>
-    NoSwitchCaseLabel("no-labels-switch-case",
-                      llvm::cl::desc("Do not create Labels in switch cases"),
-                      llvm::cl::cat(InstrumentationOptions));
-static llvm::cl::opt<bool> NoSwitchDefaultLabel(
-    "no-labels-switch-default",
-    llvm::cl::desc("Do not create Labels in default cases"),
-    llvm::cl::cat(InstrumentationOptions));
+    SwitchLabelOnly("labels-switch-only",
+                    llvm::cl::desc("Do only add labels at the beginning of "
+                                   "switch cases (including the default case)"),
+                    llvm::cl::cat(InstrumentationOptions));
 // Function Options
 static llvm::cl::opt<bool> NoFunctionStartLabel(
     "no-labels-function-start",
-    llvm::cl::desc("Do not create Labels at the begin of a function"),
+    llvm::cl::desc("Do not add labels at the begin of functions"),
+    llvm::cl::cat(InstrumentationOptions));
+static llvm::cl::opt<bool> FunctionStartLabelOnly(
+    "labels-function-start-only",
+    llvm::cl::desc("Do only add labels at the begin of functions"),
     llvm::cl::cat(InstrumentationOptions));
 // Ternary Options
-static llvm::cl::opt<bool>
-    NoTernaryLabel("no-labels-ternary",
-                   llvm::cl::desc("Do not refactor ternary Statements to if "
-                                  "statements and add Labels inside them"),
-                   llvm::cl::cat(InstrumentationOptions));
-static llvm::cl::opt<bool> NoTernaryTrueLabel(
-    "no-labels-ternary-true",
-    llvm::cl::desc("Do not add labels to refactored ternary true cases"),
+static llvm::cl::opt<bool> NoTernaryLabel(
+    "no-labels-ternary",
+    llvm::cl::desc("Do not add labels at the beginning of true- and "
+                   "false-expressions of ternary expressions."),
     llvm::cl::cat(InstrumentationOptions));
-static llvm::cl::opt<bool> NoTernaryFalseLabel(
-    "no-labels-ternary-false",
-    llvm::cl::desc("Do not add labels to refactored ternary false cases"),
+static llvm::cl::opt<bool> TernaryLabelOnly(
+    "labels-ternary-only",
+    llvm::cl::desc("Do only add labels at the beginning of true- and "
+                   "false-expressions of ternary expressions."),
     llvm::cl::cat(InstrumentationOptions));
+static llvm::cl::opt<std::string> FunctionCall(
+    "function-call", llvm::cl::desc("Add label to begin of the given function"),
+    llvm::cl::value_desc("name"), llvm::cl::cat(InstrumentationOptions));
+static llvm::cl::opt<std::string> FunctionCallOnly(
+    "function-call-only",
+    llvm::cl::desc("Add label _only_ to begin of the given function"),
+    llvm::cl::value_desc("name"), llvm::cl::cat(InstrumentationOptions));
+
 // Output Options
 static llvm::cl::opt<bool> InPlace("in-place",
                                    llvm::cl::desc("Overwrite files"),
@@ -69,31 +74,34 @@ static llvm::cl::opt<bool>
               llvm::cl::cat(InstrumentationOptions));
 
 LabelOptions generateLabelOptions() {
-  LabelOptions labelOptions;
-  if (NoIfStmtLabel) {
-    labelOptions.ifLabel = false;
-    labelOptions.elseLabel = false;
-  } else {
-    labelOptions.ifLabel = !NoIfLabel.getValue();
-    labelOptions.elseLabel = !NoElseLabel.getValue();
-  }
+  LabelOptions labelOptions = {};
 
-  if (NoSwitchLabel) {
-    labelOptions.caseLabel = false;
-    labelOptions.defaultLabel = false;
+  if (BranchingLabelOnly) {
+    labelOptions.ifLabel = true;
+    labelOptions.elseLabel = true;
+  } else if (SwitchLabelOnly) {
+    labelOptions.caseLabel = true;
+    labelOptions.defaultLabel = true;
+  } else if (FunctionStartLabelOnly) {
+    labelOptions.functionStartLabel = true;
+  } else if (TernaryLabelOnly) {
+    labelOptions.ternaryTrueLabel = true;
+    labelOptions.ternaryFalseLabel = true;
+  } else if (!FunctionCallOnly.getValue().empty()) {
+    labelOptions.functionCall = FunctionCallOnly.getValue();
   } else {
-    labelOptions.caseLabel = !NoSwitchCaseLabel.getValue();
-    labelOptions.defaultLabel = !NoSwitchDefaultLabel.getValue();
-  }
+    labelOptions.ifLabel = !NoBranchingLabel.getValue();
+    labelOptions.elseLabel = !NoBranchingLabel.getValue();
 
-  labelOptions.functionStartLabel = !NoFunctionStartLabel.getValue();
+    labelOptions.caseLabel = !NoSwitchLabel.getValue();
+    labelOptions.defaultLabel = !NoSwitchLabel.getValue();
 
-  if (NoTernaryLabel) {
-    labelOptions.ternaryTrueLabel = false;
-    labelOptions.ternaryFalseLabel = false;
-  } else {
-    labelOptions.ternaryTrueLabel = !NoTernaryTrueLabel.getValue();
-    labelOptions.ternaryFalseLabel = !NoTernaryFalseLabel.getValue();
+    labelOptions.functionStartLabel = !NoFunctionStartLabel.getValue();
+
+    labelOptions.ternaryTrueLabel = !NoTernaryLabel.getValue();
+    labelOptions.ternaryFalseLabel = !NoTernaryLabel.getValue();
+
+    labelOptions.functionCall = FunctionCall.getValue();
   }
 
   labelOptions.inPlace = InPlace.getValue();

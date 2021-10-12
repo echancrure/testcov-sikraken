@@ -190,9 +190,16 @@ bool LabelerASTVisitor::VisitDefaultStmt(DefaultStmt *S) {
 
 bool LabelerASTVisitor::VisitFunctionDecl(FunctionDecl *f) {
   // Only function with bodies should get labeled, not declarations.
+  // maybe we have to replace this check for hashBody() with a check for
+  // isThisDeclarationADefinition() in the future. But this would mean that we
+  // have to do more special handling for function definitions without a body.
   if (f->hasBody()) {
-    LabelStatementAndAddBracesIfMissing(f->getBody(),
-                                        options.functionStartLabel, false);
+    bool labelFunctionStart = options.functionStartLabel;
+    if (!options.functionCall.empty()) {
+      labelFunctionStart |= options.functionCall == f->getName().str();
+    }
+    LabelStatementAndAddBracesIfMissing(f->getBody(), labelFunctionStart,
+                                        false);
   }
 
   return true;
