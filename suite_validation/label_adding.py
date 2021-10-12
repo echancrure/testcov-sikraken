@@ -16,7 +16,7 @@ from typing import Optional, Iterable
 import pycparser
 from suite_validation import _logger as logging
 
-LABEL_PREFIX = "BRANCH_"
+LABEL_PREFIX = "Goal_"
 GOTO_PREFIX = "goto " + LABEL_PREFIX
 
 
