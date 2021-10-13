@@ -161,6 +161,19 @@ def test_label_branches_multipleBranchesAndConditions(labeler_bin, test_program_
         _number_goals(result) == 4
     ), f"Wrong number of goals ({_number_goals(result)} instead of 4):\n{result}"
 
+def test_label_branches_elseif(labeler_bin, test_program_dir):
+    prog = os.path.join(test_program_dir, "test_if-elseif.c")
+
+    result = _label(
+        prog,
+        labeler_bin,
+        options=["--labels-branching-only"],
+    )
+
+    assert (
+        _number_goals(result) == 4
+    ), f"Wrong number of goals ({_number_goals(result)} instead of 4):\n{result}"
+
 
 def test_label_while(labeler_bin, test_program_dir):
     prog = os.path.join(test_program_dir, "test_while-singleline.c")

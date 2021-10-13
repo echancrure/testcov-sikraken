@@ -126,6 +126,9 @@ bool LabelerASTVisitor::VisitIfStmt(IfStmt *S) {
   LabelStatementAndAddBracesIfMissing(thenStatement, options.ifLabel, false);
   Stmt *elseStatement = S->getElse();
   if (elseStatement) {
+    if (isa<IfStmt>(elseStatement)) {
+      return true;
+    }
     LabelStatementAndAddBracesIfMissing(elseStatement, options.elseLabel,
                                         false);
   } else if (options.elseLabel) {
