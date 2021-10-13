@@ -44,23 +44,32 @@ def labeler_bin():
 
 def pytest_generate_tests(metafunc):
     if "labeler_param" in metafunc.fixturenames:
-        metafunc.parametrize("labeler_param", [ "--labels-branching-only",
-        "--labels-function-start-only",
-        "--labels-switch-only",
-        "--labels-ternary-only",
-        "--function-call-only=main",
-        None,
-    ])
+        metafunc.parametrize(
+            "labeler_param",
+            [
+                ["--labels-branching-only"],
+                ["--labels-function-start-only"],
+                ["--labels-switch-only"],
+                ["--labels-ternary-only"],
+                ["--function-call-only", "--function-call=main"],
+                ["--labels-branching-only", "--function-call=main"],
+                [
+                    "--labels-branching-only",
+                    "--labels-ternary-only",
+                    "--labels-switch-only",
+                ],
+                [],
+            ],
+        )
     if "test_program" in metafunc.fixturenames:
         metafunc.parametrize("test_program", source_files_and_expected_outcome())
+
 
 def test_labeler_output_compiles(
     test_program, labeler_bin, test_program_dir, labeler_param
 ):
     program_file, _ = test_program
-    actual_output = _label(
-        program_file, labeler_bin, options=[labeler_param] if labeler_param else []
-    )
+    actual_output = _label(program_file, labeler_bin, options=labeler_param)
 
     result = subprocess.run(
         [
@@ -161,6 +170,7 @@ def test_label_branches_multipleBranchesAndConditions(labeler_bin, test_program_
         _number_goals(result) == 4
     ), f"Wrong number of goals ({_number_goals(result)} instead of 4):\n{result}"
 
+
 def test_label_branches_elseif(labeler_bin, test_program_dir):
     prog = os.path.join(test_program_dir, "test_if-elseif.c")
 
@@ -173,6 +183,20 @@ def test_label_branches_elseif(labeler_bin, test_program_dir):
     assert (
         _number_goals(result) == 4
     ), f"Wrong number of goals ({_number_goals(result)} instead of 4):\n{result}"
+
+
+def test_label_branches_and_main(labeler_bin, test_program_dir):
+    prog = os.path.join(test_program_dir, "test_if-elseif.c")
+
+    result = _label(
+        prog,
+        labeler_bin,
+        options=["--labels-branching-only", "--function-call=main"],
+    )
+
+    assert (
+        _number_goals(result) == 5
+    ), f"Wrong number of goals ({_number_goals(result)} instead of 5):\n{result}"
 
 
 def test_label_while(labeler_bin, test_program_dir):

@@ -60,7 +60,7 @@ static llvm::cl::opt<bool> TernaryLabelOnly(
 static llvm::cl::opt<std::string> FunctionCall(
     "function-call", llvm::cl::desc("Add label to begin of the given function"),
     llvm::cl::value_desc("name"), llvm::cl::cat(InstrumentationOptions));
-static llvm::cl::opt<std::string> FunctionCallOnly(
+static llvm::cl::opt<bool> FunctionCallOnly(
     "function-call-only",
     llvm::cl::desc("Add label _only_ to begin of the given function"),
     llvm::cl::value_desc("name"), llvm::cl::cat(InstrumentationOptions));
@@ -79,17 +79,20 @@ LabelOptions generateLabelOptions() {
   if (BranchingLabelOnly) {
     labelOptions.ifLabel = true;
     labelOptions.elseLabel = true;
-  } else if (SwitchLabelOnly) {
+  }
+  if (SwitchLabelOnly) {
     labelOptions.caseLabel = true;
     labelOptions.defaultLabel = true;
-  } else if (FunctionStartLabelOnly) {
+  }
+  if (FunctionStartLabelOnly) {
     labelOptions.functionStartLabel = true;
-  } else if (TernaryLabelOnly) {
+  }
+  if (TernaryLabelOnly) {
     labelOptions.ternaryTrueLabel = true;
     labelOptions.ternaryFalseLabel = true;
-  } else if (!FunctionCallOnly.getValue().empty()) {
-    labelOptions.functionCall = FunctionCallOnly.getValue();
-  } else {
+  }
+  if (!(BranchingLabelOnly || SwitchLabelOnly || FunctionStartLabelOnly ||
+        TernaryLabelOnly || FunctionCallOnly)) {
     labelOptions.ifLabel = !NoBranchingLabel.getValue();
     labelOptions.elseLabel = !NoBranchingLabel.getValue();
 
@@ -100,9 +103,8 @@ LabelOptions generateLabelOptions() {
 
     labelOptions.ternaryTrueLabel = !NoTernaryLabel.getValue();
     labelOptions.ternaryFalseLabel = !NoTernaryLabel.getValue();
-
-    labelOptions.functionCall = FunctionCall.getValue();
   }
+  labelOptions.functionCall = FunctionCall.getValue();
 
   labelOptions.inPlace = InPlace.getValue();
   labelOptions.noInfo = !DebugInfo.getValue();

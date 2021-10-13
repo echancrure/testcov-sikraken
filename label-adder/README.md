@@ -79,3 +79,5 @@ Examples: `--no-labels-branching`, `--no-labels-function-start`.
 
 To only use a single of these labelings, use `--labels-TYPE-only`.
 Examples: `--labels-branching-only`, `--labels-function-start-only`.
+This will only add labels for the specified label types; multiple `--labels*only`
+can be combined.
