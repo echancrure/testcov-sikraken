@@ -16,7 +16,7 @@
 
 FROM python:3.9-buster
 
-RUN apt-get update && apt-get install -y gcc-multilib g++-multilib lcov clang clang-format llvm git \
+RUN apt-get update && apt-get install -y gcc-multilib g++-multilib lcov clang clang-tidy clang-format llvm git \
   && rm -rf /var/lib/apt/lists/*
 
 RUN pip install -U pip && pip install \

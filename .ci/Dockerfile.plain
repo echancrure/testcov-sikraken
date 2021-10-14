@@ -18,4 +18,4 @@
 FROM ubuntu:21.04
 
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt update && apt install -y gcc-multilib g++-multilib lcov clang llvm python3-pip git zip
+RUN apt update && apt install -y gcc-multilib g++-multilib lcov clang clang-tidy llvm python3-pip git zip

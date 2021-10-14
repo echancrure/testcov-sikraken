@@ -24,6 +24,7 @@ For containerization, TestCov uses parts of [BenchExec](https://github.com/sosy-
 * Python >= 3.6
 * gcc >= 8.0
 * lcov >= 1.13
+* clang-tidy (sometimes separate, sometimes included in clang package)
 
 The following requirements are automatically installed upon installation:
 * lxml >= 4.0
