@@ -682,6 +682,17 @@ class TestSuiteExecutor:
 
         assert test_coverage.hits_percent == 100
 
+    def test_branch_coverage_high_nesting_level(self, tmp_path):
+        program = os.path.join(TEST_DIRECTORY, "id_build.i.p+sep-reducer.c")
+        test_suite = os.path.join(SUITE_DIR, "suite-id_build-hybridtiger.zip")
+        runner = self.get_runner(eu.COVER_BRANCHES)
+
+        with WorkIn(tmp_path):
+            result_obj = runner.run(program, test_suite, eu.MACHINE_MODEL_32)
+        test_coverage = result_obj.coverage_total
+
+        assert test_coverage.hits_percent > 0
+
     @staticmethod
     def _check_reduction_correct_suite_simple_if(runner, strategy, machine_model, goal):
         # the program has only one if statement (x > 0) and is fed by two different test vectors
