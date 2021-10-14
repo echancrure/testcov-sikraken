@@ -260,8 +260,8 @@ def execute(command, quiet=False, input_str=None, timelimit=None):
     try:
         output = output.decode() if output else ""
     except UnicodeDecodeError as e:
+        # fail silently, continue with encoded output
         logging.info(e, exc_info=True)
-        pass  # fail silently, continue with encoded output
 
     if output:
         logging.debug("Output of execution:\n%s", snip(output))

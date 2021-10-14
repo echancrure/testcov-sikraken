@@ -19,8 +19,6 @@ import re
 import tempfile
 from typing import List, Sequence, Optional, Union
 from pathlib import Path
-import pycparser
-from pycparser import c_generator
 
 from suite_validation import execution_utils as eu
 from suite_validation import _logger as logging
@@ -70,7 +68,6 @@ def instrument_program(
         target_method = coverage_goal.target_method
     except AttributeError:
         logging.debug("No target method, so not replacing any")
-        pass
     else:
         c_code = replace_reach_error(target_method, c_code)
 
