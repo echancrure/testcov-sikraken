@@ -88,6 +88,26 @@ build-archive:arch-linux:
   # that it does work on different distributions
   image: ${CI_REGISTRY_IMAGE}/test:arch-linux
 
+build-archive-full:test-comp:
+  <<: *build-archive
+  # Build archive for Test-Comp infrastructure
+  image: ${CI_REGISTRY_IMAGE}/build:test-comp
+  script:
+      - cd label-adder && make install
+      - cp label-adder/bin/label-adder suite_validation/label-adder
+      - git update-index --assume-unchanged label-adder/bin/label-adder suite_validation/label-adder
+      - "./contrib/create_archive_testcov.sh"
+      # unzip archive and put its contents into a tar because original Test-Comp image may not include the 'unzip' command
+      - cd /tmp && unzip $CI_PROJECT_DIR/testcov-*.zip && tar -vczf $CI_PROJECT_DIR/testcov.tar.gz testcov/
+  artifacts:
+      paths:
+          - testcov-*.zip
+          - testcov.tar.gz
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    paths:
+      - label-adder/build
+
 
 check-archive:default:
   <<: *check-archive
@@ -106,6 +126,15 @@ check-archive:arch-linux:
   image: ${CI_REGISTRY_IMAGE}/test:arch-linux
   dependencies:
     - build-archive:arch-linux
+
+check-archive:test-comp:
+  <<: *check-archive
+  image: registry.gitlab.com/sosy-lab/benchmarking/competition-scripts/user
+  dependencies:
+    - build-archive:test-comp
+  script:
+    - tar -vxf testcov.tar.gz -C /tmp
+    - cd /tmp/testcov && ./bin/testcov --no-isolation --verbose --test-suite "$CI_PROJECT_DIR/test/suites/suite-valid.zip" --goal "$CI_PROJECT_DIR/contrib/goal_files/coverage-error-call.prp" "$CI_PROJECT_DIR/test/test_false_ReachError.c"
 
 
 unit-tests:python-3.6:
@@ -203,3 +232,9 @@ build-docker:arch-linux:
   variables:
     DOCKERFILE: .ci/Dockerfile.arch-linux
     IMAGE: test:arch-linux
+
+build-docker:test-comp:
+  extends: .build-docker
+  variables:
+    DOCKERFILE: .ci/Dockerfile.test-comp
+    IMAGE: build:test-comp
