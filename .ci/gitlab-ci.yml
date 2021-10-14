@@ -67,8 +67,9 @@ check-format:
 
 .check-archive: &check-archive
     stage: test
-    script:
+    before_script:
         - cd /tmp && unzip "$CI_PROJECT_DIR"/testcov-*.zip
+    script:
         - cd /tmp/testcov && ./bin/testcov --no-isolation --verbose --test-suite "$CI_PROJECT_DIR/test/suites/suite-valid.zip" --goal "$CI_PROJECT_DIR/contrib/goal_files/coverage-error-call.prp" "$CI_PROJECT_DIR/test/test_false_ReachError.c"
     dependencies:
         - .build-archive  # In jobs inheriting, set correct job build-archive:X
@@ -93,10 +94,11 @@ build-archive-full:test-comp:
   # Build archive for Test-Comp infrastructure
   image: ${CI_REGISTRY_IMAGE}/build:test-comp
   script:
-      - cd label-adder && make install
+      - cd label-adder && make install && cd -
       - cp label-adder/bin/label-adder suite_validation/label-adder
       - git update-index --assume-unchanged label-adder/bin/label-adder suite_validation/label-adder
       - "./contrib/create_archive_testcov.sh"
+  after_script:
       # unzip archive and put its contents into a tar because original Test-Comp image may not include the 'unzip' command
       - cd /tmp && unzip $CI_PROJECT_DIR/testcov-*.zip && tar -vczf $CI_PROJECT_DIR/testcov.tar.gz testcov/
   artifacts:
@@ -131,9 +133,10 @@ check-archive:test-comp:
   <<: *check-archive
   image: registry.gitlab.com/sosy-lab/benchmarking/competition-scripts/user
   dependencies:
-    - build-archive:test-comp
-  script:
+    - build-archive-full:test-comp
+  before_script:
     - tar -vxf testcov.tar.gz -C /tmp
+  script:
     - cd /tmp/testcov && ./bin/testcov --no-isolation --verbose --test-suite "$CI_PROJECT_DIR/test/suites/suite-valid.zip" --goal "$CI_PROJECT_DIR/contrib/goal_files/coverage-error-call.prp" "$CI_PROJECT_DIR/test/test_false_ReachError.c"
 
 
