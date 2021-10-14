@@ -213,7 +213,8 @@ def add_goto_goals(content: Sequence[str]) -> Sequence[str]:
     goal_regex = re.compile(f"({LABEL_PREFIX}[0-9]+):")
     new_content = []
     for line in content:
-        if match := goal_regex.search(line):
+        match = goal_regex.search(line)
+        if match:
             new_content.append(f"goto {match.group(1)};")
         new_content.append(line)
     return new_content
