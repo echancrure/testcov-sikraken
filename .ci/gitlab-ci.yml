@@ -68,7 +68,6 @@ check-format:
 .check-archive: &check-archive
     stage: test
     script:
-        - "./contrib/create_archive_testcov.sh"
         - cd /tmp && unzip "$CI_PROJECT_DIR"/testcov-*.zip
         - cd /tmp/testcov && ./bin/testcov --no-isolation --verbose --test-suite "$CI_PROJECT_DIR/test/suites/suite-valid.zip" --goal "$CI_PROJECT_DIR/contrib/goal_files/coverage-error-call.prp" "$CI_PROJECT_DIR/test/test_false_ReachError.c"
     dependencies:
