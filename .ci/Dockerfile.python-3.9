@@ -29,3 +29,5 @@ RUN python3 -m pip install -U pip && python3 -m pip install \
   tsbuilder \
   black
 
+RUN apt-get update && apt-get install -y clang-format \
+  && rm -rf /var/lib/apt/lists/*
