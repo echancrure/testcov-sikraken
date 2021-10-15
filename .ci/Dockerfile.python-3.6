@@ -14,12 +14,21 @@
 # docker build --pull -t registry.gitlab.com/sosy-lab/software/test-suite-validator/test:python-3.6 - < .ci/Dockerfile.python-3.6
 # docker push registry.gitlab.com/sosy-lab/software/test-suite-validator/test:python-3.6
 
-FROM python:3.6-buster
+FROM registry.gitlab.com/sosy-lab/software/test-suite-validator/test:plain
 
-RUN apt-get update && apt-get install -y gcc-multilib g++-multilib lcov clang clang-tidy llvm \
-  && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y wget libssl-dev
 
-RUN pip install -U pip && pip install \
+RUN wget https://www.python.org/ftp/python/3.6.15/Python-3.6.15.tgz \
+  && tar xf Python-3.6.15.tgz \
+  && cd Python-3.6.15 \
+  && ./configure \
+  && make \
+  && make install \
+  && cd - \
+  && rm -r Python-3.6.15 Python-3.6.15.tgz
+RUN ln -s /usr/local/bin/python3.6 /bin/python
+ 
+RUN /bin/python -m pip install -U pip && /bin/python -m pip install \
   coverage \
   lxml \
   benchexec \
