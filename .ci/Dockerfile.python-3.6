@@ -16,7 +16,8 @@
 
 FROM registry.gitlab.com/sosy-lab/software/test-suite-validator/test:plain
 
-RUN apt-get update && apt-get install -y wget libssl-dev
+RUN apt-get update && apt-get install -y wget libssl-dev libsqlite3-dev \
+  && rm -rf /var/lib/apt/lists/*
 
 RUN wget https://www.python.org/ftp/python/3.6.15/Python-3.6.15.tgz \
   && tar xf Python-3.6.15.tgz \
