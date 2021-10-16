@@ -30,3 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Store all metadata in setup.cfg instead of setup.py.
   (easier to read and can contain more information about other tools)
 - Minor code improvements
+
+[Unreleased]: https://gitlab.com/sosy-lab/software/test-suite-validator/-/compare/v3.4...main
+[3.4]: https://gitlab.com/sosy-lab/software/test-suite-validator/-/compare/v3.3...v3.4
