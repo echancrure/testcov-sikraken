@@ -83,7 +83,8 @@ def test_labeler_output_compiles(
             "-",
         ],
         input=actual_output,
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
     )
     assert (
         result.returncode == 0
@@ -91,7 +92,11 @@ def test_labeler_output_compiles(
 
 
 def _label(program_file, labeler_bin, options=[]):
-    result = subprocess.run([labeler_bin, *options, program_file], capture_output=True)
+    result = subprocess.run(
+        [labeler_bin, *options, program_file],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
     return result.stdout
 
 
