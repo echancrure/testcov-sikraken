@@ -39,7 +39,7 @@ def source_files_and_expected_outcome():
 def labeler_bin():
     test_dir = os.path.dirname(__file__)
     label_adder_root = os.path.join(test_dir, os.path.pardir)
-    return os.path.join(label_adder_root, "bin", "label-adder")
+    return os.path.join(label_adder_root, "..", "suite_validation", "label-adder")
 
 
 def pytest_generate_tests(metafunc):
