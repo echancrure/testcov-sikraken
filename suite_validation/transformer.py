@@ -175,7 +175,7 @@ def add_controlflow_braces(c_code: str):
     try:
         cmd = [
             "clang-tidy",
-            "--checks=readability-braces-around-statements",
+            "--checks=-*,readability-braces-around-statements",
             "-fix-errors",
             tmp_file,
         ]
