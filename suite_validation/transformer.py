@@ -50,7 +50,7 @@ def _get_label_adder_params(coverage_goal) -> Optional[List[str]]:
             f"--function-call={coverage_goal.target_method}",
         ]
     if eu.uses_branch_coverage(coverage_goal):
-        return ["--labels-branching-only"]
+        return ["--labels-branching-only", "--labels-switch-only", "--labels-ternary-only"]
     return None
 
 
