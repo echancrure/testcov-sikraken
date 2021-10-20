@@ -58,6 +58,8 @@ public:
   // Traverse Functions, check if they are declarations or functions with
   // bodies. If they are functions with bodies, add Labels to them.
   bool VisitFunctionDecl(FunctionDecl *f);
+  // Traverse do-while-loop and add label after the loop.
+  bool VisitDoStmt(DoStmt *f);
 
 private:
   // The Rewriter is storing our refactoring of the code

@@ -149,6 +149,14 @@ bool LabelerASTVisitor::VisitWhileStmt(WhileStmt *S) {
   return true;
 }
 
+bool LabelerASTVisitor::VisitDoStmt(DoStmt *S) {
+  SourceLocation afterLoop = GetTrueEndLocation(S);
+  if (options.elseLabel) {
+    labelAddRewriter.InsertTextAfter(afterLoop, getNextLabel());
+  }
+  return true;
+}
+
 bool LabelerASTVisitor::VisitForStmt(ForStmt *S) {
   LabelStatementAndAddBracesIfMissing(S->getBody(), options.ifLabel, false);
   SourceLocation afterLoop = GetTrueEndLocation(S->getBody());
