@@ -22,7 +22,7 @@ SourceLocation LabelerASTVisitor::GetTrueEndLocation(Stmt *fromStatement) {
     return fromStatement->getEndLoc().getLocWithOffset(1);
   }
   while (isa<IfStmt>(fromStatement) || isa<WhileStmt>(fromStatement) ||
-         isa<ForStmt>(fromStatement)) {
+         isa<ForStmt>(fromStatement) || isa<LabelStmt>(fromStatement)) {
     if (isa<IfStmt>(fromStatement)) {
       IfStmt *ifStmt = cast<IfStmt>(fromStatement);
       if (ifStmt->getElse()) {
@@ -36,6 +36,9 @@ SourceLocation LabelerASTVisitor::GetTrueEndLocation(Stmt *fromStatement) {
     }
     if (isa<ForStmt>(fromStatement)) {
       fromStatement = cast<ForStmt>(fromStatement)->getBody();
+    }
+    if (isa<LabelStmt>(fromStatement)) {
+      fromStatement = cast<LabelStmt>(fromStatement)->getSubStmt();
     }
   }
   if (isa<CompoundStmt>(fromStatement)) {
