@@ -112,9 +112,7 @@ void LabelerASTVisitor::LabelStatement(Stmt *processedStatement,
   }
 }
 
-void LabelerASTVisitor::LabelStatementAndAddBracesIfMissing(
-    Stmt *processedStatement, bool beginLabel, bool endLabel) {
-  LabelStatement(processedStatement, beginLabel, endLabel);
+void LabelerASTVisitor::AddBracesIfMissing(Stmt *processedStatement) {
   if (!isa<CompoundStmt>(processedStatement) &&
       !isa<NullStmt>(processedStatement)) {
     AddBracesAroundStatement(processedStatement);
@@ -123,7 +121,6 @@ void LabelerASTVisitor::LabelStatementAndAddBracesIfMissing(
 
 bool LabelerASTVisitor::VisitIfStmt(IfStmt *S) {
   Stmt *thenStatement = S->getThen();
-  LabelStatementAndAddBracesIfMissing(thenStatement, options.ifLabel, false);
   Stmt *elseStatement = S->getElse();
   if (elseStatement) {
     if (isa<IfStmt>(elseStatement) ||
@@ -131,21 +128,24 @@ bool LabelerASTVisitor::VisitIfStmt(IfStmt *S) {
          isa<IfStmt>(cast<LabelStmt>(elseStatement)->getSubStmt()))) {
       return true;
     }
-    LabelStatementAndAddBracesIfMissing(elseStatement, options.elseLabel,
-                                        false);
+    LabelStatement(elseStatement, options.elseLabel, false);
+    AddBracesIfMissing(elseStatement);
   } else if (options.elseLabel) {
     SourceLocation endLoc = GetTrueEndLocation(S);
     labelAddRewriter.InsertTextAfter(endLoc, " else { " + getNextLabel() + "}");
   }
+  LabelStatement(thenStatement, options.ifLabel, false);
+  AddBracesIfMissing(thenStatement);
   return true;
 }
 
 bool LabelerASTVisitor::VisitWhileStmt(WhileStmt *S) {
-  LabelStatementAndAddBracesIfMissing(S->getBody(), options.ifLabel, false);
+  LabelStatement(S->getBody(), options.ifLabel, false);
   SourceLocation afterLoop = GetTrueEndLocation(S->getBody());
   if (options.elseLabel) {
     labelAddRewriter.InsertTextAfter(afterLoop, getNextLabel());
   }
+  AddBracesIfMissing(S->getBody());
   return true;
 }
 
@@ -158,11 +158,12 @@ bool LabelerASTVisitor::VisitDoStmt(DoStmt *S) {
 }
 
 bool LabelerASTVisitor::VisitForStmt(ForStmt *S) {
-  LabelStatementAndAddBracesIfMissing(S->getBody(), options.ifLabel, false);
+  LabelStatement(S->getBody(), options.ifLabel, false);
   SourceLocation afterLoop = GetTrueEndLocation(S->getBody());
   if (options.elseLabel) {
     labelAddRewriter.InsertTextAfter(afterLoop, getNextLabel());
   }
+  AddBracesIfMissing(S->getBody());
   return true;
 }
 
@@ -211,8 +212,8 @@ bool LabelerASTVisitor::VisitFunctionDecl(FunctionDecl *f) {
     if (!options.functionCall.empty()) {
       labelFunctionStart |= options.functionCall == f->getName().str();
     }
-    LabelStatementAndAddBracesIfMissing(f->getBody(), labelFunctionStart,
-                                        false);
+    LabelStatement(f->getBody(), labelFunctionStart, false);
+    AddBracesIfMissing(f->getBody());
   }
 
   return true;

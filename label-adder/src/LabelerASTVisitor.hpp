@@ -91,8 +91,7 @@ private:
   // This Method adds a Label at the begin of a statement, if beginLabel is set.
   // And a Label at the end if endLabel is set. It also transforms a statement,
   // to a compound statement, if it is a one-liner with missing braces.
-  void LabelStatementAndAddBracesIfMissing(Stmt *processedStatement,
-                                           bool beginLabel, bool endLabel);
+  void AddBracesIfMissing(Stmt *processedStatement);
 
   // Refactors a ternary Statement to an if-statements and adds requested Labels
   // Currently in progress...
