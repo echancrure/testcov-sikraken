@@ -21,17 +21,22 @@ SourceLocation LabelerASTVisitor::GetTrueEndLocation(Stmt *fromStatement) {
   if (isa<NullStmt>(fromStatement)) {
     return fromStatement->getEndLoc().getLocWithOffset(1);
   }
-  if (isa<IfStmt>(fromStatement)) {
-    IfStmt *ifStmt = cast<IfStmt>(fromStatement);
-    if (ifStmt->getElse()) {
-      fromStatement = ifStmt->getElse();
-    } else {
-      fromStatement = ifStmt->getThen();
+  while (isa<IfStmt>(fromStatement) || isa<WhileStmt>(fromStatement) ||
+         isa<ForStmt>(fromStatement)) {
+    if (isa<IfStmt>(fromStatement)) {
+      IfStmt *ifStmt = cast<IfStmt>(fromStatement);
+      if (ifStmt->getElse()) {
+        fromStatement = ifStmt->getElse();
+      } else {
+        fromStatement = ifStmt->getThen();
+      }
     }
-  } else if (isa<WhileStmt>(fromStatement)) {
-    fromStatement = cast<WhileStmt>(fromStatement)->getBody();
-  } else if (isa<ForStmt>(fromStatement)) {
-    fromStatement = cast<ForStmt>(fromStatement)->getBody();
+    if (isa<WhileStmt>(fromStatement)) {
+      fromStatement = cast<WhileStmt>(fromStatement)->getBody();
+    }
+    if (isa<ForStmt>(fromStatement)) {
+      fromStatement = cast<ForStmt>(fromStatement)->getBody();
+    }
   }
   if (isa<CompoundStmt>(fromStatement)) {
     // the final decision of the if-statement is a compound statement with
@@ -78,12 +83,7 @@ void LabelerASTVisitor::AddBracesAroundStatement(Stmt *processedStatement) {
   labelAddRewriter.InsertTextAfter(afterSemicolonLocation, "\n}\n");
 }
 
-void LabelerASTVisitor::LabelStatement(Stmt *processedStatement,
-                                       bool beginLabel, bool endLabel) {
-  // Return instantly, if no labels to add
-  if (!(beginLabel || endLabel)) {
-    return;
-  }
+void LabelerASTVisitor::LabelStatement(Stmt *processedStatement) {
   if (isa<NullStmt>(processedStatement)) {
     labelAddRewriter.RemoveText(SourceRange(processedStatement->getBeginLoc(),
                                             processedStatement->getEndLoc()));
@@ -92,24 +92,16 @@ void LabelerASTVisitor::LabelStatement(Stmt *processedStatement,
     return;
   }
   SourceLocation beginPos;
-  SourceLocation endPos;
   // Check if Braces are missing
   if (isa<CompoundStmt>(processedStatement)) {
     // If braces are already there, beginLoc leaves us with the position
     // before the brace, so we have to offset by 1
     // The reverse applies to the closing brace, so we offset by -1
     beginPos = processedStatement->getBeginLoc().getLocWithOffset(1);
-    endPos = processedStatement->getEndLoc().getLocWithOffset(-1);
   } else {
     beginPos = processedStatement->getBeginLoc();
-    endPos = processedStatement->getEndLoc();
   }
-  if (beginLabel) {
-    labelAddRewriter.InsertTextAfter(beginPos, getNextLabel());
-  }
-  if (endLabel) {
-    labelAddRewriter.InsertTextAfter(endPos, getNextLabel());
-  }
+  labelAddRewriter.InsertTextAfter(beginPos, getNextLabel());
 }
 
 void LabelerASTVisitor::AddBracesIfMissing(Stmt *processedStatement) {
@@ -121,47 +113,54 @@ void LabelerASTVisitor::AddBracesIfMissing(Stmt *processedStatement) {
 
 bool LabelerASTVisitor::VisitIfStmt(IfStmt *S) {
   Stmt *thenStatement = S->getThen();
+  if (options.ifLabel) {
+    AddBracesIfMissing(thenStatement);
+    LabelStatement(thenStatement);
+  }
+
   Stmt *elseStatement = S->getElse();
-  if (elseStatement) {
+  if (elseStatement && options.elseLabel) {
     if (isa<IfStmt>(elseStatement) ||
         (isa<LabelStmt>(elseStatement) &&
          isa<IfStmt>(cast<LabelStmt>(elseStatement)->getSubStmt()))) {
       return true;
     }
-    LabelStatement(elseStatement, options.elseLabel, false);
     AddBracesIfMissing(elseStatement);
+    LabelStatement(elseStatement);
   } else if (options.elseLabel) {
     SourceLocation endLoc = GetTrueEndLocation(S);
     labelAddRewriter.InsertTextAfter(endLoc, " else { " + getNextLabel() + "}");
   }
-  LabelStatement(thenStatement, options.ifLabel, false);
-  AddBracesIfMissing(thenStatement);
   return true;
 }
 
 bool LabelerASTVisitor::VisitWhileStmt(WhileStmt *S) {
-  LabelStatement(S->getBody(), options.ifLabel, false);
+  AddBracesIfMissing(S->getBody());
+  if (options.ifLabel) {
+    LabelStatement(S->getBody());
+  }
   SourceLocation afterLoop = GetTrueEndLocation(S->getBody());
   if (options.elseLabel) {
-    labelAddRewriter.InsertTextAfter(afterLoop, getNextLabel());
+    labelAddRewriter.InsertTextBefore(afterLoop, getNextLabel());
   }
-  AddBracesIfMissing(S->getBody());
   return true;
 }
 
 bool LabelerASTVisitor::VisitDoStmt(DoStmt *S) {
   SourceLocation afterLoop = GetTrueEndLocation(S);
   if (options.elseLabel) {
-    labelAddRewriter.InsertTextAfter(afterLoop, getNextLabel());
+    labelAddRewriter.InsertTextBefore(afterLoop, getNextLabel());
   }
   return true;
 }
 
 bool LabelerASTVisitor::VisitForStmt(ForStmt *S) {
-  LabelStatement(S->getBody(), options.ifLabel, false);
+  if (options.ifLabel) {
+    LabelStatement(S->getBody());
+  }
   SourceLocation afterLoop = GetTrueEndLocation(S->getBody());
   if (options.elseLabel) {
-    labelAddRewriter.InsertTextAfter(afterLoop, getNextLabel());
+    labelAddRewriter.InsertTextBefore(afterLoop, getNextLabel());
   }
   AddBracesIfMissing(S->getBody());
   return true;
@@ -169,23 +168,20 @@ bool LabelerASTVisitor::VisitForStmt(ForStmt *S) {
 
 bool LabelerASTVisitor::VisitCaseStmt(CaseStmt *S) {
   if (options.caseLabel) {
-    LabelStatement(S->getSubStmt(), true, false);
+    LabelStatement(S->getSubStmt());
   }
   return true;
 }
 
 bool LabelerASTVisitor::VisitConditionalOperator(ConditionalOperator *S) {
-  if (!(options.ternaryTrueLabel || options.ternaryFalseLabel)) {
-    return true;
-  }
 
-  {
+  if (options.ternaryTrueLabel) {
     SourceLocation beginOfTrueExpr = S->getTrueExpr()->getBeginLoc();
     labelAddRewriter.InsertTextBefore(beginOfTrueExpr, "({" + getNextLabel());
     SourceLocation endOfTrueExpr = S->getTrueExpr()->getEndLoc();
     labelAddRewriter.InsertTextAfterToken(endOfTrueExpr, ";})");
   }
-  {
+  if (options.ternaryFalseLabel) {
     SourceLocation beginOfFalseExpr = S->getFalseExpr()->getBeginLoc();
     labelAddRewriter.InsertTextBefore(beginOfFalseExpr, "({" + getNextLabel());
     SourceLocation endOfFalseExpr = S->getFalseExpr()->getEndLoc();
@@ -196,7 +192,7 @@ bool LabelerASTVisitor::VisitConditionalOperator(ConditionalOperator *S) {
 
 bool LabelerASTVisitor::VisitDefaultStmt(DefaultStmt *S) {
   if (options.defaultLabel) {
-    LabelStatement(S->getSubStmt(), true, false);
+    LabelStatement(S->getSubStmt());
   }
 
   return true;
@@ -212,8 +208,10 @@ bool LabelerASTVisitor::VisitFunctionDecl(FunctionDecl *f) {
     if (!options.functionCall.empty()) {
       labelFunctionStart |= options.functionCall == f->getName().str();
     }
-    LabelStatement(f->getBody(), labelFunctionStart, false);
-    AddBracesIfMissing(f->getBody());
+    if (labelFunctionStart) {
+      AddBracesIfMissing(f->getBody());
+      LabelStatement(f->getBody());
+    }
   }
 
   return true;

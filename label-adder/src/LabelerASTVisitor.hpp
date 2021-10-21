@@ -86,7 +86,7 @@ private:
   // one already.
   void AddBracesAroundStatement(Stmt *processedStatement);
 
-  void LabelStatement(Stmt *processedStatement, bool beginLabel, bool endLabel);
+  void LabelStatement(Stmt *processedStatement);
 
   // This Method adds a Label at the begin of a statement, if beginLabel is set.
   // And a Label at the end if endLabel is set. It also transforms a statement,
