@@ -9,8 +9,9 @@
 #include "LabelerASTVisitor.hpp"
 #include "Includes.hpp"
 
-LabelerASTVisitor::LabelerASTVisitor(Rewriter &R, LabelOptions labelOptions)
-    : labelAddRewriter(R), options(labelOptions) {}
+LabelerASTVisitor::LabelerASTVisitor(ASTContext &Context, Rewriter &R,
+                                     LabelOptions labelOptions)
+    : context(Context), labelAddRewriter(R), options(labelOptions) {}
 
 std::string LabelerASTVisitor::getNextLabel() {
   goalCounter++;
@@ -94,6 +95,10 @@ void LabelerASTVisitor::LabelStatement(Stmt *processedStatement) {
 }
 
 bool LabelerASTVisitor::VisitIfStmt(IfStmt *S) {
+  if (!isInFunction(S)) {
+    return false;
+  }
+
   Stmt *thenStatement = S->getThen();
   if (options.ifLabel) {
     LabelStatement(thenStatement);
@@ -116,6 +121,10 @@ bool LabelerASTVisitor::VisitIfStmt(IfStmt *S) {
 }
 
 bool LabelerASTVisitor::VisitWhileStmt(WhileStmt *S) {
+  if (!isInFunction(S)) {
+    return false;
+  }
+
   if (options.ifLabel) {
     LabelStatement(S->getBody());
   }
@@ -127,6 +136,10 @@ bool LabelerASTVisitor::VisitWhileStmt(WhileStmt *S) {
 }
 
 bool LabelerASTVisitor::VisitDoStmt(DoStmt *S) {
+  if (!isInFunction(S)) {
+    return false;
+  }
+
   SourceLocation afterLoop = GetTrueEndLocation(S);
   if (options.elseLabel) {
     labelAddRewriter.InsertTextBefore(afterLoop, getNextLabel());
@@ -135,6 +148,10 @@ bool LabelerASTVisitor::VisitDoStmt(DoStmt *S) {
 }
 
 bool LabelerASTVisitor::VisitForStmt(ForStmt *S) {
+  if (!isInFunction(S)) {
+    return false;
+  }
+
   if (options.ifLabel) {
     LabelStatement(S->getBody());
   }
@@ -146,6 +163,10 @@ bool LabelerASTVisitor::VisitForStmt(ForStmt *S) {
 }
 
 bool LabelerASTVisitor::VisitCaseStmt(CaseStmt *S) {
+  if (!isInFunction(S)) {
+    return false;
+  }
+
   if (options.caseLabel) {
     LabelStatement(S->getSubStmt());
   }
@@ -153,6 +174,9 @@ bool LabelerASTVisitor::VisitCaseStmt(CaseStmt *S) {
 }
 
 bool LabelerASTVisitor::VisitConditionalOperator(ConditionalOperator *S) {
+  if (!isInFunction(S)) {
+    return false;
+  }
 
   if (options.ternaryTrueLabel) {
     SourceLocation beginOfTrueExpr = S->getTrueExpr()->getBeginLoc();
@@ -170,6 +194,10 @@ bool LabelerASTVisitor::VisitConditionalOperator(ConditionalOperator *S) {
 }
 
 bool LabelerASTVisitor::VisitDefaultStmt(DefaultStmt *S) {
+  if (!isInFunction(S)) {
+    return false;
+  }
+
   if (options.defaultLabel) {
     LabelStatement(S->getSubStmt());
   }
@@ -193,4 +221,29 @@ bool LabelerASTVisitor::VisitFunctionDecl(FunctionDecl *f) {
   }
 
   return true;
+}
+
+bool LabelerASTVisitor::isInFunction(Stmt *s) {
+  context.getParentMapContext().clear();
+  return isInFunctionDyn(DynTypedNode::create(*s));
+}
+
+bool LabelerASTVisitor::isInFunctionDyn(DynTypedNode n) {
+  DynTypedNodeList parents = context.getParentMapContext().getParents(n);
+  for (const DynTypedNode parent : parents) {
+    const Stmt *parentStmt = parent.get<Stmt>();
+    if (parentStmt == NULL) {
+      const Decl *parentDecl = parent.get<Decl>();
+      if (parentDecl == NULL) {
+        continue;
+      }
+      if (isa<FunctionDecl>(parentDecl)) {
+        return true;
+      }
+    }
+    if (isInFunctionDyn(parent)) {
+      return true;
+    }
+  }
+  return false;
 }

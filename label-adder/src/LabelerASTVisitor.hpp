@@ -16,8 +16,8 @@
 // Rewriter.
 class LabelerASTVisitor : public RecursiveASTVisitor<LabelerASTVisitor> {
 public:
-  // Just a generic constructor.
-  LabelerASTVisitor(Rewriter &R, LabelOptions labelOptions);
+  LabelerASTVisitor(ASTContext &Context, Rewriter &R,
+                    LabelOptions labelOptions);
 
   // Methods called, while the AST is traversed, need to be public, as they are
   // accessed from outside.
@@ -62,10 +62,12 @@ public:
   bool VisitDoStmt(DoStmt *f);
 
 private:
+  ASTContext &context;
   // The Rewriter is storing our refactoring of the code
   Rewriter &labelAddRewriter;
   // A struct, where all options are stored in
   LabelOptions options;
+
   // A counter, for the value of the current label
   int goalCounter = 0;
 
@@ -99,6 +101,9 @@ private:
                         std::string leftHandString);
 
   Optional<Token> getNextToken(SourceLocation fromLocation);
+
+  bool isInFunction(Stmt *s);
+  bool isInFunctionDyn(DynTypedNode n);
 };
 
 #endif

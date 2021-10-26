@@ -34,5 +34,6 @@ LabelerFrontendAction::CreateASTConsumer(CompilerInstance &CI, StringRef file) {
     llvm::errs() << "** Creating AST consumer for: " << file << "\n";
   }
   labelAddRewriter.setSourceMgr(CI.getSourceManager(), CI.getLangOpts());
-  return std::make_unique<LabelerASTConsumer>(labelAddRewriter, options);
+  return std::make_unique<LabelerASTConsumer>(CI.getASTContext(),
+                                              labelAddRewriter, options);
 }

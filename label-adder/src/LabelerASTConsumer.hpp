@@ -16,7 +16,8 @@
 // by the Clang parser.
 class LabelerASTConsumer : public ASTConsumer {
 public:
-  LabelerASTConsumer(Rewriter &R, LabelOptions labelOptions);
+  LabelerASTConsumer(ASTContext &Context, Rewriter &R,
+                     LabelOptions labelOptions);
 
   // Override the method that gets called for each parsed top-level
   // declaration.
