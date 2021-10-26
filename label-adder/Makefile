@@ -15,7 +15,7 @@ install: ${BUILD_DIR}/label-adder/bin/label-adder
 	mkdir -p ${PREFIX}/bin
 	mv $< ${PREFIX}/bin/
 
-${BUILD_DIR}/label-adder/bin/label-adder: ${BUILD_DIR}/label-adder/CMakeCache.txt
+${BUILD_DIR}/label-adder/bin/label-adder: ${BUILD_DIR}/label-adder/CMakeCache.txt src/*
 	cd ${BUILD_DIR}/label-adder \
 		&& ninja label-adder
 
