@@ -594,7 +594,8 @@ int main()
         // read input
         int input;
         input = __VERIFIER_nondet_int();
-        if ((input != 2) && (input != 3) && (input != 4) && (input != 5) && (input != 6)) return -2;
+        if ((input != 2) && (input != 3) && (input != 4) && (input != 5) && (input != 6)) { return -2;
+}
 
         // operate eca engine
         output = calculate_output(input);

@@ -14,6 +14,7 @@ int main() {
     x++;
   }else if(x>-5){
     x--; x--;
-  }   else    if    ( x > -10)
+  }   else    if    ( x > -10) {
     x = 5;
+}
 }

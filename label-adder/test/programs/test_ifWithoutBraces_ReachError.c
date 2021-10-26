@@ -17,13 +17,15 @@ extern void __assert (const char *__assertion, const char *__file, int __line)
 
 extern char __VERIFIER_nondet_char();
 
-void reach_error() { ((void) sizeof ((0) ? 1 : 0), __extension__ ({ if (0) ; else __assert_fail ("0", "byte_add-1.c", 3, __extension__ __PRETTY_FUNCTION__); })); }
+void reach_error() { ((void) sizeof ((0) ? 1 : 0), __extension__ ({ if (0) { ; } else { __assert_fail ("0", "byte_add-1.c", 3, __extension__ __PRETTY_FUNCTION__); 
+}})); }
 
 int main() {
   char a = __VERIFIER_nondet_char();
   char b = __VERIFIER_nondet_char();
   char c = __VERIFIER_nondet_char();
 
-  if (a == 'a' && b == 5 && c == 16)
+  if (a == 'a' && b == 5 && c == 16) {
     reach_error();
+}
 }

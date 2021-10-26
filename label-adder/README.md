@@ -10,7 +10,9 @@ SPDX-License-Identifier: Apache-2.0
 
 # Program transformation to add GOAL labels
 
-Based on [clang libtooling](https://clang.llvm.org/docs/LibTooling.html)
+Based on [clang libtooling](https://clang.llvm.org/docs/LibTooling.html).
+label-adder expects all input files to have braces at each control-flow statement (if, else, while, etc).
+You can ensure this with command `clang-tidy --checks=-*,readability-braces-around-statements -fix-errors`.
 
 ## Build requirements
 

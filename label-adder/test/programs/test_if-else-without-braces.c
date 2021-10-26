@@ -15,8 +15,9 @@ int main() {
   char b = __VERIFIER_nondet_char();
   char c = __VERIFIER_nondet_char();
 
-  if (a == 'a' && b == 5 && c == 16)
+  if (a == 'a' && b == 5 && c == 16) {
     reach_error();
-  else
+  } else {
      b++;
+}
 }

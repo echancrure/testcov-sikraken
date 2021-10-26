@@ -72,20 +72,6 @@ Optional<Token> LabelerASTVisitor::getNextToken(SourceLocation fromLocation) {
                               labelAddRewriter.getLangOpts());
 }
 
-void LabelerASTVisitor::AddBracesAroundStatement(Stmt *processedStatement) {
-  if (isa<CompoundStmt>(processedStatement))
-    return;
-  // We have to use InsertTextBefore so in case
-  // other code was written at the same location already,
-  // the braces will be put around that written code
-  labelAddRewriter.InsertTextBefore(processedStatement->getBeginLoc(), "{\n");
-  // We need to add the closing brace after the semicolon, therefore we need
-  // to calculate the semicolons position.
-  SourceLocation afterSemicolonLocation =
-      GetTrueEndLocation(processedStatement);
-  labelAddRewriter.InsertTextAfter(afterSemicolonLocation, "\n}\n");
-}
-
 void LabelerASTVisitor::LabelStatement(Stmt *processedStatement) {
   if (isa<NullStmt>(processedStatement)) {
     labelAddRewriter.RemoveText(SourceRange(processedStatement->getBeginLoc(),
@@ -107,17 +93,9 @@ void LabelerASTVisitor::LabelStatement(Stmt *processedStatement) {
   labelAddRewriter.InsertTextAfter(beginPos, getNextLabel());
 }
 
-void LabelerASTVisitor::AddBracesIfMissing(Stmt *processedStatement) {
-  if (!isa<CompoundStmt>(processedStatement) &&
-      !isa<NullStmt>(processedStatement)) {
-    AddBracesAroundStatement(processedStatement);
-  }
-}
-
 bool LabelerASTVisitor::VisitIfStmt(IfStmt *S) {
   Stmt *thenStatement = S->getThen();
   if (options.ifLabel) {
-    AddBracesIfMissing(thenStatement);
     LabelStatement(thenStatement);
   }
 
@@ -128,17 +106,16 @@ bool LabelerASTVisitor::VisitIfStmt(IfStmt *S) {
          isa<IfStmt>(cast<LabelStmt>(elseStatement)->getSubStmt()))) {
       return true;
     }
-    AddBracesIfMissing(elseStatement);
     LabelStatement(elseStatement);
   } else if (options.elseLabel) {
     SourceLocation endLoc = GetTrueEndLocation(S);
-    labelAddRewriter.InsertTextAfter(endLoc, " else { " + getNextLabel() + "}");
+    labelAddRewriter.InsertTextBefore(endLoc,
+                                      " else { " + getNextLabel() + "}");
   }
   return true;
 }
 
 bool LabelerASTVisitor::VisitWhileStmt(WhileStmt *S) {
-  AddBracesIfMissing(S->getBody());
   if (options.ifLabel) {
     LabelStatement(S->getBody());
   }
@@ -165,7 +142,6 @@ bool LabelerASTVisitor::VisitForStmt(ForStmt *S) {
   if (options.elseLabel) {
     labelAddRewriter.InsertTextBefore(afterLoop, getNextLabel());
   }
-  AddBracesIfMissing(S->getBody());
   return true;
 }
 
@@ -212,7 +188,6 @@ bool LabelerASTVisitor::VisitFunctionDecl(FunctionDecl *f) {
       labelFunctionStart |= options.functionCall == f->getName().str();
     }
     if (labelFunctionStart) {
-      AddBracesIfMissing(f->getBody());
       LabelStatement(f->getBody());
     }
   }

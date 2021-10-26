@@ -19,8 +19,9 @@ extern char __VERIFIER_nondet_char();
 
 void reach_error() {
   ((void) sizeof ((0) ? 1 : 0),
-    __extension__ ({ if (0) ;
-    else __assert_fail ("0", "byte_add-1.c", 3, __extension__ __PRETTY_FUNCTION__); 
+    __extension__ ({ if (0) { ;
+    } else { __assert_fail ("0", "byte_add-1.c", 3, __extension__ __PRETTY_FUNCTION__); 
+}
     }))
     ;
   }

@@ -17,8 +17,9 @@ void reach_error() {
   __assert_fail("0", "AllInterval-013.c", 5, "reach_error");
 }
 void assume(int cond) {
-  if (!cond)
+  if (!cond) {
     abort();
+}
 }
 int main() {
   int cond0;

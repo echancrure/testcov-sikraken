@@ -12,8 +12,10 @@ int main() {
   int x = __VERIFIER_nondet_int();
   if (x > 0) {
     x++;
-  }else _L: if(x>-5){
+  }else { _L: if(x>-5){
     x--; x--;
-  }   else    if    ( x > -10)
+  }   else    if    ( x > -10) {
     x = 5;
+}
+}
 }

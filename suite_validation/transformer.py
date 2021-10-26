@@ -75,15 +75,16 @@ def instrument_program(
     else:
         c_code = replace_reach_error(target_method, c_code)
 
-    logging.debug("Adding program labels")
-    adder_params = _get_label_adder_params(coverage_goal)
-    if adder_params:
-        c_code = _call_label_adder(adder_params, c_code)
-
+    logging.debug("Adding braces to all control-flow statements, if missing")
     # add braces around all if-, else-, while, for-blocks,
     # so that we can add code to them without
     # caring about changing the control-flow semantics.
     c_code = add_controlflow_braces(c_code)
+
+    logging.debug("Adding program labels")
+    adder_params = _get_label_adder_params(coverage_goal)
+    if adder_params:
+        c_code = _call_label_adder(adder_params, c_code)
 
     lines = c_code.split("\n")
     lines = add_gcov_flushes(lines)

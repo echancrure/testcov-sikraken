@@ -24,5 +24,5 @@ int main() {
   char b = __VERIFIER_nondet_char();
   char c = __VERIFIER_nondet_char();
 
-  do;while (a == 'a' && b == 5 && c == 16);
+  do {;} while (a == 'a' && b == 5 && c == 16);
 }
