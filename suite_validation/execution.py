@@ -414,6 +414,7 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
             compiler,
         )
         self._goal = goal
+        self._output_dir = output_dir
         self._output_dir_info = os.path.join(output_dir, info_files_dir)
         self.harness_file = None
         self._individual_runs = individual_runs
@@ -430,11 +431,9 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
         info_file = self._get_info_file(harness_file)
         os.remove(info_file)
 
-    @staticmethod
-    def _get_instrumented_file_name(original_file) -> str:
+    def _get_instrumented_file_name(self, original_file) -> str:
         filename = os.path.basename(original_file)
-        tmp_dir = tempfile.mkdtemp(prefix="testcov-")
-        return os.path.join(tmp_dir, "instrumented_" + filename)
+        return os.path.join(self._output_dir, "instrumented_" + filename)
 
     def _prepare_program(self, program_file):
         if eu.uses_line_coverage(self._goal):
