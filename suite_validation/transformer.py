@@ -98,6 +98,7 @@ def instrument_program(
 
     branch_label_line_numbers = collect_branch_label_line_numbers(c_code)
 
+    os.makedirs(os.path.dirname(output_program), exist_ok=True)
     with open(output_program, "w", encoding="UTF-8") as outp:
         outp.write(c_code)
         logging.debug("Wrote transformed C program to %s", output_program)
