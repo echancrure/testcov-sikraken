@@ -32,6 +32,7 @@ TEST_FILES_WITH_ERR = [
     for f, v in (
         ("test_false_VerifierError.c", eu.CoverFunc("__VERIFIER_error")),
         ("test_false_ReachError.c", COVER_REACH),
+        ("test_false_ReachError-malloc-defined.c", COVER_REACH),
         ("test_false_ReachErrorMultiline.c", COVER_REACH),
         ("test_ifWithoutBraces_ReachError.c", COVER_REACH),
         ("test_ternary_ReachError.c", COVER_REACH),
