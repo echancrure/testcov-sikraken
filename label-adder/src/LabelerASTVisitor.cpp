@@ -206,6 +206,12 @@ bool LabelerASTVisitor::VisitDefaultStmt(DefaultStmt *S) {
 }
 
 bool LabelerASTVisitor::VisitFunctionDecl(FunctionDecl *f) {
+  // at least in clang 11, we have to reset the parentMapContext at every new
+  // function that we enter. according to the documentation, all parents are
+  // computed on the first call to `getParents()`, but it seems it stays within
+  // the same function. Without clearing the map, all nodes in functions but the
+  // first will have 0 parents.
+  context.getParentMapContext().clear();
   // Only function with bodies should get labeled, not declarations.
   // maybe we have to replace this check for hashBody() with a check for
   // isThisDeclarationADefinition() in the future. But this would mean that we
@@ -224,7 +230,6 @@ bool LabelerASTVisitor::VisitFunctionDecl(FunctionDecl *f) {
 }
 
 bool LabelerASTVisitor::isInFunction(Stmt *s) {
-  context.getParentMapContext().clear();
   return isInFunctionDyn(DynTypedNode::create(*s));
 }
 
