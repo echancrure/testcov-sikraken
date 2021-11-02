@@ -222,12 +222,16 @@ reuse:
 
 build-docker:python:3.9:
   extends: .build-docker
+  needs:
+    - build-docker:plain
   variables:
     DOCKERFILE: .ci/Dockerfile.python-3.9
     IMAGE: test:python-3.9
 
 build-docker:python:3.6:
   extends: .build-docker
+  needs:
+    - build-docker:plain
   variables:
     DOCKERFILE: .ci/Dockerfile.python-3.6
     IMAGE: test:python-3.6
@@ -240,6 +244,8 @@ build-docker:plain:
 
 build-docker:gcc-11:
   extends: .build-docker
+  needs:
+    - build-docker:plain
   variables:
     DOCKERFILE: .ci/Dockerfile.gcc-11
     IMAGE: test:gcc-11
