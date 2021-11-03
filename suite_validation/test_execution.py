@@ -32,6 +32,7 @@ TEST_FILES_WITH_ERR = [
     for f, v in (
         ("test_false_VerifierError.c", eu.CoverFunc("__VERIFIER_error")),
         ("test_false_ReachError.c", COVER_REACH),
+        ("test_false_ReachError-malloc-defined.c", COVER_REACH),
         ("test_false_ReachErrorMultiline.c", COVER_REACH),
         ("test_ifWithoutBraces_ReachError.c", COVER_REACH),
         ("test_ternary_ReachError.c", COVER_REACH),
@@ -681,6 +682,17 @@ class TestSuiteExecutor:
         test_coverage = result_obj.coverage_total
 
         assert test_coverage.hits_percent == 100
+
+    def test_branch_coverage_high_nesting_level(self, tmp_path):
+        program = os.path.join(TEST_DIRECTORY, "id_build.i.p+sep-reducer.c")
+        test_suite = os.path.join(SUITE_DIR, "suite-id_build-hybridtiger.zip")
+        runner = self.get_runner(eu.COVER_BRANCHES)
+
+        with WorkIn(tmp_path):
+            result_obj = runner.run(program, test_suite, eu.MACHINE_MODEL_32)
+        test_coverage = result_obj.coverage_total
+
+        assert test_coverage.hits_percent > 0
 
     @staticmethod
     def _check_reduction_correct_suite_simple_if(runner, strategy, machine_model, goal):

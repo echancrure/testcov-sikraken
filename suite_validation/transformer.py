@@ -14,14 +14,18 @@ Reducer of C program. Create a residual program from an input program and a set 
 # pylint: disable=C0103
 # to disable snake_case error
 
+import os
 import re
-from typing import List, Sequence
-import pycparser
-from pycparser import c_generator
+import tempfile
+from typing import List, Sequence, Optional, Union
+from pathlib import Path
 
-from suite_validation import label_adding as la
 from suite_validation import execution_utils as eu
 from suite_validation import _logger as logging
+
+
+LABEL_PREFIX = "Goal_"
+GOTO_PREFIX = "goto " + LABEL_PREFIX
 
 
 def _preprocess(input_program: str, machine_model: str) -> str:
@@ -39,11 +43,18 @@ def _preprocess(input_program: str, machine_model: str) -> str:
     return preprocessed_file
 
 
-def _get_label_adder(coverage_goal):
+def _get_label_adder_params(coverage_goal) -> Optional[List[str]]:
     if isinstance(coverage_goal, eu.CoverFunc):
-        return la.TargetFuncLabelAdder(coverage_goal.target_method)
+        return [
+            "--function-call-only",
+            f"--function-call={coverage_goal.target_method}",
+        ]
     if eu.uses_branch_coverage(coverage_goal):
-        return la.LabelAdder()
+        return [
+            "--labels-branching-only",
+            "--labels-switch-only",
+            "--labels-ternary-only",
+        ]
     return None
 
 
@@ -55,17 +66,29 @@ def instrument_program(
     ):  # very simple heuristic to decide whether program is preprocessed
         input_program = _preprocess(input_program, machine_model)
     c_code = _get_content(input_program)
+    # C function reach_error may contain an arbitrary definition - replace this with an exit() call
+    # Q: Only do this if coverage goal is reach_error?
+    try:
+        target_method = coverage_goal.target_method
+    except AttributeError:
+        logging.debug("No target method, so not replacing any")
+    else:
+        c_code = replace_reach_error(target_method, c_code)
+
+    logging.debug("Adding braces to all control-flow statements, if missing")
+    # add braces around all if-, else-, while, for-blocks,
+    # so that we can add code to them without
+    # caring about changing the control-flow semantics.
+    c_code = add_controlflow_braces(c_code)
 
     logging.debug("Adding program labels")
-    adder = _get_label_adder(coverage_goal)
-
-    if adder:
-        ast = _parse(c_code)
-        adder.visit(ast)
-        c_code = _to_c(ast)
+    adder_params = _get_label_adder_params(coverage_goal)
+    if adder_params:
+        c_code = _call_label_adder(adder_params, c_code)
 
     lines = c_code.split("\n")
     lines = add_gcov_flushes(lines)
+    lines = add_goto_goals(lines)
     # If we keep preprocessor comments, gcov and lcov may use these to deduce the original file name.
     # While this is nice in general, we already manage the original file name separately, for all goal types.
     # So we remove the comments here to avoid the additional special case where the file name
@@ -75,6 +98,7 @@ def instrument_program(
 
     branch_label_line_numbers = collect_branch_label_line_numbers(c_code)
 
+    os.makedirs(os.path.dirname(output_program), exist_ok=True)
     with open(output_program, "w", encoding="UTF-8") as outp:
         outp.write(c_code)
         logging.debug("Wrote transformed C program to %s", output_program)
@@ -82,11 +106,24 @@ def instrument_program(
     return branch_label_line_numbers
 
 
+def _call_label_adder(parameters: Sequence[str], input_content: str):
+    with tempfile.NamedTemporaryFile(mode="w", encoding="UTF-8", suffix=".c") as tmp:
+        tmp.write(input_content)
+        tmp.flush()
+        cmd = [_get_label_adder_bin(), *parameters, tmp.name]
+        exec_result = eu.execute(cmd, quiet=True)
+        return exec_result.stdout
+
+
+def _get_label_adder_bin() -> str:
+    return str(Path(__file__).parent / "label-adder")
+
+
 def collect_branch_label_line_numbers(c_code: str) -> List[int]:
     line_numbers = []
     line_number = 1
     for line in c_code.splitlines():
-        if la.GOTO_PREFIX in line:
+        if GOTO_PREFIX in line:
             line_numbers.append(line_number)
         line_number += 1
     return line_numbers
@@ -97,107 +134,19 @@ def _get_content(program: str) -> str:
         return inp.read()
 
 
-def _get_parser() -> pycparser.c_parser.CParser:
-    # del args  # unused
-    return pycparser.c_parser.CParser()
-
-
-def _parse(content_original: str) -> pycparser.c_ast.FileAST:
-    logging.debug("Parsing program")
-    try:
-        content = _rewrite_cproblems(content_original)
-
-        parser = _get_parser()
-        return parser.parse(content)
-    except pycparser.plyparser.ParseError as e:
-        print(content)
-        raise eu.ParseError("Parsing failed") from e
-    finally:
-        logging.debug("Finished parsing program")
-
-
-def _to_c(ast: pycparser.c_ast.Node) -> str:
-    generator = CondensingCGenerator()
-    return generator.visit(ast)
-
-
-def _rewrite_cproblems(content: str) -> str:
-    need_struct_body = False
-    skip_asm = False
-    in_attribute = False
-    prepared_content = []
-    for line in [c + "\n" for c in content.split("\n")]:
-        line = re.sub(r"/\*.*?\*/", "", line)
-        # remove __attribute__
-        line = re.sub(r"__attribute__\s*\(\(\s*[a-z_, ]+\s*\)\)\s*", "", line)
-        # line = re.sub(r'__attribute__\s*\(\(\s*[a-z_, ]+\s*\(\s*[a-zA-Z0-9_, "\.]+\s*\)\s*\)\)\s*', '', line)
-        # line = re.sub(r'__attribute__\s*\(\(\s*[a-z_, ]+\s*\(\s*sizeof\s*\([a-z ]+\)\s*\)\s*\)\)\s*', '', line)
-        # line = re.sub(r'__attribute__\s*\(\(\s*[a-z_, ]+\s*\(\s*\([0-9]+\)\s*<<\s*\([0-9]+\)\s*\)\s*\)\)\s*', '', line)
-        line = re.sub(r"__attribute__\s*\(\(.*\)\)\s*", "", line)
-        if re.search(r"__attribute__\s*\(\(", line):
-            line = re.sub(r"__attribute__\s*\(\(.*", "", line)
-            in_attribute = True
-        elif in_attribute:
-            line = re.sub(r".*\)\)", "", line)
-            in_attribute = False
-        # rewrite some GCC extensions
-        line = re.sub(r"__extension__", "", line)
-        line = re.sub(r"__PRETTY_FUNCTION__", '"func_name"', line)
-        line = re.sub(r"__restrict", "", line)
-        line = re.sub(r"__restrict__", "", line)
-        line = re.sub(r"__inline__", "", line)
-        line = re.sub(r"__inline", "", line)
-        line = re.sub(r"__const", "const", line)
-        line = re.sub(r"__signed__", "signed", line)
-        line = re.sub(r"__builtin_va_list", "int", line)
-        # a hack for some C-standards violating code in LDV benchmarks
-        if need_struct_body and re.match(r"^\s*}\s*;\s*$", line):
-            line = "int __dummy; " + line
-            need_struct_body = False
-        elif need_struct_body:
-            need_struct_body = re.match(r"^\s*$", line) is not None
-        elif re.match(r"^\s*struct\s+[a-zA-Z0-9_]+\s*{\s*$", line):
-            need_struct_body = True
-        # remove inline asm
-        line = re.sub(
-            r'(^|\s)\s*__asm__(\s+volatile)?\s*\("([^"]|\\")*"[^;]*\)\s*;$', ";", line
-        )
-        if re.match(r'^\s*__asm__(\s+volatile)?\s*\("([^"]|\\")*"[^;]*$', line):
-            skip_asm = True
-        elif skip_asm and re.search(r"\)\s*;\s*$", line):
-            skip_asm = False
-            line = "\n"
-        if skip_asm or re.match(
-            r'^\s*__asm__(\s+volatile)?\s*\("([^"]|\\")*"[^;]*\)\s*;\s*$', line
-        ):
-            line = "\n"
-        # remove asm renaming
-        line = re.sub(r'__asm__\s*\(""\s+"[a-zA-Z0-9_]+"\)', "", line)
-        prepared_content.append(line)
-
-    prepared_content = replace_reach_error(prepared_content)
-
-    prepared_content = "".join(prepared_content)
-
-    def replacer(match):
-        s = match.group(0)
-        if s.startswith("/"):
-            return ""
-        return s
-
-    pattern = re.compile(
-        r'//.*?$|/\*.*?\*/|\'(?:\\.|[^\\\'])*\'|"(?:\\.|[^\\"])*"',
-        re.DOTALL | re.MULTILINE,
-    )
-    return re.sub(pattern, replacer, prepared_content)
-
-
-def replace_reach_error(content: Sequence[str]) -> Sequence[str]:
+def replace_reach_error(
+    function_name, content: Union[str, Sequence[str]]
+) -> Sequence[str]:
+    logging.debug("Replacing target function %s with exit()", function_name)
+    if isinstance(content, str):
+        content = content.splitlines()
     new_content = []
     in_reach_error = False
-    contains_reach_error = re.compile(r".*void reach_error.*")
-    single_line_reach_error = re.compile(r"^\s*void reach_error\s*\(.*\)\s*{.*}\s*$")
-    multiline_reach_error = re.compile(r"^\s*void reach_error.*{\s*$")
+    contains_reach_error = re.compile(f".*void {function_name}.*")
+    single_line_reach_error = re.compile(
+        r"^\s*void " + function_name + r"\s*\(.*\)\s*{.*}\s*$"
+    )
+    multiline_reach_error = re.compile(r"^\s*void " + function_name + r".*{\s*$")
     idx = None
     for idx, line in enumerate(content):
         if in_reach_error:
@@ -205,20 +154,42 @@ def replace_reach_error(content: Sequence[str]) -> Sequence[str]:
                 break
         elif contains_reach_error.match(line):
             new_content.append("extern void exit (int __status);\n")
-            new_content.append("void reach_error() { exit(1); }\n")
+            new_content.append("void " + function_name + "() { exit(1); }\n")
             if single_line_reach_error.match(line):
                 break
             if multiline_reach_error.match(line):
                 in_reach_error = True
             else:
-                logging.warning("Unmatched occurence of reach_error: %s", line)
+                logging.warning("Unmatched occurence of %s: %s", function_name, line)
         else:
             new_content.append(line)
 
     if idx is not None:
         new_content += content[(idx + 1) :]
 
-    return new_content
+    return "\n".join(new_content)
+
+
+def add_controlflow_braces(c_code: str):
+    """
+    Add braces around all if-, else-, while, for-blocks.
+    Requires clang-tidy to be installed.
+    """
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".c", delete=False) as tmp:
+        tmp.write(c_code)
+        tmp_file = tmp.name
+    try:
+        cmd = [
+            "clang-tidy",
+            "--checks=-*,readability-braces-around-statements",
+            "-fix-errors",
+            tmp_file,
+        ]
+        eu.execute(cmd, quiet=True)
+        with open(tmp_file, encoding="UTF-8") as inp:
+            return inp.read()
+    finally:
+        os.remove(tmp_file)
 
 
 def add_gcov_flushes(content: Sequence[str]) -> Sequence[str]:
@@ -230,9 +201,9 @@ def add_gcov_flushes(content: Sequence[str]) -> Sequence[str]:
                 r"\1{\n\1#ifdef GCOV\n\1__gcov_dump();\n\1#endif\n\1abort();\n\1}",
                 line,
             )
-        if " __assert_fail" in line and not re.search(r"void.*__assert_fail", line):
+        if "__assert_fail" in line and not re.search(r"void.*__assert_fail", line):
             line = re.sub(
-                r"(\s+)__assert_fail",
+                r"(\s*)__assert_fail",
                 r"\1#ifdef GCOV\n\1__gcov_dump();\n\1#endif\n\1__assert_fail",
                 line,
             )
@@ -241,56 +212,16 @@ def add_gcov_flushes(content: Sequence[str]) -> Sequence[str]:
     return new_content
 
 
+def add_goto_goals(content: Sequence[str]) -> Sequence[str]:
+    goal_regex = re.compile(f"({LABEL_PREFIX}[0-9]+):")
+    new_content = []
+    for line in content:
+        match = goal_regex.search(line)
+        if match:
+            new_content.append(f"goto {match.group(1)};")
+        new_content.append(line)
+    return new_content
+
+
 def remove_preprocessor_comments(content: Sequence[str]) -> Sequence[str]:
     return [line for line in content if not line.strip().startswith("# ")]
-
-
-class CondensingCGenerator(c_generator.CGenerator):
-    def visit_Label(self, n):
-        if isinstance(n.stmt, pycparser.c_ast.EmptyStatement):
-            separator = ""
-        else:
-            separator = "\n"
-        return n.name + ":" + separator + self._generate_stmt(n.stmt).strip()
-
-    def visit_If(self, n):
-        s = "if ("
-        if n.cond:
-            s += self.visit(n.cond)
-        s += ") "
-        s += self._generate_stmt(n.iftrue, add_indent=True)
-        if n.iffalse:
-            s += self._make_indent() + "else"
-            s += self._generate_stmt(n.iffalse, add_indent=True)
-        return s
-
-    def visit_While(self, n):
-        s = "while ("
-        if n.cond:
-            s += self.visit(n.cond)
-        s += ") "
-        s += self._generate_stmt(n.stmt, add_indent=True)
-        return s
-
-    def visit_DoWhile(self, n):
-        s = "do "
-        s += self._generate_stmt(n.stmt, add_indent=True)
-        s += self._make_indent() + "while ("
-        if n.cond:
-            s += self.visit(n.cond)
-        s += ");"
-        return s
-
-    def visit_For(self, n):
-        s = "for ("
-        if n.init:
-            s += self.visit(n.init)
-        s += ";"
-        if n.cond:
-            s += " " + self.visit(n.cond)
-        s += ";"
-        if n.next:
-            s += " " + self.visit(n.next)
-        s += ") "
-        s += self._generate_stmt(n.stmt, add_indent=True)
-        return s

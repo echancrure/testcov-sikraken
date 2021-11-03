@@ -25,8 +25,6 @@ void __VERIFIER_assume(int cond) {
   }
 }
 
-void __VERIFIER_error() {}
-
 char *get_input();
 
 // taken from https://stackoverflow.com/a/32496721

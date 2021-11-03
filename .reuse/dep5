@@ -6,3 +6,15 @@ Source: https://gitlab.com/sosy-lab/software/test-suite-validator/
 Files: lib/tsbuilder-2.0.dev0.dist-info/*
 Copyright: 2018-2020 Dirk Beyer <https://www.sosy-lab.org>
 License: Apache-2.0
+
+Files:
+        label-adder/test/programs/cdaudio.i.cil-2.c
+        label-adder/test/programs/dll_extends_pointer.i
+        label-adder/test/programs/s3_srvr_1a_alt.BV.c.cil.c
+Copyright: unknown
+License: LicenseRef-unknown
+
+Files:
+        test/id_build.i.p+sep-reducer.c
+Copyright: unknown
+License: Apache-2.0

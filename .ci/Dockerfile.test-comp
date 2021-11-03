@@ -1,0 +1,27 @@
+# This file is part of TestCov,
+# a robust test executor with reliable coverage measurement:
+# https://gitlab.com/sosy-lab/software/test-suite-validator/
+#
+# SPDX-FileCopyrightText: 2021 Dirk Beyer <https://www.sosy-lab.org>
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# This is a Docker image for building the TestCov archive for Test-Comp.
+# It should be pushed to registry.gitlab.com/sosy-lab/software/test-suite-validator/build
+# and will be used by CI as declared in .ci/gitlab-ci.yml.
+#
+# Commands for updating the image:
+# docker build --pull -t registry.gitlab.com/sosy-lab/software/test-suite-validator/build:test-comp - < .ci/Dockerfile.test-comp
+# docker push registry.gitlab.com/sosy-lab/software/test-suite-validator/build:test-comp
+# Commands for updating the image:
+
+FROM registry.gitlab.com/sosy-lab/benchmarking/competition-scripts/user:latest
+
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt update && apt install -y \
+        cmake \
+        ninja-build \
+        git \
+        python3-pip \
+        zip \
+  && rm -rf /var/lib/apt/lists/*

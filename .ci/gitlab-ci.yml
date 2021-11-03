@@ -24,7 +24,7 @@ variables:
 .unit-tests: &unit-tests
   stage: test
   script:
-    - pytest
+    - pytest suite_validation
   artifacts:
     paths:
       - coverage.xml
@@ -36,6 +36,12 @@ variables:
         - bin/testcov --verbose --test-suite test/suites/suite-invalid-unicode.zip test/test_invalid_unicode.c --goal contrib/goal_files/coverage-branches.prp --no-isolation
         - bin/testcov --verbose --test-suite test/suites/suite-invalid-unicode-test.zip test/test_invalid_unicode.c --goal contrib/goal_files/coverage-branches.prp --no-isolation
         - 'rm -rf output ; bin/testcov --verbose --test-suite test/suites/suite-valid.zip test/test_false_ReachError.c --goal contrib/goal_files/coverage-error-call.prp --no-isolation --no-stop-on-success && test $(ls output/info_files | wc -l) -eq 2'
+
+label-adder-tests:
+  stage: test
+  script:
+    - pytest label-adder
+  image: ${CI_REGISTRY_IMAGE}/test:gcc-11
 
 pylint:
   stage: test
@@ -61,9 +67,9 @@ check-format:
 
 .check-archive: &check-archive
     stage: test
-    script:
-        - "./contrib/create_archive_testcov.sh"
+    before_script:
         - cd /tmp && unzip "$CI_PROJECT_DIR"/testcov-*.zip
+    script:
         - cd /tmp/testcov && ./bin/testcov --no-isolation --verbose --test-suite "$CI_PROJECT_DIR/test/suites/suite-valid.zip" --goal "$CI_PROJECT_DIR/contrib/goal_files/coverage-error-call.prp" "$CI_PROJECT_DIR/test/test_false_ReachError.c"
     dependencies:
         - .build-archive  # In jobs inheriting, set correct job build-archive:X
@@ -83,6 +89,41 @@ build-archive:arch-linux:
   # that it does work on different distributions
   image: ${CI_REGISTRY_IMAGE}/test:arch-linux
 
+# This job is using about 6GB of memory, which our runners
+# can not afford randomly at the moment.
+#build-archive-full:test-comp:
+#  <<: *build-archive
+#  # Build archive for Test-Comp infrastructure
+#  image: ${CI_REGISTRY_IMAGE}/build:test-comp
+#  script:
+#      - cd label-adder && make install && cd -
+#      - cp label-adder/bin/label-adder suite_validation/label-adder
+#      - git update-index --assume-unchanged label-adder/bin/label-adder suite_validation/label-adder
+#      - "./contrib/create_archive_testcov.sh"
+#  after_script:
+#      # unzip archive and put its contents into a tar because original Test-Comp image may not include the 'unzip' command
+#      - cd /tmp && unzip $CI_PROJECT_DIR/testcov-*.zip && tar -vczf $CI_PROJECT_DIR/testcov.tar.gz testcov/
+#  artifacts:
+#      paths:
+#          - testcov-*.zip
+#          - testcov.tar.gz
+#  cache:
+#    key: $CI_COMMIT_REF_SLUG
+#    paths:
+#      - label-adder/build
+
+build-archive:test-comp:
+  <<: *build-archive
+  # Build archive for Test-Comp infrastructure
+  image: ${CI_REGISTRY_IMAGE}/build:test-comp
+  after_script:
+      # unzip archive and put its contents into a tar because original Test-Comp image may not include the 'unzip' command
+      - cd /tmp && unzip $CI_PROJECT_DIR/testcov-*.zip && tar -vczf $CI_PROJECT_DIR/testcov.tar.gz testcov/
+  artifacts:
+      paths:
+          - testcov-*.zip
+          - testcov.tar.gz
+
 
 check-archive:default:
   <<: *check-archive
@@ -101,6 +142,16 @@ check-archive:arch-linux:
   image: ${CI_REGISTRY_IMAGE}/test:arch-linux
   dependencies:
     - build-archive:arch-linux
+
+check-archive:test-comp:
+  <<: *check-archive
+  image: registry.gitlab.com/sosy-lab/benchmarking/competition-scripts/user
+  dependencies:
+    - build-archive:test-comp
+  before_script:
+    - tar -vxf testcov.tar.gz -C /tmp
+  script:
+    - cd /tmp/testcov && ./bin/testcov --no-isolation --verbose --test-suite "$CI_PROJECT_DIR/test/suites/suite-valid.zip" --goal "$CI_PROJECT_DIR/contrib/goal_files/coverage-error-call.prp" "$CI_PROJECT_DIR/test/test_false_ReachError.c"
 
 
 unit-tests:python-3.6:
@@ -171,12 +222,16 @@ reuse:
 
 build-docker:python:3.9:
   extends: .build-docker
+  needs:
+    - build-docker:plain
   variables:
     DOCKERFILE: .ci/Dockerfile.python-3.9
     IMAGE: test:python-3.9
 
 build-docker:python:3.6:
   extends: .build-docker
+  needs:
+    - build-docker:plain
   variables:
     DOCKERFILE: .ci/Dockerfile.python-3.6
     IMAGE: test:python-3.6
@@ -189,6 +244,8 @@ build-docker:plain:
 
 build-docker:gcc-11:
   extends: .build-docker
+  needs:
+    - build-docker:plain
   variables:
     DOCKERFILE: .ci/Dockerfile.gcc-11
     IMAGE: test:gcc-11
@@ -198,3 +255,9 @@ build-docker:arch-linux:
   variables:
     DOCKERFILE: .ci/Dockerfile.arch-linux
     IMAGE: test:arch-linux
+
+build-docker:test-comp:
+  extends: .build-docker
+  variables:
+    DOCKERFILE: .ci/Dockerfile.test-comp
+    IMAGE: build:test-comp

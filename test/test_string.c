@@ -8,7 +8,7 @@
 
 extern const char * __VERIFIER_nondet_string();
 
-void reach_error() { exit(1) }
+void reach_error() { exit(1); }
 
 int main() {
   char * s = __VERIFIER_nondet_string();

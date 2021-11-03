@@ -259,21 +259,36 @@ def execute(command, quiet=False, input_str=None, timelimit=None):
     # We decode output, but we can't decode error output, since it may contain undecodable bytes.
     try:
         output = output.decode() if output else ""
-    except UnicodeDecodeError:
-        pass  # fail silently, continue with encoded output
+    except UnicodeDecodeError as e:
+        # fail silently, continue with encoded output
+        logging.info(e, exc_info=True)
 
     if output:
-        logging.debug("Output of execution:\n%s", output)
+        logging.debug("Output of execution:\n%s", snip(output))
     if err_output:
         try:
             err_output_for_msg = err_output.decode() if err_output else ""
         except UnicodeDecodeError:
-            pass  # fail silently, continue with encoded output
-        logging.debug("Error output of execution:\n%s", err_output_for_msg)
+            # fail silently, continue with encoded output
+            err_output_for_msg = err_output
+        logging.debug("Error output of execution:\n%s", snip(err_output_for_msg))
 
     return ExecutionResult(
         returncode, output, err_output, got_aborted, None, wall_time, None
     )
+
+
+def snip(s, max_len=20):
+    lines = s.splitlines()
+    if len(lines) <= max_len:
+        return s
+    head = "\n".join(lines[: max_len // 2])
+    tail = "\n".join(lines[-max_len // 2 :])
+    if head[-1] != "\n":
+        head += "\n"
+    if tail[0] != "\n":
+        tail = "\n" + tail
+    return head + "... snip ..." + tail
 
 
 def found_err(output):
