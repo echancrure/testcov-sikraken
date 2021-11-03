@@ -16,6 +16,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5] - 2021-11-03
+
+### Changed
+
+- Improved speed and supported language features for test-goal instrumentation in TestCov.
+  We've replaced the Python-based implementation of adding test goals to the program
+  with an implementation based on clang libtooling.
+  This allows us to support the full range of C language features and GCC extensions.
+  Before, we had to abort if unsupported features were used; most notably variadic arguments,
+  but also GCC extensions that we did not remove explicitly.
+
+### Fixed
+
+- Removed a bug that made TestCov fail if preprocessed programs
+  contained method declarations of builtin methods with the
+  Star operator '*' right before the method name (e.g., '*malloc').
+  Such preprocessed programs are now fully supported.
+
 ## [3.4] - 2021-10-16
 
 ### Added
@@ -42,4 +60,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Minor code improvements
 
 [Unreleased]: https://gitlab.com/sosy-lab/software/test-suite-validator/-/compare/v3.4...main
+[3.5]: https://gitlab.com/sosy-lab/software/test-suite-validator/-/compare/v3.4...v3.5
 [3.4]: https://gitlab.com/sosy-lab/software/test-suite-validator/-/compare/v3.3...v3.4
