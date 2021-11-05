@@ -49,6 +49,7 @@ TEST_FILE_WITH_STRINGS = os.path.join(TEST_DIRECTORY, "test_string.c")
 TEST_FILE_COVERAGE = os.path.join(TEST_DIRECTORY, "test_coverages.c")
 TEST_FILE_SIMPLE_IF = os.path.join(TEST_DIRECTORY, "test_simple-if.c")
 TEST_FILE_NO_INPUTS = os.path.join(TEST_DIRECTORY, "test_no_inputs.c")
+TEST_FILE_ABORTS = os.path.join(TEST_DIRECTORY, "test_abort.c")
 
 TEST_HARNESS = os.path.join(TEST_DIRECTORY, "test_harness.c")
 
@@ -61,6 +62,7 @@ SUITE_COVERAGE = os.path.join(SUITE_DIR, "suite-coverages.zip")
 SUITE_SIMPLE_IF = os.path.join(SUITE_DIR, "suite-simple-if.zip")
 SUITE_SIMPLE_IF_SWAPPED = os.path.join(SUITE_DIR, "suite-simple-if-swapped.zip")
 SUITE_EMPTY_TESTCASE = os.path.join(SUITE_DIR, "suite-empty-test.zip")
+SUITE_ABORTS = os.path.join(SUITE_DIR, "suite-abort.zip")
 
 MACHINE_MODELS = (eu.MACHINE_MODEL_32, eu.MACHINE_MODEL_64)
 
@@ -611,6 +613,17 @@ class TestSuiteExecutor:
             runner = self.get_runner(eu.COVER_BRANCHES)
             with WorkIn(tmp_path):
                 self._check_branch_coverage(runner, machine_model)
+
+    def test_branch_coverage_correct_with_aborts_in_program(self, tmp_path):
+        for machine_model in MACHINE_MODELS:
+            runner = self.get_runner(eu.COVER_BRANCHES)
+            with WorkIn(tmp_path):
+                result_obj = runner.run(TEST_FILE_ABORTS, SUITE_ABORTS, machine_model)
+                test_coverage = result_obj.coverage_total
+
+                assert test_coverage.hits == 6
+                assert test_coverage.hits_percent == 100
+                assert test_coverage.count_total == 6
 
     def test_condition_coverage_correct(self, tmp_path):
         for machine_model in MACHINE_MODELS:

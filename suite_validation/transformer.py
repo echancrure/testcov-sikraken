@@ -194,10 +194,11 @@ def add_controlflow_braces(c_code: str):
 
 def add_gcov_flushes(content: Sequence[str]) -> Sequence[str]:
     new_content = ["#ifdef GCOV", "extern void __gcov_dump(void);", "#endif"]
+    abort_pattern = re.compile(r"(^|\s+|;|\{)abort\(\);")
     for line in content:
-        if " abort();" in line:
+        if abort_pattern.search(line):
             line = re.sub(
-                r"(\s+)abort\(\);",
+                r"(\s*)abort\(\);",
                 r"\1{\n\1#ifdef GCOV\n\1__gcov_dump();\n\1#endif\n\1abort();\n\1}",
                 line,
             )
