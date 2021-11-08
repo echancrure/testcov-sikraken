@@ -6,33 +6,30 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include<assert.h>
+extern int __VERIFIER_nondet_int();
+void __assert_fail(const char *, const char *, unsigned int,
+                          const char *) __attribute__((__nothrow__, __leaf__))
+__attribute__((__noreturn__));
 
-extern void __assert_fail (const char *__assertion, const char *__file,
-      unsigned int __line, const char *__function)
-     __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
-extern void __assert_perror_fail (int __errnum, const char *__file,
-      unsigned int __line, const char *__function)
-     __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
-extern void __assert (const char *__assertion, const char *__file, int __line)
-     __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
-extern void abort (void) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__noreturn__));
-
-extern char __VERIFIER_nondet_char();
-
-void reach_error() { ((void) sizeof ((0) ? 1 : 0), __extension__ ({ if (0) ; else __assert_fail ("0", "byte_add-1.c", 3, __extension__ __PRETTY_FUNCTION__); })); }
+void reach_error(){__assert_fail("0", "test_assert_fail.c", 14, "example-fail");}
+void reach_error2(){
+  __assert_fail("0", "test_assert_fail.c", 16, "example-fail");
+}
+void reach_error3() { __assert_fail("0", "test_assert_fail.c", 18, "example-fail");
+}
 
 int main() {
-  char a = __VERIFIER_nondet_char();
-  char b = __VERIFIER_nondet_char();
-  char c = __VERIFIER_nondet_char();
-
-  if (a != 'a') {
-    __assert_fail ("0", "byte_add-1.c", 3, __extension__ __PRETTY_FUNCTION__); 
-;
+  int x = __VERIFIER_nondet_int();
+  if (x > 0) {
+    x++;__assert_fail("0", "test_assert_fail.c", 24, "example-fail");
   }
+  if (x == -1) {__assert_fail("0", "test_assert_fail.c", 27, "example-fail");}
+  if (x == -2)__assert_fail("0", "test_assert_fail.c", 28, "example-fail");
+  if (x == -3) {reach_error();}
+  if (x == -4) {reach_error2();}
+  if (x == -5)
+    reach_error3();
+  else
+__assert_fail("0", "test_assert_fail.c", 30, "example-fail");
 
-  if (b == 5 && c == 16) {
-    reach_error();
-  }
 }

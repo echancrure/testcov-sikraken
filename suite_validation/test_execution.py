@@ -41,7 +41,6 @@ TEST_FILES_WITH_ERR = [
         ("test_required_declarations.c", COVER_REACH),
         ("test_assume_block.c", COVER_REACH),
         ("test_assume_singleline.c", COVER_REACH),
-        ("test_assertFail.c", COVER_REACH),
     )
 ]
 TEST_FILE_WITH_NO_TERMINATION = os.path.join(TEST_DIRECTORY, "test_no-termination.c")
@@ -50,6 +49,7 @@ TEST_FILE_COVERAGE = os.path.join(TEST_DIRECTORY, "test_coverages.c")
 TEST_FILE_SIMPLE_IF = os.path.join(TEST_DIRECTORY, "test_simple-if.c")
 TEST_FILE_NO_INPUTS = os.path.join(TEST_DIRECTORY, "test_no_inputs.c")
 TEST_FILE_ABORTS = os.path.join(TEST_DIRECTORY, "test_abort.c")
+TEST_FILE_ASSERT_FAIL = os.path.join(TEST_DIRECTORY, "test_assertFail.c")
 
 TEST_HARNESS = os.path.join(TEST_DIRECTORY, "test_harness.c")
 
@@ -63,6 +63,7 @@ SUITE_SIMPLE_IF = os.path.join(SUITE_DIR, "suite-simple-if.zip")
 SUITE_SIMPLE_IF_SWAPPED = os.path.join(SUITE_DIR, "suite-simple-if-swapped.zip")
 SUITE_EMPTY_TESTCASE = os.path.join(SUITE_DIR, "suite-empty-test.zip")
 SUITE_ABORTS = os.path.join(SUITE_DIR, "suite-abort.zip")
+SUITE_ASSERT_FAIL = os.path.join(SUITE_DIR, "suite-assert_fail.zip")
 
 MACHINE_MODELS = (eu.MACHINE_MODEL_32, eu.MACHINE_MODEL_64)
 
@@ -624,6 +625,32 @@ class TestSuiteExecutor:
                 assert test_coverage.hits == 6
                 assert test_coverage.hits_percent == 100
                 assert test_coverage.count_total == 6
+
+    def test_branch_coverage_correct_with_assert_fail_in_program(self, tmp_path):
+        for machine_model in MACHINE_MODELS:
+            runner = self.get_runner(eu.COVER_BRANCHES)
+            with WorkIn(tmp_path):
+                result_obj = runner.run(
+                    TEST_FILE_ASSERT_FAIL, SUITE_ASSERT_FAIL, machine_model
+                )
+                test_coverage = result_obj.coverage_total
+
+                assert test_coverage.hits == 12
+                assert test_coverage.hits_percent == 100
+                assert test_coverage.count_total == 12
+
+    def test_function_call_coverage_correct_with_assert_fail_in_program(self, tmp_path):
+        for machine_model in MACHINE_MODELS:
+            runner = self.get_runner(COVER_REACH)
+            with WorkIn(tmp_path):
+                result_obj = runner.run(
+                    TEST_FILE_ASSERT_FAIL, SUITE_ASSERT_FAIL, machine_model
+                )
+                test_coverage = result_obj.coverage_total
+
+                assert test_coverage.hits == 1
+                assert test_coverage.hits_percent == 100
+                assert test_coverage.count_total == 1
 
     def test_condition_coverage_correct(self, tmp_path):
         for machine_model in MACHINE_MODELS:

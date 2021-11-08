@@ -202,10 +202,10 @@ def add_gcov_flushes(content: Sequence[str]) -> Sequence[str]:
                 r"\1{\n\1#ifdef GCOV\n\1__gcov_dump();\n\1#endif\n\1abort();\n\1}",
                 line,
             )
-        if "__assert_fail" in line and not re.search(r"void.*__assert_fail", line):
+        if "__assert_fail" in line and not re.search(r"void[^\{]*__assert_fail", line):
             line = re.sub(
                 r"(\s*)__assert_fail",
-                r"\1#ifdef GCOV\n\1__gcov_dump();\n\1#endif\n\1__assert_fail",
+                r"\n#ifdef GCOV\n\1__gcov_dump();\n\1#endif\n\1__assert_fail",
                 line,
             )
 
