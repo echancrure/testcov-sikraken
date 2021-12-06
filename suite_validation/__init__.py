@@ -262,7 +262,7 @@ def parse_coverage_goal_file(goal_file: str) -> str:
         )
 
     goal = prop_match.group(1).strip()
-    if goal not in eu.COVERAGE_GOALS.keys():
+    if goal not in eu.COVERAGE_GOALS:
         raise IllegalArgumentError(f"No valid coverage goal specification: {goal}")
     return eu.COVERAGE_GOALS[goal]
 
