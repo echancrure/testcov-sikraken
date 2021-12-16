@@ -1074,10 +1074,6 @@ class TestCoverageChecker:
             assert not reduced_tests
 
 
-def _get_test_directory():
-    return tempfile.mkdtemp(prefix="tf_test_exec")
-
-
 def _get_harness_file_target():
     return "harness.c"
 
