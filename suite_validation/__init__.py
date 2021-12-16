@@ -352,72 +352,77 @@ def main(argv=None):
 
     error_occurred = True  # set to False in try-else
     try:
-        executor = execution.SuiteExecutor(
-            args.goal,
-            args.timelimit_per_run,
-            harness_file_target=harness_file,
-            compile_target=executable,
-            compute_individuals=compute_individuals,
-            memlimit=args.memlimit,
-            cores=args.cpu_cores,
-            use_runexec=args.use_runexec,
-            use_gcov_only=args.use_gcov,
-            isolate_tests=args.use_isolation,
-            info_output=True,
-            stop_on_success=args.stop_on_success,
-        )
-
-        executor.run(args.file, args.test_suite, args.machine_model, exec_results)
-        if not exec_results.results:
-            logging.warning(
-                "No test case in exchange format found in '%s'", args.test_suite
-            )
-        else:
-            # Post-processing of test data
-            reduce_testsuite(exec_results, args.reduce_tests)
-
-    except FileNotFoundError as e:
-        logging.error(e)
-    except (IsADirectoryError, zipfile.BadZipFile) as e:
-        logging.error(e)
-        logging.info(
-            "Test suites are expected as ZIP files. Try to zip the test-suite directory and provide the result as test suite"
-        )
-    except execution.ExecutionError as e:
-        logging.error(e.msg)
-    else:
-        error_occurred = False
-    finally:
-        # Output data
-        if exec_results.successful_tests:
-            suite_writer.write_tests_to_suite(
-                args.file,
-                args.test_suite,
-                exec_results.successful_tests,
+        try:
+            executor = execution.SuiteExecutor(
                 args.goal,
-                os.path.join(args.output_dir, args.reduced_suite_name),
+                args.timelimit_per_run,
+                harness_file_target=harness_file,
+                compile_target=executable,
+                compute_individuals=compute_individuals,
+                memlimit=args.memlimit,
+                cores=args.cpu_cores,
+                use_runexec=args.use_runexec,
+                use_gcov_only=args.use_gcov,
+                isolate_tests=args.use_isolation,
+                info_output=True,
+                stop_on_success=args.stop_on_success,
             )
-            if args.check_for_error:
-                # If at least one test covered an error,
-                # make the first one into an executable harness
-                suite_writer.write_harness(
-                    args.file, exec_results.successful_tests[0], args.output_dir
+
+            executor.run(args.file, args.test_suite, args.machine_model, exec_results)
+            if not exec_results.results:
+                logging.warning(
+                    "No test case in exchange format found in '%s'", args.test_suite
                 )
+            else:
+                # Post-processing of test data
+                reduce_testsuite(exec_results, args.reduce_tests)
 
-        results_file_name = RESULTS_NAME + "." + args.results_format
-        suite_writer.write_results(
-            os.path.join(args.output_dir, results_file_name),
-            exec_results,
-            args.results_format,
-        )
-        if args.write_plots and exec_results.coverage_total:
-            try:
-                from suite_validation import plotting
+        except FileNotFoundError as e:
+            logging.error(e)
+        except (IsADirectoryError, zipfile.BadZipFile) as e:
+            logging.error(e)
+            logging.info(
+                "Test suites are expected as ZIP files. Try to zip the test-suite directory and provide the result as test suite"
+            )
+        except execution.ExecutionError as e:
+            logging.error(e.msg)
+        except KeyboardInterrupt:
+            logging.info("Execution interrupted by user")
+        else:
+            error_occurred = False
+        finally:
+            # Output data
+            if exec_results.successful_tests:
+                suite_writer.write_tests_to_suite(
+                    args.file,
+                    args.test_suite,
+                    exec_results.successful_tests,
+                    args.goal,
+                    os.path.join(args.output_dir, args.reduced_suite_name),
+                )
+                if args.check_for_error:
+                    # If at least one test covered an error,
+                    # make the first one into an executable harness
+                    suite_writer.write_harness(
+                        args.file, exec_results.successful_tests[0], args.output_dir
+                    )
 
-                plotting.create_plots(exec_results, args.goal, args.output_dir)
-            except ImportError as e:
-                logging.warning("Not plotting coverage statistics: %s", e.msg)
+            results_file_name = RESULTS_NAME + "." + args.results_format
+            suite_writer.write_results(
+                os.path.join(args.output_dir, results_file_name),
+                exec_results,
+                args.results_format,
+            )
+            if args.write_plots and exec_results.coverage_total:
+                try:
+                    from suite_validation import plotting
 
+                    plotting.create_plots(exec_results, args.goal, args.output_dir)
+                except ImportError as e:
+                    logging.warning("Not plotting coverage statistics: %s", e.msg)
+    except KeyboardInterrupt:
+        logging.info("Execution interrupted by user")
+    finally:
         results_str, return_code = _decide_execution_result(
             exec_results, args.goal, error_occurred
         )

@@ -22,6 +22,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   We previously only reported the number of executed tests, but it may be interesting
   to see whether all identified tests were executed.
 
+### Fixed
+
+- A keyboard interrupt (SIGINT, usually Ctrl+C) does not display an exception anymore,
+  but gracefully terminates.
+  On an interrupt during test-suite execution, execution will stop
+  and result files will be produced.
+  It is then possible to abort the generation of result files by interrupting again.
+
 ## [3.5] - 2021-11-03
 
 ### Changed
