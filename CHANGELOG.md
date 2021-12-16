@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.6] - 2021-12-16
+
 ### Added
 
 - Report total number of tests found in a given test suite.
@@ -29,6 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   On an interrupt during test-suite execution, execution will stop
   and result files will be produced.
   It is then possible to abort the generation of result files by interrupting again.
+- Get correct coverage measurement for single-line functions that call __assert_fail.
+  A gcov_dump to dump recorded coverage was missing for these cases.
+
 
 ## [3.5] - 2021-11-03
 
@@ -73,6 +78,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (easier to read and can contain more information about other tools)
 - Minor code improvements
 
-[Unreleased]: https://gitlab.com/sosy-lab/software/test-suite-validator/-/compare/v3.4...main
+[Unreleased]: https://gitlab.com/sosy-lab/software/test-suite-validator/-/compare/v3.6...main
+[3.6]: https://gitlab.com/sosy-lab/software/test-suite-validator/-/compare/v3.5...v3.6
 [3.5]: https://gitlab.com/sosy-lab/software/test-suite-validator/-/compare/v3.4...v3.5
 [3.4]: https://gitlab.com/sosy-lab/software/test-suite-validator/-/compare/v3.3...v3.4

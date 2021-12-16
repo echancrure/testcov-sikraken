@@ -9,6 +9,6 @@
 
 """Module with tool-specific info"""
 
-__VERSION__ = "3.5"
+__VERSION__ = "3.6"
 
 __NAME__ = "testcov"
