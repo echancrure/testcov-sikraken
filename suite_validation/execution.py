@@ -737,6 +737,7 @@ class SuiteExecutor:
         """
 
         if result_target is None:
+            # add dummy result target that is never used by the caller
             result_target = eu.SuiteExecutionResult()
 
         if self._isolate_tests:
