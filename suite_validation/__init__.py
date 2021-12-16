@@ -274,6 +274,7 @@ def _decide_execution_result(
     results_output = [
         "---Results---",
         f"Tests run: {len(exec_results.results)}",
+        f"Tests in suite: {len(exec_results.all_tests)}",
     ]
     coverage = exec_results.coverage_total
     if not coverage or coverage.count_total is None:

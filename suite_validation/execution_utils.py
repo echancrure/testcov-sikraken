@@ -192,6 +192,8 @@ class SuiteExecutionResult:
     """Results of a full test suite execution."""
 
     def __init__(self):
+        self.all_tests: List[TestVector] = []
+        """All tests found in test suite."""
         self.results: List[ExecutionResult] = []
         self.coverage_total = None
         self.successful_tests = []

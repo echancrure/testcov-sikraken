@@ -467,9 +467,13 @@ class TestSuiteExecutor:
         result_obj = runner.run(
             TEST_FILE_NO_INPUTS, SUITE_EMPTY_TESTCASE, machine_model
         )
+        found_tests = result_obj.all_tests
         results = result_obj.results
         branches = result_obj.coverage_total.coverage
 
+        assert (
+            len(found_tests) == 1
+        ), f"Did not find exactly one test, but {len(found_tests)}"
         assert len(results) == 1, "Empty testcase not executed"
         assert branches, "Coverage information invalid: {branches}"
 
@@ -489,9 +493,13 @@ class TestSuiteExecutor:
         result_obj = runner.run(
             TestSuiteExecutor.PROGRAM_FILE_WITH_ERR, suite_location, machine_model
         )
+        found_tests = result_obj.all_tests
         results = result_obj.results
         branches = result_obj.coverage_total.coverage
 
+        assert (
+            len(found_tests) == 2
+        ), f"Did not find exactly two tests, but {len(found_tests)}"
         assert len(results) == 2, "Not both tests executed"
         assert (
             results.count(eu.COVERS) == 1 and results.count(eu.UNKNOWN) == 1
@@ -538,8 +546,12 @@ class TestSuiteExecutor:
         result_obj = runner.run(
             TEST_FILE_WITH_NO_TERMINATION, suite_location, machine_model
         )
+        found_tests = result_obj.all_tests
         results = result_obj.results
 
+        assert (
+            len(found_tests) == 2
+        ), f"Did not find exactly two tests, but {len(found_tests)}"
         assert len(results) == 2 and all(
             r == eu.ABORTED for r in results
         ), f"Expected two results '{eu.ABORTED}': {results}"
@@ -555,8 +567,12 @@ class TestSuiteExecutor:
         runner = self.get_runner(goal=COVER_REACH, timelimit=2)
 
         result_obj = runner.run(TEST_FILE_WITH_STRINGS, suite_location, machine_model)
+        found_tests = result_obj.all_tests
         results = result_obj.results
 
+        assert (
+            len(found_tests) == 2
+        ), f"Did not find exactly two tests, but {len(found_tests)}"
         assert (
             len(results) == 2
             and any(r == eu.COVERS for r in results)

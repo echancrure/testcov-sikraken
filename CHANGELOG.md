@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Report total number of tests found in a given test suite.
+  We previously only reported the number of executed tests, but it may be interesting
+  to see whether all identified tests were executed.
+
 ## [3.5] - 2021-11-03
 
 ### Changed

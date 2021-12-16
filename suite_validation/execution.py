@@ -14,7 +14,7 @@ import os
 import sys
 import tempfile
 import glob
-from typing import Optional
+from typing import Optional, Iterable
 import zipfile
 
 import xml.etree.ElementTree as etree
@@ -780,8 +780,9 @@ class SuiteExecutor:
         self._check_metadata(metadata, machine_model)
 
         # this method call raises an ExecutionError if the given test suite is invalid
-        test_vectors = self._get_described_vectors(test_suite)
-
+        test_vectors = list(self._get_described_vectors(test_suite))
+        logging.debug("Tests in suite: %s", len(test_vectors))
+        result_target.all_tests = test_vectors
         self._execute_tests(program_file, test_vectors, executor, result_target)
 
         return result_target
@@ -798,7 +799,7 @@ class SuiteExecutor:
                 )
 
     @staticmethod
-    def _get_described_vectors(test_suite):
+    def _get_described_vectors(test_suite) -> Iterable[eu.TestVector]:
         """Return a generator that produces the test vectors described by the given test suite.
 
         :raises ExecutionError: if given test suite is invalid.
@@ -911,7 +912,7 @@ def _parse_xml_if_testcase(xml_lines):
     return etree.fromstringlist(curr_content)
 
 
-def convert_to_vector_if_testcase(test_xml_file, xml_lines):
+def convert_to_vector_if_testcase(test_xml_file, xml_lines) -> Optional[eu.TestVector]:
     """Return test vector represented by given test-case XML.
 
     :param str test_xml_file: Path to xml file to convert.
