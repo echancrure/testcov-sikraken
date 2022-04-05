@@ -26,7 +26,7 @@ def init(level, logfile):
 
 
 def _create_logger(level, logfile):
-    logger = logging.getLogger()
+    logger = logging.getLogger(__package__)
     logger.setLevel(level)
     stdout_handler = logging.StreamHandler()
     stdout_handler.setFormatter(logging.Formatter(fmt=logging.BASIC_FORMAT))
