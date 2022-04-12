@@ -24,6 +24,8 @@ def init(loglevel=INFO, name=__package__, logfile="testcov.log"):
     """Return the logger with the given name. loglevel and logfile"""
     # pylint: disable=W0603
     global _LOGGER, _LOGGER_SET
+    # disable pylint because of a false positive
+    # pylint: disable=E0601
     assert not _LOGGER_SET
     _LOGGER_SET = True
     _LOGGER = _create_logger(name, loglevel, logfile)
