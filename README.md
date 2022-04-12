@@ -32,6 +32,9 @@ The following requirements are automatically installed upon installation:
 * BenchExec >= 1.20
 * pycparser >= 2.19
 
+For cross-compilation (e.g., measuring coverage on 32bit compiles on a 64bit machine),
+TestCov also requires 'gcc-multilib'.
+
 Older versions of GCC can be used, but may mistakenly mark the last else-branch of a program
 as covered, even if it wasn't. We thus recommend to use gcc version 8.0 or later.
 
