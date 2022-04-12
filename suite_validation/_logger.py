@@ -19,14 +19,16 @@ WARNING = logging.WARNING
 ERROR = logging.ERROR
 CRITICAL = logging.CRITICAL
 
-_LOGGER = None
+_LOGGER = logging.getLogger()
+_LOGGER_SET: bool = False
 
 
 def init(loglevel=INFO, name=__package__, logfile="testcov.log"):
     """Return the logger with the given name. loglevel and logfile"""
     # pylint: disable=W0603
-    global _LOGGER
-    assert _LOGGER is None
+    global _LOGGER, _LOGGER_SET
+    assert not _LOGGER_SET
+    _LOGGER_SET = True
     _LOGGER = _create_logger(name, loglevel, logfile)
 
 
