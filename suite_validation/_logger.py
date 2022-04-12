@@ -19,9 +19,6 @@ WARNING = logging.WARNING
 ERROR = logging.ERROR
 CRITICAL = logging.CRITICAL
 
-_LOGGER = logging.getLogger()
-_LOGGER_SET: bool = False
-
 
 def init(loglevel=INFO, name=__package__, logfile="testcov.log"):
     """Return the logger with the given name. loglevel and logfile"""
@@ -137,4 +134,5 @@ class Logger:
         return self.delegate.isEnabledFor(level)
 
 
-LOGGER = Logger()
+_LOGGER = Logger(logging.getLogger())
+_LOGGER_SET: bool = False
