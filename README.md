@@ -45,37 +45,38 @@ For development, we use the [`black`](https://github.com/python/black) formatter
 [`pylint`](https://www.pylint.org/)
 and [`pytest`](https://docs.pytest.org/en/6.2.x/).
 
-## Installation
-
-Because of additionally shipped libraries, we recommend to run TestCov from its repository.
 
 ## Usage
 
-To check that TestCov is working as expected, run from the repository root:
+To check that TestCov is working as expected, you can run from the [repository root][repo]:
 
 ```bash
-bin/testcov --no-isolation --test-suite "test/suites/suite-simple-if.zip" "test/test_simple-if.c"
+testcov --no-isolation --test-suite "test/suites/suite-simple-if.zip" "test/test_simple-if.c"
 ```
+
+[repo]: https://gitlab.com/sosy-lab/software/test-suite-validator/
 
 This should output the following:
 ```
-⏳ Executing tests...
+⏳ Executing tests 2/2
 ✔️  Done!
 
 ---Results---
 Tests run: 2
+Tests in suite: 2
 Coverage: 100.0%
 Number of goals: 2
 Result: DONE
 ```
 
 The output tells you:
-- the number of test-cases that were executed ("Tests run: 2")
+- the number of test cases that were executed ("Tests run: 2")
+- the number of test cases in the test suite ("Tests in suite: 2")
 - the coverage achieved by these test executions ("Coverage: 100.0%")
 - the number of test goals in the program ("Number of goals: 2")
 - the result of TestCov (Result: DONE).
 
-The above command-line uses parameter `--no-isolation` to turn of isolation of test execution.
+The above command-line uses parameter `--no-isolation` to turn off isolation of test execution.
 We use this parameter to make sure that if the command fails it is some issue with your installation of TestCov,
 and not some issue with BenchExec or your cgroups configuration.
 
