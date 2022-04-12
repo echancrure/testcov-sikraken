@@ -33,7 +33,7 @@ The following requirements are automatically installed upon installation:
 * pycparser >= 2.19
 
 Older versions of GCC can be used, but may mistakenly mark the last else-branch of a program
-as covered, even it if wasn't. We thus recommend to use gcc version 8.0 or later.
+as covered, even if it wasn't. We thus recommend to use gcc version 8.0 or later.
 
 Optional, for plotting (if not available, run `testcov` with argument `--no-plots`):
 * matplotlib >= 3.1.0
