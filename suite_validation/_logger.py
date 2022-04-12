@@ -137,4 +137,4 @@ class Logger:
 
 
 _LOGGER = Logger(logging.getLogger())
-_LOGGER_SET: bool = False
+_LOGGER_SET = False
