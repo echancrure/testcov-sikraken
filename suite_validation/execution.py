@@ -874,10 +874,9 @@ class SuiteExecutor:
         """Executes all test vectors on the given program using the given executor
         and puts the results into result_target."""
 
-        print("⏳ Executing tests.", file=self._info_target, end="", flush=True)
-
         for tv in test_vectors:
             result_target.tests.append(tv)
+            logging.print_progress(len(result_target.tests), target=self._info_target)
             next_result = executor.run(program_file, tv)
             result_target.results.append(next_result)
 
@@ -897,8 +896,7 @@ class SuiteExecutor:
             ):
                 logging.info("Stopping. Achieved full coverage")
                 break
-            print(".", file=self._info_target, end="", flush=True)
-        print("\n✔️  Done!", file=self._info_target, flush=True)  # print newline
+        logging.print_done(target=self._info_target)
 
 
 def _parse_xml_if_testcase(xml_lines):
