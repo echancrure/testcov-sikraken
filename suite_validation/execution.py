@@ -877,8 +877,9 @@ class SuiteExecutor:
         total_test_count = len(test_vectors)
         for tv in test_vectors:
             result_target.tests.append(tv)
+            executed_test_count = len(result_target.tests)
             logging.print_progress(
-                count=len(result_target.tests),
+                count=executed_test_count,
                 total=total_test_count,
                 target=self._info_target,
             )
@@ -898,6 +899,7 @@ class SuiteExecutor:
             if (
                 self._stop_on_success
                 and float(result_target.coverage_total.hits_percent) >= 100
+                and executed_test_count < total_test_count
             ):
                 logging.info("Stopping. Achieved full coverage")
                 break
