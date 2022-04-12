@@ -22,8 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Especially matplotlib debug messages are not displayed anymore when command-line flag
   '--verbose' is used. This reduces clutter in the verbose output.
 - The log prefix 'DEBUG:root' changed to 'DEBUG:suite_validation'.
-- Nicer-looking progress display: Log messages and the progress display "Executing tests.."
-  now work nicely together and do not intermingle.
+- Nicer-looking progress display: Log messages and the progress display
+  now work nicely together and do not intermingle, and the progress display shows
+  the currently executed and total number of tests.
+
+  Example: "⏳ Executing tests  20/227"
+
 
 ## [3.6] - 2021-12-16
 

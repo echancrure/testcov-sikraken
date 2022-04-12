@@ -54,8 +54,8 @@ def debug(*args, **kwargs):
     _LOGGER.debug(*args, **kwargs)
 
 
-def print_progress(count: int, target):
-    _LOGGER.print_progress(count, target)
+def print_progress(count: int, total: int, target):
+    _LOGGER.print_progress(count, total, target)
 
 
 def print_done(target):
@@ -87,8 +87,9 @@ class Logger:
             delegate = logging.getLogger()
         self.delegate = delegate
 
-    def print_progress(self, count: int, target):
-        status_report = "⏳ Executing tests" + ("." * count)
+    def print_progress(self, count: int, total: int, target):
+        digits = len(str(total))
+        status_report = f"⏳ Executing tests {count:{digits}}/{total:{digits}}"
         if not self.log_written_since_status_update:
             cursor_movement = "\033[A\r"  # overwrite previous progress report
         else:

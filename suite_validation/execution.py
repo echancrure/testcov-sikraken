@@ -874,9 +874,14 @@ class SuiteExecutor:
         """Executes all test vectors on the given program using the given executor
         and puts the results into result_target."""
 
+        total_test_count = len(test_vectors)
         for tv in test_vectors:
             result_target.tests.append(tv)
-            logging.print_progress(len(result_target.tests), target=self._info_target)
+            logging.print_progress(
+                count=len(result_target.tests),
+                total=total_test_count,
+                target=self._info_target,
+            )
             next_result = executor.run(program_file, tv)
             result_target.results.append(next_result)
 
