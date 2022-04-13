@@ -11,6 +11,7 @@ The other methods in this module can only be used after 'init' has been called.
 """
 
 import logging
+import sys
 from typing import Optional
 
 DEBUG = logging.DEBUG
@@ -55,27 +56,28 @@ def debug(*args, **kwargs):
     _LOGGER.debug(*args, **kwargs)
 
 
-def print_progress(count: int, total: int, target):
+def print_progress(count: int, total: int, target=None):
     _LOGGER.print_progress(count, total, target)
 
 
-def print_done(target):
+def print_done(target=None):
     _LOGGER.print_done(target)
 
 
-def _create_logger(name, level, logfile):
+def _create_logger(name, level, logfile=None):
     delegate = logging.getLogger(name)
     delegate.setLevel(level)
     stdout_handler = logging.StreamHandler()
     stdout_handler.setFormatter(logging.Formatter(fmt=logging.BASIC_FORMAT))
     delegate.addHandler(stdout_handler)
-    logfile_handler = logging.FileHandler(logfile)
-    logfile_formatter = logging.Formatter(
-        fmt="%(asctime)s %(levelname)-8s %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-    logfile_handler.setFormatter(logfile_formatter)
-    delegate.addHandler(logfile_handler)
+    if logfile is not None:
+        logfile_handler = logging.FileHandler(logfile)
+        logfile_formatter = logging.Formatter(
+            fmt="%(asctime)s %(levelname)-8s %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+        logfile_handler.setFormatter(logfile_formatter)
+        delegate.addHandler(logfile_handler)
     return Logger(delegate)
 
 
@@ -88,7 +90,11 @@ class Logger:
             delegate = logging.getLogger()
         self.delegate = delegate
 
-    def print_progress(self, count: int, total: int, target):
+    def print_progress(self, count: int, total: int, target=None):
+        if target is None:
+            # do not use sys.stderr as default value in parameter but assign
+            # it dynamically, to always take the current stream sys.stderr points to
+            target = sys.stderr
         digits = len(str(total))
         status_report = f"⏳ Executing tests {count:{digits}}/{total:{digits}}"
         if not self.log_written_since_status_update:
@@ -99,7 +105,11 @@ class Logger:
         print(cursor_movement + status_report, file=target, flush=True)
 
     @staticmethod
-    def print_done(target):
+    def print_done(target=None):
+        if target is None:
+            # do not use sys.stderr as default value in parameter but assign
+            # it dynamically, to always take the current stream sys.stderr points to
+            target = sys.stderr
         print("✔️  Done!", file=target, flush=True)  # print newline
 
     def critical(self, *args, **kwargs):
