@@ -24,7 +24,7 @@ variables:
 .unit-tests: &unit-tests
   stage: test
   script:
-    - pytest suite_validation
+    - pytest
   artifacts:
     paths:
       - coverage.xml
