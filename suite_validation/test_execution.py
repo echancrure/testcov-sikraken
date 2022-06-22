@@ -170,7 +170,7 @@ class TestExecutionRunner:
     def test_harness_compile(self, tmp_path):
         for machine_model in MACHINE_MODELS:
             with WorkIn(tmp_path):
-                self._check_harness_creation(machine_model)
+                self._check_harness_compile(machine_model)
 
     def _check_harness_compile(self, machine_model):
         runner = self.get_runner(machine_model, timelimit=None)
