@@ -984,7 +984,7 @@ class TestStringRepresentations:
     @pytest.mark.parametrize(
         "kwargs",
         [
-            baseKwargs | compilerKwargs
+            {**baseKwargs, **compilerKwargs}
             for baseKwargs in args_compile_information_permutations()
             for compilerKwargs in args_coverage_measurement_permutations()
         ],
@@ -1013,7 +1013,7 @@ class TestStringRepresentations:
     @pytest.mark.parametrize(
         "kwargs",
         [
-            baseKwargs | compilerKwargs | isolatingKwargs
+            {**baseKwargs, **compilerKwargs, **isolatingKwargs}
             for baseKwargs in args_compile_information_permutations()
             for compilerKwargs in args_coverage_measurement_permutations()
             for isolatingKwargs in args_isolation_permutations()
@@ -1042,7 +1042,7 @@ class TestStringRepresentations:
     @pytest.mark.parametrize(
         "kwargs",
         [
-            baseKwargs | compilerKwargs | isolatingKwargs
+            {**baseKwargs, **compilerKwargs, **isolatingKwargs}
             for baseKwargs in args_compile_information_permutations()
             for compilerKwargs in args_coverage_measurement_permutations()
             for isolatingKwargs in args_isolation_permutations()
