@@ -13,6 +13,9 @@ import os
 import subprocess
 import tempfile
 import itertools
+
+import pytest
+
 import suite_validation.coverage as cov
 import suite_validation.reduction_strategy as rs
 import suite_validation.execution as ex
@@ -69,6 +72,49 @@ MACHINE_MODELS = (eu.MACHINE_MODEL_32, eu.MACHINE_MODEL_64)
 
 DUMMY_FILE = "DUMMY_FILE"
 DUMMY_TEST_VECTOR_RESULT = {eu.TestVector("dummy_tv", "dummy.xml"): eu.UNKNOWN}
+
+
+def args_compile_information_permutations():
+    return [
+        {},
+        {
+            "harness_file_target": "/tmp/example2.c",
+            "compile_target": "/tmp/bin",
+            "compiler": "gcc",
+        },
+    ]
+
+
+def args_coverage_measurement_permutations():
+    return [
+        {},
+        {
+            "output_dir": "mydir",
+            "info_files_dir": "files_dir",
+            "compute_individuals": True,
+        },
+        {
+            "output_dir": "/tmp/dir",
+            "info_files_dir": "/tmp/files_dir/",
+            "compute_individuals": False,
+        },
+    ]
+
+
+def args_isolation_permutations():
+    return [
+        {},
+        {
+            "memlimit": "15GB",
+            "cores": 2,
+            "use_runexec": True,
+        },
+        {
+            "memlimit": "500MB",
+            "cores": 1,
+            "use_runexec": False,
+        },
+    ]
 
 
 # pylint: disable=protected-access
@@ -267,7 +313,7 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
             goal,
             harness_file,
             compile_output_file,
-            individual_runs=False,
+            compute_individuals=False,
         )
 
     def test_get_line_coverage_single_execution(self, tmp_path):
@@ -886,6 +932,142 @@ class TestSuiteExecutor:
         assert coverage.hits_percent == 100
         assert coverage.count_total == 3
         assert coverage.hits == 3
+
+
+class TestStringRepresentations:
+    @pytest.mark.parametrize("machine_model", MACHINE_MODELS)
+    @pytest.mark.parametrize("timelimit", [1, 900, None])
+    @pytest.mark.parametrize("kwargs", args_compile_information_permutations())
+    # pylint: disable=invalid-name
+    def test_ExecutionRunner_repr_allows_construction(
+        self, machine_model, timelimit, kwargs
+    ):
+        from suite_validation.execution import ExecutionRunner
+
+        obj = ExecutionRunner(machine_model, timelimit, **kwargs)
+
+        # pylint: disable=eval-used
+        mirrored_object = eval(repr(obj))
+
+        # disable pylint unidiomatic typecheck because we don't want to include subtypes
+        # in our check: We want to make sure the mirrored object
+        # is the exact type of the original object.
+        # pylint: disable=unidiomatic-typecheck
+        assert type(mirrored_object) == ExecutionRunner
+        assert repr(mirrored_object) == repr(obj)
+
+    @pytest.mark.parametrize("machine_model", MACHINE_MODELS)
+    @pytest.mark.parametrize("timelimit", [1, 900, None])
+    @pytest.mark.parametrize("goal", [eu.COVER_BRANCHES, COVER_REACH])
+    @pytest.mark.parametrize("kwargs", args_compile_information_permutations())
+    # pylint: disable=invalid-name
+    def test_GcovCoverageMeasurer_repr_allows_construction(
+        self, machine_model, timelimit, goal, kwargs
+    ):
+        from suite_validation.execution import GcovCoverageMeasurer
+
+        obj = GcovCoverageMeasurer(machine_model, timelimit, goal, **kwargs)
+
+        # pylint: disable=eval-used
+        mirrored_object = eval(repr(obj))
+
+        # disable pylint unidiomatic typecheck because we don't want to include subtypes
+        # in our check: We want to make sure the mirrored object
+        # is the exact type of the original object.
+        # pylint: disable=unidiomatic-typecheck
+        assert type(mirrored_object) == GcovCoverageMeasurer
+        assert repr(mirrored_object) == repr(obj)
+
+    @pytest.mark.parametrize("machine_model", MACHINE_MODELS)
+    @pytest.mark.parametrize("timelimit", [1, 900, None])
+    @pytest.mark.parametrize("goal", [eu.COVER_BRANCHES, COVER_REACH])
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            baseKwargs | compilerKwargs
+            for baseKwargs in args_compile_information_permutations()
+            for compilerKwargs in args_coverage_measurement_permutations()
+        ],
+    )
+    # pylint: disable=invalid-name
+    def test_LcovCoverageMeasurer_repr_allows_construction(
+        self, machine_model, timelimit, goal, kwargs
+    ):
+        from suite_validation.execution import LcovCoverageMeasurer
+
+        obj = LcovCoverageMeasurer(machine_model, timelimit, goal, **kwargs)
+
+        # pylint: disable=eval-used
+        mirrored_object = eval(repr(obj))
+
+        # disable pylint unidiomatic typecheck because we don't want to include subtypes
+        # in our check: We want to make sure the mirrored object
+        # is the exact type of the original object.
+        # pylint: disable=unidiomatic-typecheck
+        assert type(mirrored_object) == LcovCoverageMeasurer
+        assert repr(mirrored_object) == repr(obj)
+
+    @pytest.mark.parametrize("machine_model", MACHINE_MODELS)
+    @pytest.mark.parametrize("timelimit", [1, 900, None])
+    @pytest.mark.parametrize("goal", [eu.COVER_BRANCHES, COVER_REACH])
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            baseKwargs | compilerKwargs | isolatingKwargs
+            for baseKwargs in args_compile_information_permutations()
+            for compilerKwargs in args_coverage_measurement_permutations()
+            for isolatingKwargs in args_isolation_permutations()
+        ],
+    )
+    # pylint: disable=invalid-name
+    def test_IsolatingRunner_repr_allows_construction(
+        self, machine_model, timelimit, goal, kwargs
+    ):
+        from suite_validation.execution import IsolatingRunner
+
+        obj = IsolatingRunner(machine_model, timelimit, goal, **kwargs)
+
+        # pylint: disable=eval-used
+        mirrored_object = eval(repr(obj))
+
+        # disable pylint unidiomatic typecheck because we don't want to include subtypes
+        # in our check: We want to make sure the mirrored object
+        # is the exact type of the original object.
+        # pylint: disable=unidiomatic-typecheck
+        assert type(mirrored_object) == IsolatingRunner
+        assert repr(mirrored_object) == repr(obj)
+
+    @pytest.mark.parametrize("timelimit", [1, 900, None])
+    @pytest.mark.parametrize("goal", [eu.COVER_BRANCHES, COVER_REACH])
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            baseKwargs | compilerKwargs | isolatingKwargs
+            for baseKwargs in args_compile_information_permutations()
+            for compilerKwargs in args_coverage_measurement_permutations()
+            for isolatingKwargs in args_isolation_permutations()
+        ],
+    )
+    # pylint: disable=invalid-name
+    def test_SuiteExecutor_repr_allows_construction(self, timelimit, goal, kwargs):
+        from suite_validation.execution import SuiteExecutor
+
+        # delete keys from kwargs that do not exist for SuiteExecutor
+        # we have to do this because we reuse the kwargs generated for used
+        # executors, but these know more optional parameters.
+        for unknown_keys in ("compiler", "info_files_dir"):
+            kwargs.pop(unknown_keys, None)
+        obj = SuiteExecutor(goal, timelimit, **kwargs)
+
+        # pylint: disable=eval-used
+        mirrored_object = eval(repr(obj))
+
+        # disable pylint unidiomatic typecheck because we don't want to include subtypes
+        # in our check: We want to make sure the mirrored object
+        # is the exact type of the original object.
+        # pylint: disable=unidiomatic-typecheck
+        assert type(mirrored_object) == SuiteExecutor
+        assert repr(mirrored_object) == repr(obj)
 
 
 def _get_cov(coverage):

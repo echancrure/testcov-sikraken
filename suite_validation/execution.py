@@ -279,6 +279,19 @@ class ExecutionRunner:
         logging.debug("Input for %s: %s", test_vector.name, get_log_repr(test_vector))
         return input_vector
 
+    def __str__(self) -> str:
+        return repr(self)
+
+    def __repr__(self) -> str:
+        return (
+            f"ExecutionRunner("
+            f"machine_model='{self.machine_model}', "
+            f"timelimit_per_run='{self.timelimit}', "
+            f"harness_file_target='{self._harness_file_target}', "
+            f"compile_target='{self._compile_target}', "
+            f"compiler='{self._compiler}')"
+        )
+
 
 class GcovCoverageMeasurer(ExecutionRunner):
     TEMPORARY_FILE_SUFFIXES = (".gcda", ".gcno", ".gcov")
@@ -387,6 +400,20 @@ class GcovCoverageMeasurer(ExecutionRunner):
             logging.debug("Falling back to look in current directory for GCDA file.")
         return _get_gcda(".")
 
+    def __str__(self) -> str:
+        return repr(self)
+
+    def __repr__(self) -> str:
+        return (
+            f"GcovCoverageMeasurer("
+            f"machine_model='{self.machine_model}', "
+            f"timelimit_per_run='{self.timelimit}', "
+            f"goal='{self._goal}', "
+            f"harness_file_target='{self._harness_file_target}', "
+            f"compile_target='{self._compile_target}', "
+            f"compiler='{self._compiler}')"
+        )
+
 
 class LcovCoverageMeasurer(GcovCoverageMeasurer):
     TEMPORARY_FILE_SUFFIXES = (".gcda", ".gcno", ".gcov", ".info")
@@ -401,7 +428,7 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
         compiler="gcc",
         output_dir="output",
         info_files_dir="info_files",
-        individual_runs=True,
+        compute_individuals=True,
     ):
         super().__init__(
             machine_model,
@@ -415,7 +442,7 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
         self._output_dir = output_dir
         self._output_dir_info = os.path.join(output_dir, info_files_dir)
         self.harness_file = None
-        self._individual_runs = individual_runs
+        self._compute_individual_run_coverages = compute_individuals
         self._instrumented_programs_cache = {}
         os.makedirs(self._output_dir_info, exist_ok=True)
 
@@ -522,7 +549,7 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
             )
             return None
         finally:
-            if self._individual_runs:
+            if self._compute_individual_run_coverages:
                 self._remove_data_file(data_file)
 
     @staticmethod
@@ -531,6 +558,23 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
             os.remove(data_file)
         except FileNotFoundError:
             pass
+
+    def __str__(self) -> str:
+        return repr(self)
+
+    def __repr__(self) -> str:
+        return (
+            f"LcovCoverageMeasurer("
+            f"machine_model='{self.machine_model}', "
+            f"timelimit_per_run='{self.timelimit}', "
+            f"goal='{self._goal}', "
+            f"harness_file_target='{self._harness_file_target}', "
+            f"compile_target='{self._compile_target}', "
+            f"compiler='{self._compiler}', "
+            f"output_dir='{self._output_dir}', "
+            f"info_files_dir='{os.path.relpath(self._output_dir_info, self._output_dir)}', "
+            f"compute_individuals='{self._compute_individual_run_coverages}')"
+        )
 
 
 class IsolatingRunner(LcovCoverageMeasurer):
@@ -541,12 +585,13 @@ class IsolatingRunner(LcovCoverageMeasurer):
         goal,
         harness_file_target="harness.c",
         compile_target="a.out",
+        compiler="gcc",
         memlimit=None,
         cores=None,
         use_runexec=True,
         output_dir="output",
         info_files_dir="info_files",
-        individual_runs=True,
+        compute_individuals=True,
     ):
         super().__init__(
             machine_model,
@@ -554,9 +599,10 @@ class IsolatingRunner(LcovCoverageMeasurer):
             goal,
             harness_file_target,
             compile_target,
+            compiler,
             output_dir=output_dir,
             info_files_dir=info_files_dir,
-            individual_runs=individual_runs,
+            compute_individuals=compute_individuals,
         )
         self._memlimit = memlimit
         self._timelimit = timelimit_per_run
@@ -663,6 +709,26 @@ class IsolatingRunner(LcovCoverageMeasurer):
                 return True
         return execution_info.got_aborted
 
+    def __str__(self) -> str:
+        return repr(self)
+
+    def __repr__(self) -> str:
+        return (
+            f"IsolatingRunner("
+            f"machine_model='{self.machine_model}', "
+            f"timelimit_per_run='{self.timelimit}', "
+            f"goal='{self._goal}', "
+            f"harness_file_target='{self._harness_file_target}', "
+            f"compile_target='{self._compile_target}', "
+            f"compiler='{self._compiler}', "
+            f"memlimit='{self._memlimit}', "
+            f"cores='{self._cpu_cores}', "
+            f"use_runexec={self._use_runexec}, "
+            f"output_dir='{self._output_dir}', "
+            f"info_files_dir='{os.path.relpath(self._output_dir_info, self._output_dir)}', "
+            f"compute_individuals={self._compute_individual_run_coverages})"
+        )
+
 
 class SuiteExecutor:
     """Provides methods to execute a full test suite in the XML format."""
@@ -749,7 +815,7 @@ class SuiteExecutor:
                 self._cpu_cores,
                 self._use_runexec,
                 output_dir=self._output_dir,
-                individual_runs=self._compute_individual_test_coverages,
+                compute_individuals=self._compute_individual_test_coverages,
             )
         elif self._use_gcov_only:
             executor = GcovCoverageMeasurer(
@@ -768,7 +834,7 @@ class SuiteExecutor:
                 self._harness_file_target,
                 self._compile_target,
                 output_dir=self._output_dir,
-                individual_runs=self._compute_individual_test_coverages,
+                compute_individuals=self._compute_individual_test_coverages,
             )
 
         try:
@@ -902,6 +968,27 @@ class SuiteExecutor:
                 logging.info("Stopping. Achieved full coverage")
                 break
         logging.print_done(target=self._info_target)
+
+    def __str__(self) -> str:
+        return repr(self)
+
+    def __repr__(self) -> str:
+        return (
+            f"SuiteExecutor("
+            f"goal='{self._goal}', "
+            f"timelimit_per_run='{self._timelimit}', "
+            f"harness_file_target='{self._harness_file_target}', "
+            f"compile_target='{self._compile_target}', "
+            f"isolate_tests={self._isolate_tests}, "
+            f"compute_individuals={self._compute_individual_test_coverages}, "
+            f"memlimit='{self._memlimit}', "
+            f"cores='{self._cpu_cores}', "
+            f"use_runexec={self._use_runexec}, "
+            f"use_gcov_only={self._use_gcov_only}, "
+            f"info_output={self._info_target is not None}, "
+            f"stop_on_success={self._stop_on_success}, "
+            f"output_dir='{self._output_dir}')"
+        )
 
 
 def _parse_xml_if_testcase(xml_lines):
