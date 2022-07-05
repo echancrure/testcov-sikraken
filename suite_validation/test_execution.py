@@ -117,55 +117,34 @@ def args_isolation_permutations():
     ]
 
 
+def _vector(*values):
+    vector = eu.TestVector("TestVector", "dummy.c")
+    for val in values:
+        if isinstance(val, tuple):
+            vector.add(*val)
+        else:
+            vector.add(val)
+    return vector
+
+
 # pylint: disable=protected-access
 class TestHarness:
     """Tests for harness creation with ex.HarnessCreator."""
 
-    def test_harness_without_test_vector_compilable(self, tmp_path):
-        with WorkIn(tmp_path):
-            self._check_compilable()
-
-    def test_harness_with_test_vector_compilable(self, tmp_path):
-        vectors = []
-
-        test_vector = eu.TestVector("int_input", "dummy.xml")
-        test_vector.add("0")
-        vectors.append(test_vector)
-
-        test_vector = eu.TestVector("int_input_with_method", "dummy.xml")
-        test_vector.add("0", method="__VERIFIER_nondet_int")
-        vectors.append(test_vector)
-
-        test_vector = eu.TestVector("char_input", "dummy.xml")
-        test_vector.add("'a'")
-        vectors.append(test_vector)
-
-        test_vector = eu.TestVector("hex_input", "dummy.xml")
-        test_vector.add("0x0000f")
-        vectors.append(test_vector)
-
-        test_vector = eu.TestVector("multiple_inputs", "dummy.xml")
-        test_vector.add("0")
-        test_vector.add("5")
-        test_vector.add("999")
-        vectors.append(test_vector)
-
-        test_vector = eu.TestVector("string_inputs", "dummy.xml")
-        test_vector.add('"Some string value"')
-        vectors.append(test_vector)
-
-        test_vector = eu.TestVector("multiple_input_types", "dummy.xml")
-        test_vector.add("0")
-        test_vector.add("'b'")
-        test_vector.add("0xff000f9a")
-        vectors.append(test_vector)
-
-        for tv in vectors:
-            with WorkIn(tmp_path):
-                self._check_compilable(tv)
-
-    @staticmethod
-    def _check_compilable(test_vector=None):
+    @pytest.mark.parametrize(
+        "vector",
+        (
+            None,
+            _vector("0"),
+            _vector(("0", "__VERIFIER_nondet_int")),
+            _vector("'a'"),
+            _vector("0x000f"),
+            _vector("0", "5", "999"),
+            _vector('"Some string value"'),
+            _vector("0", "'b'", "0xff000f9a"),
+        ),
+    )
+    def test_harness_with_test_vector_compilable(self, vector, tmp_path):
         compile_cmd = [
             "gcc",
             "-Wno-attributes",
@@ -176,13 +155,14 @@ class TestHarness:
             "-",
         ]
 
-        harness = ex.HarnessCreator().convert(TEST_FILE_WITHOUT_ERR, test_vector)
+        with WorkIn(tmp_path):
+            harness = ex.HarnessCreator().convert(TEST_FILE_WITHOUT_ERR, vector)
 
-        with subprocess.Popen(compile_cmd, stdin=subprocess.PIPE) as compile_exec:
-            compile_exec.communicate(harness.encode())
-            returncode = compile_exec.poll()
+            with subprocess.Popen(compile_cmd, stdin=subprocess.PIPE) as compile_exec:
+                compile_exec.communicate(harness.encode())
+                returncode = compile_exec.poll()
 
-        assert returncode == 0, f"Compilation failed: {compile_cmd}"
+            assert returncode == 0, f"Compilation failed: {compile_cmd}"
 
 
 # pylint: disable=protected-access
@@ -190,114 +170,98 @@ class TestExecutionRunner:
     """Tests for ex.ExecutionRunner."""
 
     @staticmethod
-    def get_runner(machine_model, timelimit, goal=None):
-        del goal
+    def _runner(machine_model, timelimit):
         harness_file = _get_harness_file_target()
         compile_output_file = _get_compile_target()
         return ex.ExecutionRunner(
             machine_model, timelimit, harness_file, compile_output_file
         )
 
-    def test_harness_creation(self, tmp_path):
-        for machine_model in MACHINE_MODELS:
-            with WorkIn(tmp_path):
-                self._check_harness_creation(machine_model)
+    @staticmethod
+    @pytest.fixture
+    def runner():
+        return TestExecutionRunner._runner(eu.MACHINE_MODEL_32, timelimit=None)
 
-    def _check_harness_creation(self, machine_model):
-        runner = self.get_runner(machine_model, timelimit=None)
+    def test_harness_creation(self, runner, tmp_path):
+        with WorkIn(tmp_path):
+            try:
+                output_file = runner.get_executable_harness(TEST_FILE_WITHOUT_ERR)
+            except ex.ExecutionError as e:
+                assert False, f"Harness creation failed: {e}"
+            assert os.path.exists(output_file), f"Harness {output_file} not found"
 
-        try:
-            output_file = runner.get_executable_harness(TEST_FILE_WITHOUT_ERR)
-        except ex.ExecutionError as e:
-            assert False, f"Harness creation failed: {e}"
+    def test_harness_compile(self, runner, tmp_path):
+        with WorkIn(tmp_path):
+            _, out_file = tempfile.mkstemp()
 
-        assert os.path.exists(output_file), f"Harness {output_file} not found"
+            try:
+                out_file = runner.compile(TEST_FILE_WITHOUT_ERR, TEST_HARNESS, out_file)
+            except ex.ExecutionError as e:
+                assert False, f"Compilation failed: {e}"
 
-    def test_harness_compile(self, tmp_path):
-        for machine_model in MACHINE_MODELS:
-            with WorkIn(tmp_path):
-                self._check_harness_compile(machine_model)
+            assert os.path.exists(out_file)
 
-    def _check_harness_compile(self, machine_model):
-        runner = self.get_runner(machine_model, timelimit=None)
-        _, out_file = tempfile.mkstemp()
+    def test_invalid_harness_compile_throws_error(self, runner, tmp_path):
+        with WorkIn(tmp_path):
+            _, out_file = tempfile.mkstemp()
 
-        try:
-            out_file = runner.compile(TEST_FILE_WITHOUT_ERR, TEST_HARNESS, out_file)
-        except ex.ExecutionError as e:
-            assert False, f"Compilation failed: {e}"
+            try:
+                runner.compile(TEST_FILE_WITHOUT_ERR, "harness.c", out_file)
+            except ex.ExecutionError:
+                pass
+            else:
+                assert False, "Expected ExecutionError"
 
-        assert os.path.exists(out_file)
+    def test_invalid_program_compile_throws_error(self, runner, tmp_path):
+        with WorkIn(tmp_path):
+            _, out_file = tempfile.mkstemp()
 
-    def test_invalid_harness_compile_throws_error(self, tmp_path):
-        for machine_model in MACHINE_MODELS:
-            with WorkIn(tmp_path):
-                self._check_invalid_harness_compile_throws_error(machine_model)
+            try:
+                runner.compile("program.c", TEST_HARNESS, out_file)
+            except ex.ExecutionError:
+                pass
+            else:
+                assert False, "Expected ExecutionError"
 
-    def _check_invalid_harness_compile_throws_error(self, machine_model):
-        runner = self.get_runner(machine_model, timelimit=None)
-        _, out_file = tempfile.mkstemp()
-
-        try:
-            runner.compile(TEST_FILE_WITHOUT_ERR, "harness.c", out_file)
-        except ex.ExecutionError:
-            pass
-        else:
-            assert False, "Expected ExecutionError"
-
-    def test_invalid_program_compile_throws_error(self, tmp_path):
-        for machine_model in MACHINE_MODELS:
-            with WorkIn(tmp_path):
-                self._check_invalid_harness_compile_throws_error(machine_model)
-
-    def _check_invalid_program_compile_throws_error(self, machine_model):
-        runner = self.get_runner(machine_model, timelimit=None)
-        _, out_file = tempfile.mkstemp()
-
-        try:
-            runner.compile("program.c", TEST_HARNESS, out_file)
-        except ex.ExecutionError:
-            pass
-        else:
-            assert False, "Expected ExecutionError"
-
-    def test_execution_run_result_unknown(self, tmp_path):
+    @pytest.mark.parametrize("machine_model", MACHINE_MODELS)
+    @pytest.mark.parametrize("timelimit", (None, 5, 10, 99999))
+    def test_execution_run_result_unknown(self, machine_model, timelimit, tmp_path):
         simple_vector = eu.TestVector("dummy", "dummy.xml")
         simple_vector.add("1")
 
-        for machine_model in MACHINE_MODELS:
-            for timelimit in (None, 5, 10, 99999):
-                with WorkIn(tmp_path):
-                    self._check_test_execution_runs(
-                        machine_model,
-                        timelimit,
-                        TEST_FILE_WITHOUT_ERR,
-                        simple_vector,
-                        eu.UNKNOWN,
-                    )
+        with WorkIn(tmp_path):
+            self._check_test_execution_runs(
+                machine_model,
+                timelimit,
+                TEST_FILE_WITHOUT_ERR,
+                simple_vector,
+                eu.UNKNOWN,
+            )
 
     def _check_test_execution_runs(
         self, machine_model, timelimit, test_file, test_vector, expected
     ):
-        runner = self.get_runner(machine_model, timelimit)
+        runner = TestExecutionRunner._runner(machine_model, timelimit)
 
         run_result = runner.run(test_file, test_vector)
 
         assert run_result == expected
 
-    def test_execution_run_non_terminating_with_timelimit(self, tmp_path):
+    @pytest.mark.parametrize("machine_model", MACHINE_MODELS)
+    def test_execution_run_non_terminating_with_timelimit(
+        self, machine_model, tmp_path
+    ):
         empty_vector = eu.TestVector("dummy", "dummy.xml")
         timelimit = 3
 
-        for machine_model in MACHINE_MODELS:
-            with WorkIn(tmp_path):
-                self._check_test_execution_runs(
-                    machine_model,
-                    timelimit,
-                    TEST_FILE_WITH_NO_TERMINATION,
-                    empty_vector,
-                    eu.ABORTED,
-                )
+        with WorkIn(tmp_path):
+            self._check_test_execution_runs(
+                machine_model,
+                timelimit,
+                TEST_FILE_WITH_NO_TERMINATION,
+                empty_vector,
+                eu.ABORTED,
+            )
 
 
 class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
@@ -400,30 +364,24 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
 
             old_condition_cov = coverage.hits
 
-    def test_function_call_coverage(self, tmp_path):
-        covering_vector = eu.TestVector("covers_test", "covers_test.c")
-        covering_vector.add("'a'")
-        covering_vector.add("5")
-        covering_vector.add("0x10")
+    @pytest.mark.parametrize("machine_model", MACHINE_MODELS)
+    @pytest.mark.parametrize(("program_file", "goal"), TEST_FILES_WITH_ERR)
+    @pytest.mark.parametrize(
+        ("test_vector", "expected"),
+        [
+            (_vector("'a'", "5", "0x10"), eu.COVERS),
+            (_vector("'z'", "5", "0x0f"), eu.UNKNOWN),
+        ],
+    )
+    def test_function_call_coverage(
+        self, machine_model, program_file, goal, test_vector, expected, tmp_path
+    ):
+        with WorkIn(tmp_path):
+            runner = self.get_runner(machine_model, None, goal)
 
-        missing_vector = eu.TestVector("misses_test", "misses_test.c")
-        missing_vector.add("'z'")
-        missing_vector.add("5")
-        missing_vector.add("0x0f")
+            run_result = runner.run(program_file, test_vector)
 
-        for machine_model in MACHINE_MODELS:
-            for err_file, goal in TEST_FILES_WITH_ERR:
-                with WorkIn(tmp_path):
-                    self._check_call_coverage(
-                        machine_model, err_file, goal, covering_vector, eu.COVERS
-                    )
-
-        for machine_model in MACHINE_MODELS:
-            for err_file, goal in TEST_FILES_WITH_ERR:
-                with WorkIn(tmp_path):
-                    self._check_call_coverage(
-                        machine_model, err_file, goal, missing_vector, eu.UNKNOWN
-                    )
+            assert run_result == expected
 
     def test_function_call_coverage_incomplete_input(self, tmp_path):
         runner = self.get_runner(eu.MACHINE_MODEL_32, None, COVER_REACH)
@@ -456,13 +414,6 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
             run_result = runner.run(err_file, incomplete_vector)
 
         assert run_result == eu.COVERS
-
-    def _check_call_coverage(self, machine_model, test_file, goal, vector, expected):
-        runner = self.get_runner(machine_model, None, goal)
-
-        run_result = runner.run(test_file, vector)
-
-        assert run_result == expected
 
 
 class WorkIn:
