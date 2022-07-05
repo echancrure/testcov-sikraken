@@ -34,6 +34,9 @@ class ExecutionError(Exception):
         super().__init__()
         self.msg = msg
 
+    def __str__(self):
+        return self.msg
+
 
 class HarnessCreator:
     """Provides methods to create a harness.
