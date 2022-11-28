@@ -809,14 +809,14 @@ class SuiteExecutor:
 
         if self._isolate_tests:
             executor = IsolatingRunner(
-                machine_model,
-                self._timelimit,
-                self._goal,
-                self._harness_file_target,
-                self._compile_target,
-                self._memlimit,
-                self._cpu_cores,
-                self._use_runexec,
+                machine_model=machine_model,
+                timelimit_per_run=self._timelimit,
+                goal=self._goal,
+                harness_file_target=self._harness_file_target,
+                compile_target=self._compile_target,
+                memlimit=self._memlimit,
+                cores=self._cpu_cores,
+                use_runexec=self._use_runexec,
                 output_dir=self._output_dir,
                 compute_individuals=self._compute_individual_test_coverages,
             )
