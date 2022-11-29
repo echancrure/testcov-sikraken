@@ -245,7 +245,11 @@ class ExecutionRunner:
                 logging.info("Aborted execution for test %s", test_vector)
                 return eu.TestResult(eu.ABORTED, run_result)
             if run_result.returncode != 0:
-                logging.debug("Non-0 return code for test %s", test_vector)
+                logging.debug(
+                    "Non-0 return code for test %s. Exited with '%s'.",
+                    test_vector,
+                    run_result.stderr,
+                )
             return eu.TestResult(eu.UNKNOWN, run_result)
         return eu.TestResult(eu.ERROR, run_result)
 
