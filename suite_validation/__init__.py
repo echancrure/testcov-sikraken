@@ -120,15 +120,6 @@ def get_parser():
     )
 
     parser.add_argument(
-        "--cpu-cores",
-        dest="cpu_cores",
-        action="store",
-        type=int,
-        default="1",
-        help="cpu core limit for each execution",
-    )
-
-    parser.add_argument(
         "--output",
         dest="output_dir",
         action=StorePath,
@@ -360,7 +351,6 @@ def main(argv=None):
                 compile_target=executable,
                 compute_individuals=compute_individuals,
                 memlimit=args.memlimit,
-                cores=args.cpu_cores,
                 use_runexec=args.use_runexec,
                 use_gcov_only=args.use_gcov,
                 isolate_tests=args.use_isolation,

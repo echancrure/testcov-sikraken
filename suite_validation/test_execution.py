@@ -106,12 +106,10 @@ def args_isolation_permutations():
         {},
         {
             "memlimit": "15GB",
-            "cores": 2,
             "use_runexec": True,
         },
         {
             "memlimit": "500MB",
-            "cores": 1,
             "use_runexec": False,
         },
     ]

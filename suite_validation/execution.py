@@ -590,7 +590,6 @@ class IsolatingRunner(LcovCoverageMeasurer):
         compile_target="a.out",
         compiler="gcc",
         memlimit=None,
-        cores=None,
         use_runexec=True,
         output_dir="output",
         info_files_dir="info_files",
@@ -609,7 +608,6 @@ class IsolatingRunner(LcovCoverageMeasurer):
         )
         self._memlimit = memlimit
         self._timelimit = timelimit_per_run
-        self._cpu_cores = cores
         self._use_runexec = use_runexec
         tempdir = tempfile.mkdtemp(prefix="testcov-")
         self._output_log = os.path.join(tempdir, "output.log")
@@ -624,8 +622,6 @@ class IsolatingRunner(LcovCoverageMeasurer):
                 resource_options += ["--memlimit", self._memlimit]
             if self._timelimit:
                 resource_options += ["--timelimit", str(self._timelimit)]
-            if self._cpu_cores:
-                resource_options += ["--cores", str(self._cpu_cores)]
             cmd = [
                 "runexec",
                 "--container",
@@ -725,7 +721,6 @@ class IsolatingRunner(LcovCoverageMeasurer):
             f"compile_target='{self._compile_target}', "
             f"compiler='{self._compiler}', "
             f"memlimit='{self._memlimit}', "
-            f"cores='{self._cpu_cores}', "
             f"use_runexec={self._use_runexec}, "
             f"output_dir='{self._output_dir}', "
             f"info_files_dir='{os.path.relpath(self._output_dir_info, self._output_dir)}', "
@@ -745,7 +740,6 @@ class SuiteExecutor:
         isolate_tests=True,
         compute_individuals=True,
         memlimit=None,
-        cores=None,
         use_runexec=True,
         use_gcov_only=False,
         info_output=False,
@@ -764,7 +758,6 @@ class SuiteExecutor:
             compute_individuals and not use_gcov_only
         )
         self._memlimit = memlimit
-        self._cpu_cores = cores
         self._use_runexec = use_runexec and not use_gcov_only
         self._use_gcov_only = use_gcov_only
         assert (
@@ -815,7 +808,6 @@ class SuiteExecutor:
                 harness_file_target=self._harness_file_target,
                 compile_target=self._compile_target,
                 memlimit=self._memlimit,
-                cores=self._cpu_cores,
                 use_runexec=self._use_runexec,
                 output_dir=self._output_dir,
                 compute_individuals=self._compute_individual_test_coverages,
@@ -985,7 +977,6 @@ class SuiteExecutor:
             f"isolate_tests={self._isolate_tests}, "
             f"compute_individuals={self._compute_individual_test_coverages}, "
             f"memlimit='{self._memlimit}', "
-            f"cores='{self._cpu_cores}', "
             f"use_runexec={self._use_runexec}, "
             f"use_gcov_only={self._use_gcov_only}, "
             f"info_output={self._info_target is not None}, "
