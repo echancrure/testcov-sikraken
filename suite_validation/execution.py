@@ -645,8 +645,6 @@ class IsolatingRunner(LcovCoverageMeasurer):
             "/home",
             "--hidden-dir",
             "/sys/kernel/debug",
-            "--result-files",
-            "harness.gcda",
             "--output-dir",
             self._output_dir,
             "--",
