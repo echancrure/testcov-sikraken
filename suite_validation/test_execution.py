@@ -954,7 +954,6 @@ def _get_cov(coverage):
 
 # pylint: disable=protected-access
 class TestCoverageChecker:
-
     bad_test_coverages = {
         eu.COVER_LINES: _get_cov(
             cov._LinesCoverage(
