@@ -8,6 +8,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import subprocess
+import tempfile
 import time
 from typing import List
 
@@ -225,6 +226,28 @@ class ExecutionResult:
 
 
 def execute(command, quiet=False, input_str=None, timelimit=None):
+    if input_str is not None and not isinstance(input_str, bytes):
+        input_str = input_str.encode()
+
+    with tempfile.TemporaryFile() as input_file:
+        if input_str is None:
+            # If we have no input, use no input file.
+            input_file = None
+        else:
+            # Write the input to a file so that we have an EOF marker after all content
+            # is read. This is necessary to make test executables abort
+            # when no more inputs are available. With stdin as a pipe,
+            # the test executable will wait for a new input until the timeout expires
+            # and there is no way to differentiate missing inputs
+            # and long-running executions.
+            input_file.write(input_str if input_str is not None else b"")
+            input_file.flush()
+            input_file.seek(0)
+
+        return _execute(command, input_file, quiet=quiet, timelimit=timelimit)
+
+
+def _execute(command, input_file, quiet=False, timelimit=None):
     def shut_down(process):
         process.kill()
         return process.wait()
@@ -235,20 +258,17 @@ def execute(command, quiet=False, input_str=None, timelimit=None):
     wall_time_start = time.perf_counter()
     with subprocess.Popen(
         command,
-        stdin=subprocess.PIPE if input_str else None,
+        stdin=input_file,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         universal_newlines=False,
     ) as process:
-
         output = None
         err_output = None
         wall_time = None
         try:
-            if input_str and not isinstance(input_str, bytes):
-                input_str = input_str.encode()
             output, err_output = process.communicate(
-                input=input_str, timeout=timelimit if timelimit else None
+                timeout=timelimit if timelimit else None
             )
             returncode = process.poll()
             got_aborted = False
