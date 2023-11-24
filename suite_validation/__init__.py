@@ -355,7 +355,7 @@ def main(argv=None):
         ]
         subprocess.run(clang_format_command, check=True)
         args.file = formatted_file
-        logging.debug("Formatted file written to %s." % formatted_file)
+        logging.debug(f"Formatted file written to {formatted_file}.")
     if not os.path.exists(args.output_dir):
         os.mkdir(args.output_dir)
 
