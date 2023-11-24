@@ -14,6 +14,7 @@ import re
 import subprocess
 import sys
 import zipfile
+from shutil import copy
 from typing import Tuple
 from suite_validation import execution
 from suite_validation import execution_utils as eu
@@ -341,15 +342,9 @@ def main(argv=None):
         formatted_file = os.path.join(
             project_directory, f"formatted_{os.path.basename(args.file)}"
         )
-        with open(formatted_file, "w", encoding="utf-8") as formatted:
-            with open(args.file, "r", encoding="utf-8") as not_formatted:
-                formatted.write(not_formatted.read())
-        code_style = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "code.style"
-        )
+        copy(args.file, formatted_file)
         clang_format_command = [
             "clang-format",
-            f"-style=file:{code_style}",
             "-i",
             formatted_file,
         ]
