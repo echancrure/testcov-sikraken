@@ -156,7 +156,7 @@ def get_parser():
 
     parser.add_argument(
         "--format",
-        dest="verbose",
+        dest="format",
         action="store_true",
         default=False,
         help="formats the code with clang before test suite validation",
@@ -336,6 +336,7 @@ def main(argv=None):
         argv = sys.argv[1:]
     args = parse(argv)
     if args.format:
+        logging.debug("Formatting file with clang-format.")
         project_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         formatted_file = os.path.join(
             project_directory, f"formatted_{os.path.basename(args.file)}"
@@ -343,13 +344,18 @@ def main(argv=None):
         with open(formatted_file, "w") as formatted:
             with open(args.file, "r") as not_formatted:
                 formatted.write(not_formatted.read())
+        code_style = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "code.style"
+        )
         clang_format_command = [
             "clang-format",
+            f"-style=file:{code_style}",
             "-i",
             formatted_file,
         ]
         subprocess.run(clang_format_command, check=True)
         args.file = formatted_file
+        logging.debug("Formatted file written to %s." % formatted_file)
     if not os.path.exists(args.output_dir):
         os.mkdir(args.output_dir)
 
