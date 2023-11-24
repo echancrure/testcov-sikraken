@@ -341,8 +341,8 @@ def main(argv=None):
         formatted_file = os.path.join(
             project_directory, f"formatted_{os.path.basename(args.file)}"
         )
-        with open(formatted_file, "w") as formatted:
-            with open(args.file, "r") as not_formatted:
+        with open(formatted_file, "w", encoding="utf-8") as formatted:
+            with open(args.file, "r", encoding="utf-8") as not_formatted:
                 formatted.write(not_formatted.read())
         code_style = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "code.style"
