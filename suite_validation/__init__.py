@@ -11,6 +11,7 @@
 import argparse
 import os
 import re
+import subprocess
 import sys
 import zipfile
 from typing import Tuple
@@ -151,6 +152,14 @@ def get_parser():
         action="store_true",
         default=False,
         help="show messages verbose",
+    )
+
+    parser.add_argument(
+        "--format",
+        dest="verbose",
+        action="store_true",
+        default=False,
+        help="formats the code with clang before test suite validation",
     )
 
     parser.add_argument(
@@ -326,7 +335,21 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
     args = parse(argv)
-
+    if args.format:
+        project_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        formatted_file = os.path.join(
+            project_directory, f"formatted_{os.path.basename(args.file)}"
+        )
+        with open(formatted_file, "w") as formatted:
+            with open(args.file, "r") as not_formatted:
+                formatted.write(not_formatted.read())
+        clang_format_command = [
+            "clang-format",
+            "-i",
+            formatted_file,
+        ]
+        subprocess.run(clang_format_command, check=True)
+        args.file = formatted_file
     if not os.path.exists(args.output_dir):
         os.mkdir(args.output_dir)
 
