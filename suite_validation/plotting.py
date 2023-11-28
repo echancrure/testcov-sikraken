@@ -116,7 +116,12 @@ def _write_coverages_plot(exec_results, coverage_goal, output_file):
                 "Accumulated coverage",
                 ha="left",
                 va="bottom",
-                bbox=dict(facecolor="white", edgecolor=None, linewidth=0, alpha=0),
+                bbox={
+                    "facecolor": "white",
+                    "edgecolor": None,
+                    "linewidth": 0,
+                    "alpha": 0,
+                },
                 fontsize=10,
             )
 
