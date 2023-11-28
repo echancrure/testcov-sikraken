@@ -11,8 +11,10 @@
 import argparse
 import os
 import re
+import subprocess
 import sys
 import zipfile
+from shutil import copy
 from typing import Tuple
 from suite_validation import execution
 from suite_validation import execution_utils as eu
@@ -151,6 +153,14 @@ def get_parser():
         action="store_true",
         default=False,
         help="show messages verbose",
+    )
+
+    parser.add_argument(
+        "--format",
+        dest="format",
+        action="store_true",
+        default=False,
+        help="formats the code with clang before test suite validation",
     )
 
     parser.add_argument(
@@ -326,7 +336,21 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
     args = parse(argv)
-
+    if args.format:
+        logging.debug("Formatting file with clang-format.")
+        project_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        formatted_file = os.path.join(
+            project_directory, f"formatted_{os.path.basename(args.file)}"
+        )
+        copy(args.file, formatted_file)
+        clang_format_command = [
+            "clang-format",
+            "-i",
+            formatted_file,
+        ]
+        subprocess.run(clang_format_command, check=True)
+        args.file = formatted_file
+        logging.debug(f"Formatted file written to {formatted_file}.")
     if not os.path.exists(args.output_dir):
         os.mkdir(args.output_dir)
 
