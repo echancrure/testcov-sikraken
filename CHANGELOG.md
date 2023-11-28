@@ -16,6 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.9] - 2023-11-28
+
+- Option `--format` creates a temporary copy of the input program and formats it with `clang format`.
+  The internal program transformations of TestCov work best with the formatting style of `clang format`.
+- TestCov now generates a temporary file ensuring the presence of EOF. 
+  This is necessary to abort test-execution.
+
 ## [3.8] - 2023-03-05
 
 ### Changed
@@ -99,7 +106,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (easier to read and can contain more information about other tools)
 - Minor code improvements
 
-[Unreleased]: https://gitlab.com/sosy-lab/software/test-suite-validator/-/compare/v3.8...main
+[Unreleased]: https://gitlab.com/sosy-lab/software/test-suite-validator/-/compare/v3.9...main
+[3.9]: https://gitlab.com/sosy-lab/software/test-suite-validator/-/compare/v3.8...v3.9
 [3.8]: https://gitlab.com/sosy-lab/software/test-suite-validator/-/compare/v3.7...v3.8
 [3.7]: https://gitlab.com/sosy-lab/software/test-suite-validator/-/compare/v3.6...v3.7
 [3.6]: https://gitlab.com/sosy-lab/software/test-suite-validator/-/compare/v3.5...v3.6
