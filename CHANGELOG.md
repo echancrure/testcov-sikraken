@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.9] - 2023-11-28
 
+### Added
+
 - Option `--format` creates a temporary copy of the input program and formats it with `clang format`.
   The internal program transformations of TestCov work best with the formatting style of `clang format`.
 - TestCov now generates a temporary file ensuring the presence of EOF. 
