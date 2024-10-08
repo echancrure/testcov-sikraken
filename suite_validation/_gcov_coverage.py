@@ -15,6 +15,7 @@ from typing import Tuple
 from collections import namedtuple
 from suite_validation import execution_utils as eu
 
+
 Coverage = namedtuple("Coverage", ("hits_percent", "count_total"))
 
 
@@ -23,7 +24,7 @@ class GcovError(Exception):
 
 
 def create_gcov_file(
-    program_name, data_file, gcov_tool="gcov"
+    program_name, data_file, gcov_tool
 ) -> Tuple[str, eu.ExecutionResult]:
     execution_result = _run_gcov(data_file, gcov_tool)
     program_name = os.path.basename(program_name)
@@ -33,11 +34,14 @@ def create_gcov_file(
     return gcov_file, execution_result
 
 
-def _run_gcov(data_file, gcov_tool="gcov"):
+def _run_gcov(data_file, gcov_tool):
     if not os.path.exists(data_file):
         raise FileNotFoundError(data_file)
 
-    gcov_cmd = [gcov_tool, "-bc", data_file]
+    gcov_cmd = [gcov_tool]
+    if gcov_tool.startswith("llvm-cov"):
+        gcov_cmd += ["gcov"]
+    gcov_cmd += ["-bc", data_file]
     return eu.execute(gcov_cmd, quiet=True)
 
 
