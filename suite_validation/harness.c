@@ -7,6 +7,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <stdint.h>
+#include <ctype.h>
+
 #define MAX_INPUT_SIZE 3000
 #ifdef GCOV
 extern void __gcov_dump(void);
@@ -161,6 +164,30 @@ double __VERIFIER_nondet_double() {
   double val;
   parse_input("%lf", &val);
   return val;
+}
+
+__uint128_t str_to_uint128(const char* str) {
+    __uint128_t result = 0;
+    while (*str) {
+        result = result * 10 + (*str - '0');
+        str++;
+    }
+    return result;
+}
+
+__uint128_t __VERIFIER_nondet_uint128() {
+    char input[256];
+
+    if (fgets(input, sizeof(input), stdin) == 0) {
+        fprintf(stderr, "Error reading input\n");
+        return 1;
+    }
+
+    size_t len = strlen(input);
+    if (input[len - 1] == '\n') {
+        input[len - 1] = '\0';
+    }
+    return str_to_uint128(input);
 }
 
 _Bool __VERIFIER_nondet_bool() { return (_Bool)__VERIFIER_nondet_int(); }
