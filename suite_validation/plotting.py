@@ -26,6 +26,8 @@ def _prepare_axis_for_plot(coverage_goal: str, total_coverage: float, test_count
         ylabel = "Condition Coverage (%)"
     elif eu.uses_line_coverage(coverage_goal):
         ylabel = "Line Coverage (%)"
+    else:
+        raise ValueError(f"Unknown coverage goal: {coverage_goal}.")
 
     ax = plt.figure().gca()
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
