@@ -936,7 +936,8 @@ class SuiteExecutor:
         and puts the results into result_target."""
 
         total_test_count = len(test_vectors)
-        for tv in test_vectors:
+        for i, tv in enumerate(test_vectors):
+            logging.debug("Running test %d/%d", i + 1, total_test_count)
             result_target.tests.append(tv)
             executed_test_count = len(result_target.tests)
             logging.print_progress(

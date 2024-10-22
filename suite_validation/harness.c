@@ -6,10 +6,6 @@
 // SPDX-FileCopyrightText: 2019 Dirk Beyer <https://www.sosy-lab.org>
 //
 // SPDX-License-Identifier: Apache-2.0
-
-#include <ctype.h>
-#include <stdint.h>
-
 #define MAX_INPUT_SIZE 3000
 #ifdef GCOV
 extern void __gcov_dump(void);
