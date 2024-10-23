@@ -348,7 +348,9 @@ class GcovCoverageMeasurer(ExecutionRunner):
                 logging.info("Removing existing file %s", f)
                 os.remove(f)
 
-    def _compute_coverage_with_gcov(self, program_name, data_file) -> Optional[Coverage]:
+    def _compute_coverage_with_gcov(
+        self, program_name, data_file
+    ) -> Optional[Coverage]:
         try:
             _, execution_result = _gcov_coverage.create_gcov_file(
                 program_name, data_file

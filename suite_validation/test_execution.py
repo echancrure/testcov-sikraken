@@ -67,6 +67,9 @@ SUITE_SIMPLE_IF_SWAPPED = os.path.join(SUITE_DIR, "suite-simple-if-swapped.zip")
 SUITE_EMPTY_TESTCASE = os.path.join(SUITE_DIR, "suite-empty-test.zip")
 SUITE_ABORTS = os.path.join(SUITE_DIR, "suite-abort.zip")
 SUITE_ASSERT_FAIL = os.path.join(SUITE_DIR, "suite-assert_fail.zip")
+SUITE_UINT128_ZIP = os.path.join(SUITE_DIR, "suite-uint128.zip")
+SUITE_INT128_ZIP = os.path.join(SUITE_DIR, "suite-int128.zip")
+SUITE_INT128_SAFE_ZIP = os.path.join(SUITE_DIR, "suite-int128_safe.zip")
 
 MACHINE_MODELS = (eu.MACHINE_MODEL_32, eu.MACHINE_MODEL_64)
 
@@ -448,6 +451,60 @@ class TestSuiteExecutor:
                 results.count(eu.COVERS) == 1 and results.count(eu.UNKNOWN) == 1
             ), f"Expected exactly one result to be {eu.COVERS} and one to be {eu.UNKNOWN}: {results}"
             assert branches, f"Coverage information invalid: {branches}"
+
+    @pytest.mark.parametrize("test_suite", (SUITE_UINT128_ZIP, SUITE_INT128_SAFE_ZIP))
+    def test_128_bit_inputs_unsigned(self, test_suite, tmp_path):
+        with WorkIn(tmp_path):
+            runner = self.get_runner()
+
+            result_obj = runner.run(
+                os.path.join(TEST_DIRECTORY, "test_uint128.c"),
+                test_suite,
+                eu.MACHINE_MODEL_64,
+            )
+            found_tests = result_obj.all_tests
+            results = result_obj.results
+            assert (
+                len(found_tests) == 3
+            ), f"Did not find exactly one test, but {len(found_tests)}"
+            assert len(results) == 3, "Not all tests executed"
+            if "_safe" in test_suite:
+                assert all([r.execution_info.returncode == 0 for r in results]), (
+                    f"Not all tests failed with return code 1: "
+                    f"{[r.execution_info.returncode for r in results]}"
+                )
+            else:
+                assert all([r.execution_info.returncode == 1 for r in results]), (
+                    f"Not all tests failed with return code 1: "
+                    f"{[r.execution_info.returncode for r in results]}"
+                )
+
+    @pytest.mark.parametrize("test_suite", (SUITE_INT128_ZIP, SUITE_INT128_SAFE_ZIP))
+    def test_128_bit_inputs_signed(self, test_suite, tmp_path):
+        with WorkIn(tmp_path):
+            runner = self.get_runner()
+
+            result_obj = runner.run(
+                os.path.join(TEST_DIRECTORY, "test_int128.c"),
+                test_suite,
+                eu.MACHINE_MODEL_64,
+            )
+            found_tests = result_obj.all_tests
+            results = result_obj.results
+            assert (
+                len(found_tests) == 3
+            ), f"Did not find exactly one test, but {len(found_tests)}"
+            assert len(results) == 3, "Not all tests executed"
+            if "_safe" in test_suite:
+                assert all([r.execution_info.returncode == 0 for r in results]), (
+                    f"Not all tests failed with return code 1: "
+                    f"{[r.execution_info.returncode for r in results]}"
+                )
+            else:
+                assert all([r.execution_info.returncode == 1 for r in results]), (
+                    f"Not all tests failed with return code 1: "
+                    f"{[r.execution_info.returncode for r in results]}"
+                )
 
     @staticmethod
     def _check_file_exists(filename):
