@@ -25,6 +25,7 @@ from suite_validation import coverage as cov
 from suite_validation import metadata_utils as mu
 from suite_validation import transformer as tr
 from suite_validation import _logger as logging
+from suite_validation._gcov_coverage import Coverage
 
 HARNESS_FILE_NAME = "harness.c"
 
@@ -347,7 +348,7 @@ class GcovCoverageMeasurer(ExecutionRunner):
                 logging.info("Removing existing file %s", f)
                 os.remove(f)
 
-    def _compute_coverage_with_gcov(self, program_name, data_file) -> Optional[float]:
+    def _compute_coverage_with_gcov(self, program_name, data_file) -> Optional[Coverage]:
         try:
             _, execution_result = _gcov_coverage.create_gcov_file(
                 program_name, data_file
@@ -936,8 +937,7 @@ class SuiteExecutor:
         and puts the results into result_target."""
 
         total_test_count = len(test_vectors)
-        for i, tv in enumerate(test_vectors):
-            logging.debug("Running test %d/%d", i + 1, total_test_count)
+        for tv in test_vectors:
             result_target.tests.append(tv)
             executed_test_count = len(result_target.tests)
             logging.print_progress(
