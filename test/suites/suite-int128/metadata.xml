@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE test-metadata PUBLIC "+//IDN sosy-lab.org//DTD test-format test-metadata 1.0//EN" "https://sosy-lab.org/test-format/test-metadata-1.0.dtd">
+<test-metadata>
+  <sourcecodelang>C</sourcecodelang>
+  <producer>AFL 2.47b</producer>
+  <specification>CHECK( LTL(G ! call(__VERIFIER_error())) )</specification>
+  <programfile>../test_uint128.c</programfile>
+  <programhash>446d1505d60bcd9b2667aadb3895ec63cbb5138263834663fdb48e6948b82121</programhash>
+  <entryfunction>main</entryfunction>
+  <architecture>64bit</architecture>
+  <creationtime>2018-11-13T14:17:34Z</creationtime>
+</test-metadata>
