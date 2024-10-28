@@ -164,6 +164,19 @@ def get_parser():
     )
 
     parser.add_argument(
+        "--compiler",
+        default="gcc",
+        help="Use the given compiler binary for all program compilation",
+    )
+
+    parser.add_argument(
+        "--cov-tool",
+        dest="coverage_tool",
+        default="gcov",
+        help="Use the given binary as backend for coverage measurement",
+    )
+
+    parser.add_argument(
         "--no-individual-test-coverage",
         dest="individual_test_cov",
         action="store_false",
@@ -377,6 +390,8 @@ def main(argv=None):
                 memlimit=args.memlimit,
                 use_runexec=args.use_runexec,
                 use_gcov_only=args.use_gcov,
+                compiler=args.compiler,
+                coverage_tool=args.coverage_tool,
                 isolate_tests=args.use_isolation,
                 info_output=True,
                 stop_on_success=args.stop_on_success,

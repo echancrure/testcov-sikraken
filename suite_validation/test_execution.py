@@ -26,6 +26,9 @@ MODULE_DIRECTORY = os.path.join(
     os.path.dirname(suite_validation.__file__), os.path.pardir
 )
 
+COMPILER = "gcc"
+COVERAGE_TOOL = "gcov"
+
 COVER_REACH = eu.CoverFunc("reach_error")
 
 TEST_DIRECTORY = os.path.join(MODULE_DIRECTORY, "test")
@@ -83,7 +86,7 @@ def args_compile_information_permutations():
         {
             "harness_file_target": "/tmp/example2.c",
             "compile_target": "/tmp/bin",
-            "compiler": "gcc",
+            "compiler": COMPILER,
         },
     ]
 
@@ -147,7 +150,7 @@ class TestHarness:
     )
     def test_harness_with_test_vector_compilable(self, vector, tmp_path):
         compile_cmd = [
-            "gcc",
+            COMPILER,
             "-Wno-attributes",
             "-x",
             "c",
@@ -279,6 +282,8 @@ class TestCoverageMeasuringExecutionRunner(TestExecutionRunner):
             harness_file,
             compile_output_file,
             compute_individuals=False,
+            compiler=COMPILER,
+            coverage_tool=COVERAGE_TOOL,
         )
 
     @pytest.mark.parametrize("machine_model", MACHINE_MODELS)
@@ -410,6 +415,8 @@ class TestSuiteExecutor:
             isolate_tests=False,
             compute_individuals=compute_individuals,
             use_runexec=False,
+            compiler=COMPILER,
+            coverage_tool=COVERAGE_TOOL,
         )
 
     @pytest.mark.parametrize("machine_model", MACHINE_MODELS)
@@ -901,7 +908,9 @@ class TestStringRepresentations:
     ):
         from suite_validation.execution import GcovCoverageMeasurer
 
-        obj = GcovCoverageMeasurer(machine_model, timelimit, goal, **kwargs)
+        obj = GcovCoverageMeasurer(
+            machine_model, timelimit, goal, coverage_tool=COVERAGE_TOOL, **kwargs
+        )
 
         # pylint: disable=eval-used
         mirrored_object = eval(repr(obj))
@@ -930,7 +939,9 @@ class TestStringRepresentations:
     ):
         from suite_validation.execution import LcovCoverageMeasurer
 
-        obj = LcovCoverageMeasurer(machine_model, timelimit, goal, **kwargs)
+        obj = LcovCoverageMeasurer(
+            machine_model, timelimit, goal, coverage_tool=COVERAGE_TOOL, **kwargs
+        )
 
         # pylint: disable=eval-used
         mirrored_object = eval(repr(obj))
@@ -960,7 +971,9 @@ class TestStringRepresentations:
     ):
         from suite_validation.execution import IsolatingRunner
 
-        obj = IsolatingRunner(machine_model, timelimit, goal, **kwargs)
+        obj = IsolatingRunner(
+            machine_model, timelimit, goal, coverage_tool=COVERAGE_TOOL, **kwargs
+        )
 
         # pylint: disable=eval-used
         mirrored_object = eval(repr(obj))

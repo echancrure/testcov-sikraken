@@ -158,13 +158,17 @@ class ExecutionRunner:
         timelimit_per_run,
         harness_file_target="harness.c",
         compile_target="a.out",
-        compiler="gcc",
+        compiler=None,
     ):
         """Create new ExecutionRunner.
 
         :param str machine_model: Machine model to use
         :param int timelimit_per_run: Time limit for each execution, in seconds
         """
+
+        if compiler is None:
+            compiler = "gcc"
+            logging.info("No compiler specified; I will call '%s'", compiler)
 
         self.machine_model = machine_model
         self.harness = None
@@ -311,7 +315,8 @@ class GcovCoverageMeasurer(ExecutionRunner):
         goal,
         harness_file_target="harness.c",
         compile_target="a.out",
-        compiler="gcc",
+        compiler=None,
+        coverage_tool=None,
     ):
         super().__init__(
             machine_model,
@@ -322,6 +327,7 @@ class GcovCoverageMeasurer(ExecutionRunner):
         )
         self._goal = goal
         self.harness_file = None
+        self._coverage_tool = coverage_tool
 
     def _get_compile_cmd(
         self, program_file, harness_file, output_file, c_version="gnu11"
@@ -353,7 +359,7 @@ class GcovCoverageMeasurer(ExecutionRunner):
     ) -> Optional[Coverage]:
         try:
             _, execution_result = _gcov_coverage.create_gcov_file(
-                program_name, data_file
+                program_name, data_file, gcov_tool=self._coverage_tool
             )
         except FileNotFoundError:
             return None
@@ -435,7 +441,8 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
         goal,
         harness_file_target="harness.c",
         compile_target="a.out",
-        compiler="gcc",
+        compiler=None,
+        coverage_tool=None,
         output_dir="output",
         info_files_dir="info_files",
         compute_individuals=True,
@@ -446,8 +453,10 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
             goal,
             harness_file_target,
             compile_target,
-            compiler,
+            compiler=compiler,
+            coverage_tool=coverage_tool,
         )
+        self._coverage_tool = coverage_tool
         self._goal = goal
         self._output_dir = output_dir
         self._output_dir_info = os.path.join(output_dir, info_files_dir)
@@ -549,6 +558,7 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
                 coverage_goal,
                 branch_label_line_numbers,
                 output_dir=self._output_dir_info,
+                gcov_tool=self._coverage_tool,
             )
             return coverage
         except FileNotFoundError as e:
@@ -595,7 +605,8 @@ class IsolatingRunner(LcovCoverageMeasurer):
         goal,
         harness_file_target="harness.c",
         compile_target="a.out",
-        compiler="gcc",
+        compiler=None,
+        coverage_tool=None,
         memlimit=None,
         use_runexec=True,
         output_dir="output",
@@ -608,7 +619,8 @@ class IsolatingRunner(LcovCoverageMeasurer):
             goal,
             harness_file_target,
             compile_target,
-            compiler,
+            compiler=compiler,
+            coverage_tool=coverage_tool,
             output_dir=output_dir,
             info_files_dir=info_files_dir,
             compute_individuals=compute_individuals,
@@ -747,6 +759,8 @@ class SuiteExecutor:
         memlimit=None,
         use_runexec=True,
         use_gcov_only=False,
+        compiler=None,
+        coverage_tool=None,
         info_output=False,
         stop_on_success=False,
         output_dir="output",
@@ -771,6 +785,8 @@ class SuiteExecutor:
         assert (
             not self._use_runexec or self._isolate_tests
         ), "Conflicting arguments: Can't use runexec without isolating runs"
+        self._compiler = compiler
+        self._coverage_tool = coverage_tool
 
         self._info_target = sys.stderr if info_output else None
 
@@ -812,6 +828,8 @@ class SuiteExecutor:
                 goal=self._goal,
                 harness_file_target=self._harness_file_target,
                 compile_target=self._compile_target,
+                compiler=self._compiler,
+                coverage_tool=self._coverage_tool,
                 memlimit=self._memlimit,
                 use_runexec=self._use_runexec,
                 output_dir=self._output_dir,
@@ -824,6 +842,8 @@ class SuiteExecutor:
                 self._goal,
                 self._harness_file_target,
                 self._compile_target,
+                compiler=self._compiler,
+                coverage_tool=self._coverage_tool,
             )
 
         else:
@@ -833,6 +853,8 @@ class SuiteExecutor:
                 self._goal,
                 self._harness_file_target,
                 self._compile_target,
+                compiler=self._compiler,
+                coverage_tool=self._coverage_tool,
                 output_dir=self._output_dir,
                 compute_individuals=self._compute_individual_test_coverages,
             )

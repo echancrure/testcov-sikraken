@@ -20,8 +20,6 @@ from suite_validation import execution_utils as eu
 from suite_validation import _logger as logging
 
 
-MODULE_DIRECTORY = os.path.join(os.path.dirname(__file__), os.path.pardir)
-LLVM_GCOV_BINARY = os.path.join(MODULE_DIRECTORY, "bin/llvm-gcov")
 TRACE_FILE_CONDITION_NOT_VISITED = "-"
 
 _FILEPATH = "SF:"
@@ -571,7 +569,7 @@ def _get_lcov_body(lcov_lines: List[str], relevant_program_name: str):
             break
     assert (
         start is not None
-    ), f"Missing {_FILEPATH} in lcov file for {relevant_program_name}"
+    ), f"Missing {_FILEPATH} in lcov file for {relevant_program_name}: {lcov_lines}"
     assert stop is not None
     return lcov_lines[start:stop]
 
@@ -652,10 +650,22 @@ def _get_coverage_from_tracefile(
         logging.debug("Done extracting coverage from created tracefile")
 
 
-def _create_lcov_tracefile(coverage_goal, data_file, gcov_tool="gcov"):
+def _create_lcov_tracefile(coverage_goal, data_file, gcov_tool):
     output_tracefile = "current_test.info"
     data_directory = os.path.dirname(data_file)
     cmd = ["lcov", "--gcov-tool", gcov_tool]
+    # To make llvm-cov work with lcov, as proposed in the manpage geninfo(1):
+    # ```
+    # If the --gcov-tool option is used multiple times, then the arguments are concatenated when the callback is executed - similar to how the gcc -Xlinker para‐
+    # meter  works.  This provides a possibly easier way to pass arguments to your tool, without requiring a wrapper script.  In that case, your callback will be
+    # executed as: tool-0 'tool-1; ... 'filename'.  Note that the second and subsequent arguments are quoted when passed to the shell, in order to handle parame‐
+    # ters which contain spaces.
+    # A common use for this option is to enable LLVM:
+    #        geninfo --gcov-tool llvm-cov --gcov-tool gcov ..
+    # ```
+    if gcov_tool.startswith("llvm-cov"):
+        cmd += ["--gcov-tool", "gcov"]
+
     if eu.uses_condition_coverage(coverage_goal):
         # add coverage information about which branch conditions were taken/evaluated.
         # This option makes lcov pretty slow, so
@@ -674,8 +684,11 @@ def _compute_test_coverage_lcov(
     data_file,
     coverage_goal,
     branch_label_line_numbers=None,
-    gcov_tool="gcov",
+    gcov_tool=None,
 ) -> Tuple[List[str], _CoverageComparable]:
+    assert (
+        gcov_tool is not None
+    ), "Parameter gcov_tool must be provided; is currently None"
     if not os.path.exists(data_file):
         raise FileNotFoundError(data_file)
 
@@ -698,9 +711,14 @@ def compute_test_coverage(
     next_result,
     coverage_goal,
     branch_label_line_numbers=None,
-    gcov_tool="gcov",
+    gcov_tool=None,
     output_dir="output/info_files",
 ) -> TestCoverage:
+    if gcov_tool is None:
+        gcov_tool = "gcov"
+        logging.info(
+            "No tool for coverage measurement defined. I will call '%s'", gcov_tool
+        )
     created_files, coverage = _compute_test_coverage_lcov(
         program_name,
         data_file,
