@@ -6,7 +6,6 @@
 // SPDX-FileCopyrightText: 2019 Dirk Beyer <https://www.sosy-lab.org>
 //
 // SPDX-License-Identifier: Apache-2.0
-
 #define MAX_INPUT_SIZE 3000
 #ifdef GCOV
 extern void __gcov_dump(void);
@@ -162,6 +161,50 @@ double __VERIFIER_nondet_double() {
   parse_input("%lf", &val);
   return val;
 }
+
+#ifdef __SIZEOF_INT128__
+#define MAX_INT128_SIZE 41
+void read_int128_input(char *input) {
+  if (fgets(input, MAX_INT128_SIZE, stdin) == 0) {
+    fprintf(stderr, "Error reading input\n");
+    abort_prog();
+  }
+
+  size_t len = strlen(input);
+  if (input[len - 1] == '\n') {
+    input[len - 1] = '\0';
+  }
+}
+
+__uint128_t str_to_uint128(const char *str) {
+  __uint128_t result = 0;
+  while (*str) {
+    if (*str >= '0' && *str <= '9') {
+      result = result * 10 + (*str - '0');
+      str++;
+    } else {
+      fprintf(stderr, "Invalid input for __uint128_t: %s\n", str);
+      abort_prog();
+    }
+  }
+  return result;
+}
+
+__uint128_t __VERIFIER_nondet_uint128() {
+  char input[MAX_INT128_SIZE];
+  read_int128_input(input);
+  return str_to_uint128(input);
+}
+
+__int128_t __VERIFIER_nondet_int128() {
+  char input[MAX_INT128_SIZE];
+  read_int128_input(input);
+  if (input[0] == '-') {
+    return -((__int128_t)str_to_uint128(input + 1));
+  }
+  return (__int128_t)str_to_uint128(input);
+}
+#endif
 
 _Bool __VERIFIER_nondet_bool() { return (_Bool)__VERIFIER_nondet_int(); }
 

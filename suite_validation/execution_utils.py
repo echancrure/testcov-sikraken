@@ -265,7 +265,6 @@ def _execute(command, input_file, quiet=False, timelimit=None):
     ) as process:
         output = None
         err_output = None
-        wall_time = None
         try:
             output, err_output = process.communicate(
                 timeout=timelimit if timelimit else None
