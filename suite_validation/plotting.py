@@ -77,8 +77,8 @@ def _write_coverages_plot(exec_results, coverage_goal, output_file):
             assert (
                 total_coverage == exec_results.coverage_sequence[-1]
             ), "Final coverage of coverage sequence not same as total coverage reported"
-            assert (
-                len(exec_results.coverage_sequence) == len(exec_results.results)
+            assert len(exec_results.coverage_sequence) == len(
+                exec_results.results
             ), f"List lengths don't match: {exec_results.coverage_sequence} vs. {exec_results.results}"
 
             ax.step(

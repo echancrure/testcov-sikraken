@@ -741,8 +741,8 @@ class TestSuiteExecutor:
         )
         suite_validation.reduce_testsuite(result_obj, strategy)
         if goal in [eu.COVER_LINES]:
-            assert (
-                len(result_obj.reduced_coverage_tests) < len(result_obj.coverage_tests)
+            assert len(result_obj.reduced_coverage_tests) < len(
+                result_obj.coverage_tests
             ), f"Inconsistent sequences: {result_obj.reduced_coverage_tests} and {result_obj.coverage_tests}"
             # only test with x = 2 included because this test executes the line in the if body and
             # gives 100% line coverage. The DIFF approach find this "better" test. The naive reduction approach
@@ -759,8 +759,8 @@ class TestSuiteExecutor:
         if goal in [eu.COVER_BRANCHES, eu.COVER_CONDITIONS]:
             # test with x = 2 and x := -2 included because each test will give 50% branch coverage and 50%
             # condition coverage and merging this together a branch/condition coverage of 100% is obtained.
-            assert (
-                len(result_obj.reduced_coverage_tests) == len(result_obj.coverage_tests)
+            assert len(result_obj.reduced_coverage_tests) == len(
+                result_obj.coverage_tests
             ), f"Inconsistent sequences: {result_obj.reduced_coverage_tests} and {result_obj.coverage_tests}"
             assert len(result_obj.reduced_coverage_tests) == 2
             total_tc_from_reduced = None
@@ -785,9 +785,8 @@ class TestSuiteExecutor:
         suite_validation.reduce_testsuite(result_obj, strategy)
         if goal in [eu.COVER_LINES]:
             if strategy == rs.FURTHEST_DIFF_REDUCTION:
-                assert (
-                    len(result_obj.reduced_coverage_tests)
-                    < len(result_obj.coverage_tests)
+                assert len(result_obj.reduced_coverage_tests) < len(
+                    result_obj.coverage_tests
                 ), f"Inconsistent sequences: {result_obj.reduced_coverage_tests} and {result_obj.coverage_tests}"
                 # only test with x = 2 included because this test executes the line in the if body and
                 # gives 100% line coverage. The DIFF approach finds this "better" test.
@@ -801,9 +800,8 @@ class TestSuiteExecutor:
                         total_tc_from_reduced = total_tc_from_reduced + tc
                 assert total_tc_from_reduced.hits_percent == 100
             if strategy == rs.BYORDER_REDUCTION:
-                assert (
-                    len(result_obj.reduced_coverage_tests)
-                    == len(result_obj.coverage_tests)
+                assert len(result_obj.reduced_coverage_tests) == len(
+                    result_obj.coverage_tests
                 ), f"Inconsistent sequences: {result_obj.reduced_coverage_tests} and {result_obj.coverage_tests}"
                 # Both test vectors included because the naive approach works sequentially when looking
                 # at the test coverages.
@@ -822,8 +820,8 @@ class TestSuiteExecutor:
             # In naive and furthest diff strategy tests with x = 2 and x := -2 are included
             # because each test will give 50% branch coverage and 50% condition coverage
             # and merging this together a branch/condition coverage of 100% is obtained.
-            assert (
-                len(result_obj.reduced_coverage_tests) == len(result_obj.coverage_tests)
+            assert len(result_obj.reduced_coverage_tests) == len(
+                result_obj.coverage_tests
             ), f"Inconsistent sequences: {result_obj.reduced_coverage_tests} and {result_obj.coverage_tests}"
             assert len(result_obj.reduced_coverage_tests) == 2
             total_tc_from_reduced = None
