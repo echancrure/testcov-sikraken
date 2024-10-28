@@ -908,7 +908,9 @@ class TestStringRepresentations:
     ):
         from suite_validation.execution import GcovCoverageMeasurer
 
-        obj = GcovCoverageMeasurer(machine_model, timelimit, goal, coverage_tool=COVERAGE_TOOL, **kwargs)
+        obj = GcovCoverageMeasurer(
+            machine_model, timelimit, goal, coverage_tool=COVERAGE_TOOL, **kwargs
+        )
 
         # pylint: disable=eval-used
         mirrored_object = eval(repr(obj))
@@ -937,7 +939,9 @@ class TestStringRepresentations:
     ):
         from suite_validation.execution import LcovCoverageMeasurer
 
-        obj = LcovCoverageMeasurer(machine_model, timelimit, goal, coverage_tool=COVERAGE_TOOL, **kwargs)
+        obj = LcovCoverageMeasurer(
+            machine_model, timelimit, goal, coverage_tool=COVERAGE_TOOL, **kwargs
+        )
 
         # pylint: disable=eval-used
         mirrored_object = eval(repr(obj))
@@ -967,7 +971,9 @@ class TestStringRepresentations:
     ):
         from suite_validation.execution import IsolatingRunner
 
-        obj = IsolatingRunner(machine_model, timelimit, goal, coverage_tool=COVERAGE_TOOL, **kwargs)
+        obj = IsolatingRunner(
+            machine_model, timelimit, goal, coverage_tool=COVERAGE_TOOL, **kwargs
+        )
 
         # pylint: disable=eval-used
         mirrored_object = eval(repr(obj))
