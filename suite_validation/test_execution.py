@@ -469,12 +469,12 @@ class TestSuiteExecutor:
             ), f"Did not find exactly one test, but {len(found_tests)}"
             assert len(results) == 3, "Not all tests executed"
             if "_safe" in test_suite:
-                assert all([r.execution_info.returncode == 0 for r in results]), (
+                assert all(r.execution_info.returncode == 0 for r in results), (
                     f"Not all tests failed with return code 1: "
                     f"{[r.execution_info.returncode for r in results]}"
                 )
             else:
-                assert all([r.execution_info.returncode == 1 for r in results]), (
+                assert all(r.execution_info.returncode == 1 for r in results), (
                     f"Not all tests failed with return code 1: "
                     f"{[r.execution_info.returncode for r in results]}"
                 )
@@ -496,12 +496,12 @@ class TestSuiteExecutor:
             ), f"Did not find exactly one test, but {len(found_tests)}"
             assert len(results) == 3, "Not all tests executed"
             if "_safe" in test_suite:
-                assert all([r.execution_info.returncode == 0 for r in results]), (
+                assert all(r.execution_info.returncode == 0 for r in results), (
                     f"Not all tests failed with return code 1: "
                     f"{[r.execution_info.returncode for r in results]}"
                 )
             else:
-                assert all([r.execution_info.returncode == 1 for r in results]), (
+                assert all(r.execution_info.returncode == 1 for r in results), (
                     f"Not all tests failed with return code 1: "
                     f"{[r.execution_info.returncode for r in results]}"
                 )
