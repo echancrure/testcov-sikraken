@@ -14,7 +14,6 @@ import os
 import sys
 import tempfile
 import glob
-from pathlib import Path
 from typing import Optional, Iterable
 import zipfile
 
@@ -652,7 +651,6 @@ class IsolatingRunner(LcovCoverageMeasurer):
             ] + resource_options
         else:
             cmd = ["containerexec"]
-        runexec_prepend = str((Path(__file__).parent / "runexec.sh").absolute())
         isolation_cmd = cmd + [
             "--read-only-dir",
             "/",
@@ -665,7 +663,6 @@ class IsolatingRunner(LcovCoverageMeasurer):
             "--output-dir",
             self._output_dir,
             "--",
-            f".{runexec_prepend}",
         ]
 
         return isolation_cmd + super()._get_execute_cmd(executable)

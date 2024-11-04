@@ -14,6 +14,7 @@ import re
 import subprocess
 import sys
 import zipfile
+from pathlib import Path
 from shutil import copy
 from typing import Tuple
 from suite_validation import execution
@@ -22,6 +23,7 @@ from suite_validation import reduction_strategy as rs
 from suite_validation import writer as suite_writer
 from suite_validation import _tool_info
 from suite_validation import _logger as logging
+from benchexec.util import read_file, write_file
 
 RESULTS_NAME = "results"
 REDUCED_TESTSUITE_NAME = "reduced-suite.zip"
@@ -237,9 +239,33 @@ def get_parser():
         help="Don't run tests in isolation. No resource limits will be considered and file modifications are possible.",
     )
 
+    parser.add_argument(
+        "--prep-cgroup",
+        help="prepare a cgroup for runexec subprocesses "
+             "(enable this when running testcov inside a container on a system with cgroups v2)",
+        action="store_true",
+    )
+
     parser.add_argument("file", action=StoreInputPath, help="program file")
 
     return parser
+
+
+def _prep_cgroup():
+    CG_BASE_DIR = Path("/sys/fs/cgroup/")
+    # create new sub-cgroups
+    main_cg = CG_BASE_DIR / "cpv-main"
+    benchexec_cg = CG_BASE_DIR / "benchexec"
+    main_cg.mkdir(parents=True, exist_ok=True)
+    benchexec_cg.mkdir(parents=True, exist_ok=True)
+    # move the main CPV process into its own cgroup
+    write_file(str(os.getpid()), main_cg / "cgroup.procs")
+    # enable controllers in subtrees for Benchexec to use
+    controllers = read_file(CG_BASE_DIR / "cgroup.controllers").split()
+    enable_ctrl = " ".join(f"+{c}" for c in controllers)
+    write_file(enable_ctrl, CG_BASE_DIR / "cgroup.subtree_control")
+    write_file(enable_ctrl, benchexec_cg / "cgroup.subtree_control")
+
 
 
 def parse(argv):
@@ -349,6 +375,8 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
     args = parse(argv)
+    if args.prep_cgroup:
+        _prep_cgroup()
     if args.format:
         logging.debug("Formatting file with clang-format.")
         project_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
