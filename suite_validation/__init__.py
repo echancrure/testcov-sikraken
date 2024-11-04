@@ -17,13 +17,13 @@ import zipfile
 from pathlib import Path
 from shutil import copy
 from typing import Tuple
+from benchexec.util import read_file, write_file
 from suite_validation import execution
 from suite_validation import execution_utils as eu
 from suite_validation import reduction_strategy as rs
 from suite_validation import writer as suite_writer
 from suite_validation import _tool_info
 from suite_validation import _logger as logging
-from benchexec.util import read_file, write_file
 
 RESULTS_NAME = "results"
 REDUCED_TESTSUITE_NAME = "reduced-suite.zip"
@@ -242,7 +242,7 @@ def get_parser():
     parser.add_argument(
         "--prep-cgroup",
         help="prepare a cgroup for runexec subprocesses "
-             "(enable this when running testcov inside a container on a system with cgroups v2)",
+        "(enable this when running testcov inside a container on a system with cgroups v2)",
         action="store_true",
     )
 
@@ -252,20 +252,19 @@ def get_parser():
 
 
 def _prep_cgroup():
-    CG_BASE_DIR = Path("/sys/fs/cgroup/")
+    cg_base_dir = Path("/sys/fs/cgroup/")
     # create new sub-cgroups
-    main_cg = CG_BASE_DIR / "cpv-main"
-    benchexec_cg = CG_BASE_DIR / "benchexec"
+    main_cg = cg_base_dir / "testcov-main"
+    benchexec_cg = cg_base_dir / "benchexec"
     main_cg.mkdir(parents=True, exist_ok=True)
     benchexec_cg.mkdir(parents=True, exist_ok=True)
-    # move the main CPV process into its own cgroup
+    # move the main testcov process into its own cgroup
     write_file(str(os.getpid()), main_cg / "cgroup.procs")
     # enable controllers in subtrees for Benchexec to use
-    controllers = read_file(CG_BASE_DIR / "cgroup.controllers").split()
+    controllers = read_file(cg_base_dir / "cgroup.controllers").split()
     enable_ctrl = " ".join(f"+{c}" for c in controllers)
-    write_file(enable_ctrl, CG_BASE_DIR / "cgroup.subtree_control")
+    write_file(enable_ctrl, cg_base_dir / "cgroup.subtree_control")
     write_file(enable_ctrl, benchexec_cg / "cgroup.subtree_control")
-
 
 
 def parse(argv):
