@@ -252,6 +252,11 @@ def get_parser():
 
 
 def _prep_cgroup():
+    if not Path("/sys/fs/cgroup/cgroup.controllers").is_file():
+        raise IllegalArgumentError(
+            "File /sys/fs/cgroup/cgroup.controllers not found. "
+            "Please make sure that cgroups v2 are enabled."
+        )
     cg_base_dir = Path("/sys/fs/cgroup/")
     # create new sub-cgroups
     main_cg = cg_base_dir / "testcov-main"
