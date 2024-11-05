@@ -382,7 +382,7 @@ def _delegate_sigterm(sig, frame):
         sig,
         frame,
     )
-    raise KeyboardInterrupt
+    raise KeyboardInterrupt()
 
 
 def main(argv=None):
