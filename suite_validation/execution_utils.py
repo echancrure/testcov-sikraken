@@ -275,6 +275,11 @@ def _execute(command, input_file, quiet=False, timelimit=None):
             logging.debug("Timeout of %ss expired. Killing process.", timelimit)
             returncode = shut_down(process)
             got_aborted = True
+        except KeyboardInterrupt as e:
+            logging.debug("Execution interrupted by user. Aborting process.")
+            returncode = shut_down(process)
+            got_aborted = True
+            raise e
     wall_time = time.perf_counter() - wall_time_start
 
     # We decode output, but we can't decode error output, since it may contain undecodable bytes.
