@@ -69,7 +69,6 @@ check-format:
     stage: test
     before_script:
         - cd /tmp && unzip "$CI_PROJECT_DIR"/testcov-*.zip
-        - apt install -y clang-tidy
     script:
         - cd /tmp/testcov && ./bin/testcov --no-isolation --verbose --test-suite "$CI_PROJECT_DIR/test/suites/suite-valid.zip" --goal "$CI_PROJECT_DIR/contrib/goal_files/coverage-error-call.prp" "$CI_PROJECT_DIR/test/test_false_ReachError.c"
     dependencies:
@@ -150,6 +149,7 @@ check-archive:test-comp:
   dependencies:
     - build-archive:test-comp
   before_script:
+    - apt install -y clang-tidy
     - tar -vxf testcov.tar.gz -C /tmp
   script:
     - cd /tmp/testcov && ./bin/testcov --no-isolation --verbose --test-suite "$CI_PROJECT_DIR/test/suites/suite-valid.zip" --goal "$CI_PROJECT_DIR/contrib/goal_files/coverage-error-call.prp" "$CI_PROJECT_DIR/test/test_false_ReachError.c"
