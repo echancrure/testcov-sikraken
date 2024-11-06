@@ -428,6 +428,7 @@ def main(argv=None):
             signal.signal(signal.SIGTERM, _delegate_signals)
             signal.signal(signal.SIGINT, _delegate_signals)
             signal.signal(signal.SIGQUIT, _delegate_signals)
+            signal.signal(signal.SIGHUP, _delegate_signals)
             executor = execution.SuiteExecutor(
                 args.goal,
                 args.timelimit_per_run,
