@@ -576,7 +576,7 @@ def _get_lcov_body(lcov_lines: List[str], relevant_program_name: str):
 
 def _parse_for_condition_coverage(
     single_lcov_line, conditions_entries
-) -> Tuple[int, int]:
+):
     if single_lcov_line.startswith(_BRANCH_LINE_CONDITION_HIT_COUNTER):
         line_with_condition_information = remove_prefix(
             single_lcov_line, _BRANCH_LINE_CONDITION_HIT_COUNTER
