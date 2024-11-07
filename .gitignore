@@ -147,3 +147,4 @@ dmypy.json
 test/test*.i
 
 .vscode/
+.idea/
