@@ -14,6 +14,7 @@ import re
 import subprocess
 import sys
 import zipfile
+import signal
 from pathlib import Path
 from shutil import copy
 from typing import Tuple
@@ -375,12 +376,23 @@ def reduce_testsuite(execution_results, reduction_strategy) -> None:
     ]
 
 
+def _delegate_signals(sig, frame):
+    logging.debug(
+        "Received signal %s on frame %s. Delegating signal to KeyboardInterrupt",
+        sig,
+        frame,
+    )
+    raise KeyboardInterrupt()
+
+
 def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
     args = parse(argv)
     if args.prep_cgroup:
         _prep_cgroup()
+        # runexec sends SIGTERM to all processes in the cgroup,
+        # so we need to treat it as a KeyboardInterrupt
     if args.format:
         logging.debug("Formatting file with clang-format.")
         project_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -413,6 +425,10 @@ def main(argv=None):
     error_occurred = True  # set to False in try-else
     try:
         try:
+            signal.signal(signal.SIGTERM, _delegate_signals)
+            signal.signal(signal.SIGINT, _delegate_signals)
+            signal.signal(signal.SIGQUIT, _delegate_signals)
+            signal.signal(signal.SIGHUP, _delegate_signals)
             executor = execution.SuiteExecutor(
                 args.goal,
                 args.timelimit_per_run,
