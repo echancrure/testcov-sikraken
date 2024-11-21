@@ -1,0 +1,33 @@
+# This file is part of TestCov,
+# a robust test executor with reliable coverage measurement:
+# https://gitlab.com/sosy-lab/software/test-suite-validator/
+#
+# SPDX-FileCopyrightText: 2021 Dirk Beyer <https://www.sosy-lab.org>
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# This is a Docker image for running the tests.
+# It should be pushed to registry.gitlab.com/sosy-lab/software/test-suite-validator/test
+# and will be used by CI as declared in .ci/gitlab-ci.yml.
+#
+# Commands for updating the image:
+# docker build --pull -t registry.gitlab.com/sosy-lab/software/test-suite-validator/test:python-3.10 - < .ci/Dockerfile.python-3.10
+# docker push registry.gitlab.com/sosy-lab/software/test-suite-validator/test:python-3.10
+
+FROM registry.gitlab.com/sosy-lab/software/test-suite-validator/test:plain
+
+RUN python3 -m pip install -U pip && python3 -m pip install \
+  coverage \
+  lxml \
+  benchexec \
+  matplotlib \
+  numpy \
+  pycparser \
+  pylint \
+  pytest \
+  pytest-cov \
+  tsbuilder \
+  black
+
+RUN apt-get update && apt-get install -y clang-format \
+  && rm -rf /var/lib/apt/lists/*

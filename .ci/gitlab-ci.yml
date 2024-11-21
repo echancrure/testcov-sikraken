@@ -155,37 +155,37 @@ check-archive:test-comp:
     - cd /tmp/testcov && ./bin/testcov --no-isolation --verbose --test-suite "$CI_PROJECT_DIR/test/suites/suite-valid.zip" --goal "$CI_PROJECT_DIR/contrib/goal_files/coverage-error-call.prp" "$CI_PROJECT_DIR/test/test_false_ReachError.c"
 
 
-unit-tests:python-3.6:
-  <<: *unit-tests
-  variables:
-    PYTHON_VERSION: '3.6'
-
 unit-tests:python-3.9:
   <<: *unit-tests
   variables:
     PYTHON_VERSION: '3.9'
 
-integration-tests:python-3.6:
-  <<: *integration-tests
+unit-tests:python-3.10:
+  <<: *unit-tests
   variables:
-    PYTHON_VERSION: '3.6'
+    PYTHON_VERSION: '3.10'
 
 integration-tests:python-3.9:
   <<: *integration-tests
   variables:
     PYTHON_VERSION: '3.9'
 
+integration-tests:python-3.10:
+  <<: *integration-tests
+  variables:
+    PYTHON_VERSION: '3.10'
+
 # 
 # deploy-coverage:
 #   stage: deploy
 #   variables:
-#     PYTHON_VERSION: '3.9'
+#     PYTHON_VERSION: '3.10'
 #   before_script:
 #     - pip install -e git+https://github.com/codacy/python-codacy-coverage.git#egg=codacy
 #   script:
 #     - python-codacy-coverage -r coverage.xml
 #   dependencies:
-#     - unit-tests:python-3.9
+#     - unit-tests:python-3.10
 #   only:
 #     refs:
 #       - master
@@ -221,6 +221,14 @@ reuse:
         - $DOCKERFILE
     - if: '$CI_PIPELINE_SOURCE == "schedule" && $BUILD_DOCKER == "true"'
 
+build-docker:python:3.10:
+  extends: .build-docker
+  needs:
+    - build-docker:plain
+  variables:
+    DOCKERFILE: .ci/Dockerfile.python-3.10
+    IMAGE: test:python-3.10
+
 build-docker:python:3.9:
   extends: .build-docker
   needs:
@@ -228,14 +236,6 @@ build-docker:python:3.9:
   variables:
     DOCKERFILE: .ci/Dockerfile.python-3.9
     IMAGE: test:python-3.9
-
-build-docker:python:3.6:
-  extends: .build-docker
-  needs:
-    - build-docker:plain
-  variables:
-    DOCKERFILE: .ci/Dockerfile.python-3.6
-    IMAGE: test:python-3.6
 
 build-docker:plain:
   extends: .build-docker
