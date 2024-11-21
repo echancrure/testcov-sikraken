@@ -175,17 +175,17 @@ integration-tests:python-3.10:
   variables:
     PYTHON_VERSION: '3.10'
 
-# 
+#
 # deploy-coverage:
 #   stage: deploy
 #   variables:
-#     PYTHON_VERSION: '3.10'
+#     PYTHON_VERSION: '3.9'
 #   before_script:
 #     - pip install -e git+https://github.com/codacy/python-codacy-coverage.git#egg=codacy
 #   script:
 #     - python-codacy-coverage -r coverage.xml
 #   dependencies:
-#     - unit-tests:python-3.10
+#     - unit-tests:python-3.9
 #   only:
 #     refs:
 #       - master
