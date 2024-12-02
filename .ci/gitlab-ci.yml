@@ -48,7 +48,7 @@ pylint:
   script:
     - pylint suite_validation
   variables:
-    PYTHON_VERSION: '3.9'
+    PYTHON_VERSION: '3.10'
 
 check-format:
   stage: test
@@ -56,7 +56,7 @@ check-format:
       - "black --check suite_validation"
       - "clang-format -i suite_validation/harness.c && git diff -s --exit-code"
   variables:
-    PYTHON_VERSION: '3.9'
+    PYTHON_VERSION: '3.10'
 
 .build-archive: &build-archive
     stage: build
