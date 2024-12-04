@@ -16,6 +16,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.10] - 2024-12-04
+
+### Added
+
+- TestCov can now be run with `clang` and `lcov` in addition to `gcc` and `gcov`.
+  The new options `--compiler` and `--cov-tool` allow to specify the compiler and coverage tool.
+- TestCov now provides an implementation in the harness for types `__int128` and `__uint128`.
+- TestCov can now be run in isolation on systems with cgroups v2.
+  The new option `--prep-cgroup` takes care of the configuration.
+
+### Changed
+- TestCov's minimal required Python version is now 3.9.
+- All signals are now caught and handled by TestCov to ensure proper output.
+
+
 ## [3.9] - 2023-11-28
 
 ### Added
@@ -109,6 +124,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Minor code improvements
 
 [Unreleased]: https://gitlab.com/sosy-lab/software/test-suite-validator/-/compare/v3.9...main
+[3.10]: https://gitlab.com/sosy-lab/software/test-suite-validator/-/compare/v3.9...v3.10
 [3.9]: https://gitlab.com/sosy-lab/software/test-suite-validator/-/compare/v3.8...v3.9
 [3.8]: https://gitlab.com/sosy-lab/software/test-suite-validator/-/compare/v3.7...v3.8
 [3.7]: https://gitlab.com/sosy-lab/software/test-suite-validator/-/compare/v3.6...v3.7
