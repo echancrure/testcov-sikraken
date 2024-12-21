@@ -247,6 +247,14 @@ def get_parser():
         action="store_true",
     )
 
+    parser.add_argument(
+        "--disable-info-files",
+        dest="disable_info_files",
+        action="store_true",
+        default=False,
+        help="Disable the creation of info files for each test run.",
+    )
+
     parser.add_argument("file", action=StoreInputPath, help="program file")
 
     return parser
@@ -443,6 +451,7 @@ def main(argv=None):
                 isolate_tests=args.use_isolation,
                 info_output=True,
                 stop_on_success=args.stop_on_success,
+                export_info_files=not args.disable_info_files,
             )
 
             executor.run(args.file, args.test_suite, args.machine_model, exec_results)

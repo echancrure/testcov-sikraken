@@ -711,6 +711,7 @@ def compute_test_coverage(
     branch_label_line_numbers=None,
     gcov_tool=None,
     output_dir="output/info_files",
+    export_info_files=True,
 ) -> TestCoverage:
     if gcov_tool is None:
         gcov_tool = "gcov"
@@ -725,11 +726,13 @@ def compute_test_coverage(
         gcov_tool,
     )
     for f in created_files:
-        _archive_file(f, test_vector.name, output_dir)
+        _archive_file(f, test_vector.name, output_dir, should_archive=export_info_files)
     return TestCoverage(program_name, {test_vector: next_result}, coverage)
 
 
-def _archive_file(to_archive, test_name, output_dir):
+def _archive_file(to_archive, test_name, output_dir, should_archive=True):
+    if not should_archive:
+        return
     suffix = to_archive.split(".")[-1] if "." in to_archive else ""
 
     def _get_target(intermediate=""):

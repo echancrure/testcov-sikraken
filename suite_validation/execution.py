@@ -446,6 +446,7 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
         output_dir="output",
         info_files_dir="info_files",
         compute_individuals=True,
+        export_info_files=True,
     ):
         super().__init__(
             machine_model,
@@ -463,6 +464,7 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
         self.harness_file = None
         self._compute_individual_run_coverages = compute_individuals
         self._instrumented_programs_cache = {}
+        self._export_info_files = export_info_files
         os.makedirs(self._output_dir_info, exist_ok=True)
 
     @staticmethod
@@ -559,6 +561,7 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
                 branch_label_line_numbers,
                 output_dir=self._output_dir_info,
                 gcov_tool=self._coverage_tool,
+                export_info_files=self._export_info_files,
             )
             return coverage
         except FileNotFoundError as e:
@@ -764,6 +767,7 @@ class SuiteExecutor:
         info_output=False,
         stop_on_success=False,
         output_dir="output",
+        export_info_files=True,
     ):
         self._check_for_error = isinstance(goal, eu.CoverFunc)
         self._stop_on_success = stop_on_success
@@ -791,6 +795,7 @@ class SuiteExecutor:
         self._info_target = sys.stderr if info_output else None
 
         self._output_dir = output_dir
+        self._info_files = export_info_files
 
     def run(self, program_file, test_suite, machine_model, result_target=None):
         """Execute the given tests on the given program.
@@ -857,6 +862,7 @@ class SuiteExecutor:
                 coverage_tool=self._coverage_tool,
                 output_dir=self._output_dir,
                 compute_individuals=self._compute_individual_test_coverages,
+                export_info_files=self._info_files,
             )
 
         try:
