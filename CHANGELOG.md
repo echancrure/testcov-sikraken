@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.11]
+
+### Added
+- Added an option to disable the export of info files with `--disbale-info-files`.
+
 ## [3.10] - 2024-12-04
 
 ### Added
