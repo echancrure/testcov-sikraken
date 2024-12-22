@@ -628,7 +628,7 @@ class IsolatingRunner(LcovCoverageMeasurer):
             output_dir=output_dir,
             info_files_dir=info_files_dir,
             compute_individuals=compute_individuals,
-            export_info_files=export_info_files
+            export_info_files=export_info_files,
         )
         self._memlimit = memlimit
         self._timelimit = timelimit_per_run
