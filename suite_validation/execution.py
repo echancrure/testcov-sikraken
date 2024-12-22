@@ -615,6 +615,7 @@ class IsolatingRunner(LcovCoverageMeasurer):
         output_dir="output",
         info_files_dir="info_files",
         compute_individuals=True,
+        export_info_files=True,
     ):
         super().__init__(
             machine_model,
@@ -627,6 +628,7 @@ class IsolatingRunner(LcovCoverageMeasurer):
             output_dir=output_dir,
             info_files_dir=info_files_dir,
             compute_individuals=compute_individuals,
+            export_info_files=export_info_files
         )
         self._memlimit = memlimit
         self._timelimit = timelimit_per_run
@@ -795,7 +797,7 @@ class SuiteExecutor:
         self._info_target = sys.stderr if info_output else None
 
         self._output_dir = output_dir
-        self._info_files = export_info_files
+        self._export_info_files = export_info_files
 
     def run(self, program_file, test_suite, machine_model, result_target=None):
         """Execute the given tests on the given program.
@@ -839,6 +841,7 @@ class SuiteExecutor:
                 use_runexec=self._use_runexec,
                 output_dir=self._output_dir,
                 compute_individuals=self._compute_individual_test_coverages,
+                export_info_files=self._export_info_files,
             )
         elif self._use_gcov_only:
             executor = GcovCoverageMeasurer(
@@ -862,7 +865,7 @@ class SuiteExecutor:
                 coverage_tool=self._coverage_tool,
                 output_dir=self._output_dir,
                 compute_individuals=self._compute_individual_test_coverages,
-                export_info_files=self._info_files,
+                export_info_files=self._export_info_files,
             )
 
         try:
