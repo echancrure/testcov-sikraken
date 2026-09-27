@@ -508,6 +508,12 @@ class LcovCoverageMeasurer(GcovCoverageMeasurer):
             label_line_numbers = None  # for condition coverage and line coverage we use existing measurements
         return program_file, label_line_numbers
 
+    def run_without_coverage(self, program_file, test_vector: eu.TestVector) -> eu.TestResult:
+        # Local patch (Sikraken, Sept 2026): execute the test on the instrumented program, so its
+        # coverage accumulates in the .gcda data file, but skip the gcov and lcov measurements
+        program_file, _ = self._prepare_program(program_file)
+        return ExecutionRunner.run(self, program_file, test_vector)
+
     def run(self, program_file, test_vector: eu.TestVector) -> eu.TestResult:
         original_program = program_file
         program_file, label_line_numbers = self._prepare_program(program_file)
@@ -970,6 +976,16 @@ class SuiteExecutor:
         and puts the results into result_target."""
 
         total_test_count = len(test_vectors)
+        # Local patch (Sikraken, Sept 2026): without individual test coverages the .gcda data file
+        # is never reset, so each measurement is the accumulated coverage and only the last one is
+        # kept. Except for a cover-error goal (which stops on the first error-call) we measure once, after
+        # the last test: same final coverage, but one lcov run instead of one per test. Lost: the
+        # accumulated coverage of intermediate tests (null in results.json) and the early stop at 100%.
+        defer_coverage = (
+            type(executor) is LcovCoverageMeasurer
+            and not self._compute_individual_test_coverages
+            and not self._check_for_error
+        )
         for tv in test_vectors:
             result_target.tests.append(tv)
             executed_test_count = len(result_target.tests)
@@ -978,6 +994,11 @@ class SuiteExecutor:
                 total=total_test_count,
                 target=self._info_target,
             )
+            if defer_coverage and executed_test_count < total_test_count:
+                result_target.results.append(executor.run_without_coverage(program_file, tv))
+                result_target.coverage_sequence.append(None)
+                result_target.successful_tests.append(tv)
+                continue
             next_result = executor.run(program_file, tv)
             result_target.results.append(next_result)
 

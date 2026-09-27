@@ -245,7 +245,7 @@ def get_parser():
         dest="fast",
         action="store_true",
         default=False,
-        help="Enable fast mode: disable per-test coverage, reduction, plots, isolation, info files, formatting and runexec. Still uses testcov coverage (not gcov).",
+        help="Enable fast mode: disable per-test coverage, reduction, plots, isolation, info files, formatting and runexec; except for a cover-error goal, coverage is measured once, after the last test. Still uses testcov coverage (not gcov).",
     )
 
     parser.add_argument(

@@ -8,6 +8,19 @@ SPDX-FileCopyrightText: 2019-2020 Dirk Beyer <https://www.sosy-lab.org>
 SPDX-License-Identifier: Apache-2.0
 -->
 
+> **Modified version for Sikraken.** This is TestCov 3.12.dev0
+> ([upstream](https://gitlab.com/sosy-lab/software/test-suite-validator), commit 6934666)
+> with local changes on the `sikraken` branch, each marked "Local change/patch (Sikraken)" in the code:
+>
+> - `--fast`: no per-test coverage, reduction, plots, isolation, runexec, info files or formatting.
+> - Each run uses its own `TMPDIR` (`<output>/tmp_<pid>`) and works inside its output directory,
+>   so several testcov processes can run in parallel.
+> - With `--fast` (more precisely: no individual test coverage and no isolation), coverage is
+>   measured once, after the last test, except for a cover-error goal. The reported coverage is
+>   unchanged; on large programs validation is much faster.
+>
+> Install: `pip install --user git+https://github.com/echancrure/testcov-sikraken.git@sikraken`
+
 # TestCov
 
 [![Apache 2.0 License](https://img.shields.io/badge/license-Apache--2-brightgreen.svg?style=flat)](https://www.apache.org/licenses/LICENSE-2.0)
