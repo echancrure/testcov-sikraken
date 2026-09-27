@@ -446,6 +446,16 @@ def main(argv=None):
     else:
         logging.init(logging.INFO, logfile=logfile)
 
+    # Local change (Sikraken, Oct 2025): ensure unique per-run temporary directory and isolate CWD inside output dir.
+    # This avoids concurrent testcov processes sharing system temp files or
+    # writing coverage/build artefacts into the same global locations.
+    per_run_tmp = os.path.join(os.path.abspath(args.output_dir), f"tmp_{os.getpid()}")
+    os.makedirs(per_run_tmp, exist_ok=True)
+    os.environ["TMPDIR"] = per_run_tmp
+    logging.debug("Using per-run TMPDIR=%s and chdir to output dir %s", per_run_tmp, args.output_dir)
+    # change working directory to output dir so tools that write to CWD are localized
+    os.chdir(os.path.abspath(args.output_dir))
+
     exec_results = eu.SuiteExecutionResult()
     harness_file = os.path.join(args.output_dir, "harness.c")
     executable = os.path.join(args.output_dir, "a.out")
