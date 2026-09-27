@@ -241,6 +241,14 @@ def get_parser():
     )
 
     parser.add_argument(
+        "--fast",
+        dest="fast",
+        action="store_true",
+        default=False,
+        help="Enable fast mode: disable per-test coverage, reduction, plots, isolation, info files, formatting and runexec. Still uses testcov coverage (not gcov).",
+    )
+
+    parser.add_argument(
         "--prep-cgroup",
         help="prepare a cgroup for runexec subprocesses "
         "(enable this when running testcov inside a container on a system with cgroups v2)",
@@ -284,6 +292,19 @@ def _prep_cgroup():
 def parse(argv):
     parser = get_parser()
     args = parser.parse_args(argv)
+
+    # Local change (Sikraken, Oct 2025): --fast mode cuts out optional/expensive features to run as fast as possible
+    # (still uses testcov coverage, not gcov).
+    if getattr(args, "fast", False):
+        args.individual_test_cov = False
+        args.reduce_tests = False
+        args.write_plots = False
+        args.use_isolation = False
+        args.use_runexec = False
+        args.format = False
+        args.prep_cgroup = False
+        args.disable_info_files = True
+        # keep use_gcov untouched (we want testcov coverage)
 
     if not args.goal_file:
         args.goal = eu.COVER_BRANCHES
@@ -449,7 +470,7 @@ def main(argv=None):
                 compiler=args.compiler,
                 coverage_tool=args.coverage_tool,
                 isolate_tests=args.use_isolation,
-                info_output=True,
+                info_output=not args.fast,
                 stop_on_success=args.stop_on_success,
                 export_info_files=not args.disable_info_files,
             )
