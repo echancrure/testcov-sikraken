@@ -37,7 +37,11 @@ def _preprocess(input_program: str, machine_model: str) -> str:
     :return: name of new, pre-processed program file
     """
     preprocessed_file = input_program + ".i"
-    cmd = [eu.COMPILER, machine_model, "-E", input_program, "-o", preprocessed_file]
+    # Local change (Sikraken, Sep 2026): pre-process with the C version the program is later compiled with
+    # (execution.py _get_compile_cmd, default gnu11). Without -std, GCC 15 (Ubuntu 26.04) pre-processes as C23: <stdbool.h>
+    # then leaves bool/true/false as keywords and <stddef.h> adds typedef __typeof__(nullptr) nullptr_t, and the gnu11
+    # compile fails ("unknown type name 'bool'"), so the test suite gets no coverage at all.
+    cmd = [eu.COMPILER, "-std=gnu11", machine_model, "-E", input_program, "-o", preprocessed_file]
     eu.execute(cmd, quiet=True)
 
     return preprocessed_file
