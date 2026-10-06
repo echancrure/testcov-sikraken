@@ -9,8 +9,10 @@
 
 """Module for creation and execution of test harnesses from test-format XML files."""
 
+import functools
 import re
 import os
+import subprocess
 import sys
 import tempfile
 import glob
@@ -28,6 +30,36 @@ from suite_validation import _logger as logging
 from suite_validation._gcov_coverage import Coverage
 
 HARNESS_FILE_NAME = "harness.c"
+
+
+@functools.lru_cache(maxsize=None)
+def _relaxed_c_flags(compiler):
+    """Return the flags that let old C code compile as it did before GCC 14.
+
+    GCC 14 turned several constraint violations into errors by default in C
+    (incompatible pointer types, int conversion, implicit function declaration,
+    implicit int, return mismatch). Programs that GCC 13 compiled with warnings
+    no longer compile, so no test can be executed on them.
+    -fpermissive turns these errors back into warnings.
+
+    The flag is only returned for GCC 14 or later: GCC 13 and earlier warn that
+    it is not valid for C, and clang does not accept it for these errors.
+    (Sikraken local patch)
+    """
+    try:
+        version = subprocess.run(
+            [compiler, "--version"], capture_output=True, check=False, timeout=10
+        ).stdout.decode(errors="replace")
+        if "clang" in version.lower():
+            return ()
+        major = subprocess.run(
+            [compiler, "-dumpversion"], capture_output=True, check=False, timeout=10
+        ).stdout.decode(errors="replace")
+        if int(major.strip().split(".")[0]) >= 14:
+            return ("-fpermissive",)
+    except (OSError, ValueError, subprocess.SubprocessError):
+        pass
+    return ()
 
 
 class ExecutionError(Exception):
@@ -188,6 +220,7 @@ class ExecutionRunner:
             f"-std={c_version}",
             mm_arg,
             "-Wno-attributes",
+            *_relaxed_c_flags(self._compiler),
             "-D__alias__(x)=",
             "-o",
             output_file,
