@@ -18,6 +18,8 @@ SPDX-License-Identifier: Apache-2.0
 > - With `--fast` (more precisely: no individual test coverage and no isolation), coverage is
 >   measured once, after the last test, except for a cover-error goal. The reported coverage is
 >   unchanged; on large programs validation is much faster.
+> - `__VERIFIER_nondet_size_t` returns `size_t` (it was `unsigned int`, which does not compile against
+>   the tasks declaring it as `size_t` under LP64).
 >
 > Install: `pip install --user git+https://github.com/echancrure/testcov-sikraken.git@sikraken`
 

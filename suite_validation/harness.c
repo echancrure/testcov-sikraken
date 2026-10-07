@@ -210,7 +210,10 @@ _Bool __VERIFIER_nondet_bool() { return (_Bool)__VERIFIER_nondet_int(); }
 
 void *__VERIFIER_nondet_pointer() { return (void *)__VERIFIER_nondet_ulong(); }
 
-unsigned int __VERIFIER_nondet_size_t() { return __VERIFIER_nondet_uint(); }
+// Local patch (Sikraken, Oct 2026): the type was unsigned int, which conflicts with the declaration
+// `extern size_t __VERIFIER_nondet_size_t();` of the tasks under LP64 (size_t is unsigned long): the
+// harness did not compile and no test was executed (e.g. sv-benchmarks c/coreutils-v9.5-units)
+size_t __VERIFIER_nondet_size_t() { return __VERIFIER_nondet_ulong(); }
 
 unsigned char __VERIFIER_nondet_u8() { return __VERIFIER_nondet_uchar(); }
 
