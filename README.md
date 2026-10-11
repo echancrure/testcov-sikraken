@@ -20,6 +20,8 @@ SPDX-License-Identifier: Apache-2.0
 >   unchanged; on large programs validation is much faster.
 > - `__VERIFIER_nondet_size_t` returns `size_t` (it was `unsigned int`, which does not compile against
 >   the tasks declaring it as `size_t` under LP64).
+> - A declaration written `void abort();` is left as it is (it was rewritten like a call of `abort`,
+>   and the harness did not compile).
 >
 > Install: `pip install --user git+https://github.com/echancrure/testcov-sikraken.git@sikraken`
 

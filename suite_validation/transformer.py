@@ -199,8 +199,11 @@ def add_controlflow_braces(c_code: str):
 def add_gcov_flushes(content: Sequence[str]) -> Sequence[str]:
     new_content = ["#ifdef GCOV", "extern void __gcov_dump(void);", "#endif"]
     abort_pattern = re.compile(r"(^|\s+|;|\{)abort\(\);")
+    # Local patch (Sikraken, Oct 2026): a declaration written 'void abort();' is not a call.
+    # It was rewritten into 'void { ... abort(); }' and the harness did not compile.
+    abort_declaration = re.compile(r"\bvoid\s+abort\(\);")
     for line in content:
-        if abort_pattern.search(line):
+        if abort_pattern.search(line) and not abort_declaration.search(line):
             line = re.sub(
                 r"(\s*)abort\(\);",
                 r"\1{\n\1#ifdef GCOV\n\1__gcov_dump();\n\1#endif\n\1abort();\n\1}",
