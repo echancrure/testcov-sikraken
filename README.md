@@ -22,6 +22,8 @@ SPDX-License-Identifier: Apache-2.0
 >   the tasks declaring it as `size_t` under LP64).
 > - A declaration written `void abort();` is left as it is (it was rewritten like a call of `abort`,
 >   and the harness did not compile).
+> - `__VERIFIER_nondet_memory(ptr, size)` is defined, as TestCoCa defines it: one input per byte, read as an
+>   unsigned char, in order (it was undefined, and a program calling it did not link).
 >
 > Install: `pip install --user git+https://github.com/echancrure/testcov-sikraken.git@sikraken`
 

@@ -215,6 +215,17 @@ void *__VERIFIER_nondet_pointer() { return (void *)__VERIFIER_nondet_ulong(); }
 // harness did not compile and no test was executed (e.g. sv-benchmarks c/coreutils-v9.5-units)
 size_t __VERIFIER_nondet_size_t() { return __VERIFIER_nondet_ulong(); }
 
+// Local patch (Sikraken, Oct 2026): __VERIFIER_nondet_memory was not defined, so a program calling it (the
+// havoc_memory tasks of sv-benchmarks c/intel-tdx-module, c/nondet-memory-examples) did not link and no test was
+// executed. Defined as TestCoCa's harness defines it: each of the size bytes is one input, read as an unsigned char,
+// in order. All the declarations in sv-benchmarks are `extern void __VERIFIER_nondet_memory(void *, size_t);`
+void __VERIFIER_nondet_memory(void *mem, size_t size) {
+  unsigned char *p = (unsigned char *)mem;
+  for (size_t i = 0; i < size; i++) {
+    p[i] = __VERIFIER_nondet_uchar();
+  }
+}
+
 unsigned char __VERIFIER_nondet_u8() { return __VERIFIER_nondet_uchar(); }
 
 unsigned short __VERIFIER_nondet_u16() { return __VERIFIER_nondet_ushort(); }
